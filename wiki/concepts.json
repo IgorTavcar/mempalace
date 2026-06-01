@@ -1,0 +1,4246 @@
+{
+  "project": "MemPalace",
+  "version": "3.3.6",
+  "generated": "2026-06-01",
+  "description": "Machine-readable knowledge graph of the MemPalace codebase wiki.",
+  "counts": {
+    "nodes": 20,
+    "edges": 136,
+    "concepts": 140,
+    "symbols": 197,
+    "surprises": 92
+  },
+  "nodes": [
+    {
+      "id": "index",
+      "label": "Home",
+      "group": "Overview",
+      "url": "index.html",
+      "summary": "MemPalace is a local-first AI memory system that stores everything you share verbatim, indexes it as a spatial palace of wings, rooms, and drawers with an AAAK closet index, and retrieves it with hybrid semantic + keyword search — no API key required for the core path. It never summarizes, never paraphrases, and never phones home, hitting ~96.6% R@5 on LongMemEval with zero LLM. This wiki maps the whole system for both humans and agents: ingestion, retrieval, interfaces, and the seven non-negotiable design principles that bind them together.",
+      "keywords": [
+        "MemPalace",
+        "AI memory",
+        "local-first",
+        "verbatim storage",
+        "memory palace",
+        "method of loci",
+        "Zettelkasten",
+        "wings",
+        "rooms",
+        "drawers",
+        "closets",
+        "AAAK",
+        "hybrid search",
+        "BM25",
+        "vector search",
+        "knowledge graph",
+        "MCP",
+        "ChromaDB",
+        "zero API",
+        "privacy by architecture",
+        "R@5",
+        "LongMemEval",
+        "96.6%",
+        "incremental",
+        "entity-first",
+        "background hooks",
+        "wake-up stack",
+        "Ollama",
+        "BYOK"
+      ]
+    },
+    {
+      "id": "architecture",
+      "label": "System Architecture",
+      "group": "Overview",
+      "url": "architecture.html",
+      "summary": "MemPalace is a multi-layer AI memory system built on a pluggable storage backend (ChromaDB default) plus a SQLite knowledge graph. User data flows through miners into verbatim drawers, indexed by AAAK-compressed closets. The L0-L3 wake-up stack injects context on demand: identity plus essential story (~600-900 tokens), on-demand wing/room retrieval, and deep semantic search. Every component honors five non-negotiable principles: verbatim-always storage, append-only ingestion, local-first execution, background hooks, and privacy by architecture.",
+      "keywords": [
+        "architecture",
+        "layers",
+        "palace",
+        "wing",
+        "room",
+        "drawer",
+        "closet",
+        "AAAK",
+        "backend",
+        "knowledge graph",
+        "mine_palace_lock",
+        "search_memories",
+        "L0-L3",
+        "incremental",
+        "verbatim",
+        "entity-first",
+        "ChromaDB",
+        "BM25",
+        "vector search",
+        "wake-up stack"
+      ]
+    },
+    {
+      "id": "palace-model",
+      "label": "The Palace Model",
+      "group": "Overview",
+      "url": "palace-model.html",
+      "summary": "The Palace Model is MemPalace's spatial memory architecture: Wings (people/projects) contain Rooms (days/topics), which hold Drawers (verbatim text ~800 chars). Hallways connect entities within wings; Tunnels link rooms across wings. The index layer (Closets) stores compact topic/entity/quote pointers that lead searchers to drawers. Dating metadata (Tier 6a) and Diaries bring temporal scoping. Dynamics (Hebbian strength + Ebbinghaus decay) make connections fade or strengthen based on use and spacing.",
+      "keywords": [
+        "wings",
+        "rooms",
+        "drawers",
+        "closets",
+        "hallways",
+        "tunnels",
+        "dynamics",
+        "Hebbian",
+        "Ebbinghaus",
+        "decay",
+        "entities",
+        "topics",
+        "dating",
+        "Tier 6a",
+        "method-of-loci",
+        "Zettelkasten",
+        "spatial memory",
+        "pointer lines",
+        "greedy packing",
+        "symmetric dedup"
+      ]
+    },
+    {
+      "id": "glossary",
+      "label": "Glossary",
+      "group": "Overview",
+      "url": "glossary.html",
+      "summary": "One alphabetized reference for the whole MemPalace vocabulary: the spatial model (wings, rooms, drawers, closets, hallways, tunnels, diary), the retrieval stack (hybrid BM25 + vector, HNSW, cosine distance, the L0-L3 wake-up layers), the ingestion machinery (AAAK dialect, incremental ingest, sweeps, entity disambiguation, corpus origin), and the cross-cutting principles (local-first, BYOK, privacy by architecture). Each of the 100+ definitions ends with a pointer to the page that covers it in depth.",
+      "keywords": [
+        "glossary",
+        "terms",
+        "definitions",
+        "wing",
+        "room",
+        "drawer",
+        "closet",
+        "hallway",
+        "tunnel",
+        "diary",
+        "AAAK",
+        "method of loci",
+        "Zettelkasten",
+        "L0-L3",
+        "wake-up stack",
+        "HNSW",
+        "BM25",
+        "hybrid search",
+        "embedding",
+        "BYOK",
+        "local-first",
+        "verbatim",
+        "incremental ingest",
+        "entity disambiguation",
+        "corpus origin",
+        "validity window",
+        "temporal KG",
+        "sweep",
+        "mega-file split",
+        "virtual line numbering",
+        "COCA",
+        "MCP",
+        "hook",
+        "precompact",
+        "idempotent",
+        "cosine distance",
+        "closet boost",
+        "knowledge graph",
+        "triple",
+        "privacy by architecture"
+      ]
+    },
+    {
+      "id": "mining-projects",
+      "label": "Project Mining",
+      "group": "Ingestion",
+      "url": "mining-projects.html",
+      "summary": "Project mining scans a directory tree, detects file formats via extension and content, chunks text into drawers, applies virtual line numbering for locators, and stores them idempotently in the palace. The process is incremental: re-mining the same project never duplicates drawers; it upserts to the same storage rows keyed by deterministic SHA-256 IDs. Gitignore rules, size limits, and chunk-cap safeguards prevent runaway ingest. Adjacent format extraction and mega-file splitting are siblings to the core miner, sharing chunking, entity detection, and room-routing logic.",
+      "keywords": [
+        "project-mining",
+        "scan-project",
+        "file-routing",
+        "room-detection",
+        "chunk-text",
+        "idempotent",
+        "drawer-id",
+        "closet-pointer",
+        "virtual-line-numbering",
+        "content-date",
+        "entity-extraction",
+        "format-miner",
+        "mtime-dirty-tracking",
+        "incremental-ingest"
+      ]
+    },
+    {
+      "id": "mining-conversations",
+      "label": "Conversation Mining",
+      "group": "Ingestion",
+      "url": "mining-conversations.html",
+      "summary": "MemPalace converts diverse chat export formats (Claude Code JSONL, ChatGPT, Gemini CLI, OpenAI Codex, Slack, Claude.ai JSON) into a normalized transcript via the --mode convos pipeline. The primary miner chunks by exchange pair (Q+A) or extracts memory types, while the sweeper catches per-message outliers missed by file-level chunking. Diary ingest files daily summaries atomically per day with incremental change detection.",
+      "keywords": [
+        "normalization",
+        "transcript",
+        "exchange",
+        "chunking",
+        "sweeper",
+        "idempotent",
+        "cursor",
+        "diary",
+        "closets",
+        "extract_mode",
+        "NORMALIZE_VERSION",
+        "noise stripping",
+        "source adapter",
+        "RFC 002",
+        "room detection",
+        "hall routing",
+        "wing resolution",
+        "deterministic ID",
+        "incremental ingest",
+        "tool result truncation"
+      ]
+    },
+    {
+      "id": "entities",
+      "label": "Entity System",
+      "group": "Ingestion",
+      "url": "entities.html",
+      "summary": "MemPalace's entity system detects and classifies proper nouns (people, projects, topics) from content using a two-pass signal-based approach: extraction via i18n-aware regex with COCA content-word filtering, then scoring via contextual signals (dialogue markers, pronouns, action verbs, versioning). A persistent EntityRegistry seeds from onboarding, learns high-confidence candidates, and researches unknowns via Wikipedia. Corpus-origin detection separates AI-dialogue agent personas from real people before classification. Entities key wings and feed hallway computation.",
+      "keywords": [
+        "entity detection",
+        "entity_detector",
+        "entity_registry",
+        "EntityRegistry",
+        "corpus_origin",
+        "COCA filter",
+        "two-signal-category",
+        "dialogue markers",
+        "agent persona",
+        "non-Latin boundaries",
+        "entity classification",
+        "closet pointers",
+        "hallways",
+        "i18n patterns",
+        "Wikipedia research",
+        "onboarding",
+        "learned entities",
+        "ambiguous flags"
+      ]
+    },
+    {
+      "id": "aaak-dialect",
+      "label": "AAAK Dialect & Closets",
+      "group": "Ingestion",
+      "url": "aaak-dialect.html",
+      "summary": "AAAK is a lossy summarization format that extracts entities, topics, key quotes, emotions, and flags from verbatim drawer content into a single compact line (typically 40-150 bytes). Closets are searchable index collections that hold these pointer lines, each pointing back to the original drawer(s) via the → syntax. During retrieval, the searcher scans closets first to identify which drawers are relevant, then returns verbatim content from those drawers—100% recall is preserved because no information is lost, only indexed. The dialect supports non-Latin scripts (Hindi, Cyrillic, etc.) via language-aware Unicode patterns in the i18n system.",
+      "keywords": [
+        "AAAK Dialect",
+        "closets",
+        "Zettelkasten",
+        "entity extraction",
+        "topic indexing",
+        "emotion codes",
+        "importance flags",
+        "closet boost",
+        "hybrid retrieval",
+        "i18n",
+        "non-Latin scripts",
+        "lossy summarization",
+        "drawer pointers",
+        "verbatim preservation"
+      ]
+    },
+    {
+      "id": "search",
+      "label": "Search & Retrieval",
+      "group": "Retrieval",
+      "url": "search.html",
+      "summary": "MemPalace fuses vector semantic search with keyword-based BM25 scoring and optional closet-boosting to approach perfect retrieval. The system reaches 96.6% R@5 with zero LLM, 98.4% R@5 on held-out data through the full hybrid pipeline, and optional Haiku reranking pushes that to 100%. A weak semantic match can always be rescued by strong keyword overlap or temporal/preference signals, eliminating the pure-vector cold-retrieval problem. Vector candidate selection is the floor that always runs; later steps can only improve ranking, never suppress a result.",
+      "keywords": [
+        "hybrid search",
+        "BM25",
+        "vector similarity",
+        "cosine distance",
+        "closet boost",
+        "embedding",
+        "deduplication",
+        "fact checking",
+        "query sanitization",
+        "candidate strategy",
+        "drawer-grep",
+        "temporal ranking",
+        "HNSW",
+        "FTS5 fallback",
+        "recall"
+      ]
+    },
+    {
+      "id": "knowledge-graph",
+      "label": "Temporal Knowledge Graph",
+      "group": "Retrieval",
+      "url": "knowledge-graph.html",
+      "summary": "The Temporal Knowledge Graph stores structured facts as subject→predicate→object triples with optional valid_from/valid_to timestamps, enabling queries at specific points in time. Built on SQLite with thread-safe WAL mode and no external dependencies, it complements vector search by providing deterministic relationship queries (\"Who was Alice's employer in 2023?\") and serves as ground truth for fact-checking and entity disambiguation.",
+      "keywords": [
+        "knowledge graph",
+        "temporal",
+        "RDF",
+        "triples",
+        "SQLite",
+        "as_of",
+        "valid_from",
+        "valid_to",
+        "invalidate",
+        "entity",
+        "predicate",
+        "bitemporal",
+        "fact-checking",
+        "provenance"
+      ]
+    },
+    {
+      "id": "backends",
+      "label": "Storage Backends",
+      "group": "Retrieval",
+      "url": "backends.html",
+      "summary": "MemPalace abstracts storage behind a minimal typed interface (BaseCollection, BaseBackend) that enables swapping retrieval implementations without touching mining, search, or repair code. ChromaDB is the reference implementation, but third-party backends register via entry points. The typed result layer (QueryResult, GetResult) replaces Chroma's raw dicts; sophisticated HNSW health checks prevent segfaults on diverged indices; and per-palace locking serializes concurrent writes against ChromaDB's non-thread-safe HNSW graph.",
+      "keywords": [
+        "backends",
+        "ChromaDB",
+        "HNSW",
+        "storage",
+        "registry",
+        "entry-points",
+        "typed results",
+        "QueryResult",
+        "GetResult",
+        "PalaceRef",
+        "divergence",
+        "corruption",
+        "quarantine",
+        "migrate",
+        "write-lock",
+        "cosine distance"
+      ]
+    },
+    {
+      "id": "cli",
+      "label": "CLI & Onboarding",
+      "group": "Interfaces",
+      "url": "cli.html",
+      "summary": "MemPalace's CLI (cli.py) dispatches 14 primary commands — init (setup + corpus detection), mine (three ingestion modes), search, wake-up (L0+L1 context injection), status, repair, and maintenance tooling — while onboarding.py guides first-time users through mode selection (work/personal/combo), entity registration, and embedding-model choice, seeding the entity registry and critical-facts bootstrap before mining begins.",
+      "keywords": [
+        "cli",
+        "init",
+        "mine",
+        "search",
+        "wake-up",
+        "onboarding",
+        "corpus-origin",
+        "entity-detection",
+        "embedding-model",
+        "AAAK",
+        "hooks",
+        "MCP",
+        "palace",
+        "layer",
+        "pass-0",
+        "tier-1",
+        "tier-2",
+        "LLM",
+        "miner"
+      ]
+    },
+    {
+      "id": "mcp-server",
+      "label": "MCP Server & Tools",
+      "group": "Interfaces",
+      "url": "mcp-server.html",
+      "summary": "The MCP server (mcp_server.py, 2,869 lines) exposes the entire palace read/write/knowledge-graph interface as JSON-RPC tools for Claude Code and Claude Desktop. It implements stdio protection to block transitive dependencies from corrupting the JSON-RPC stream, cache invalidation to detect external database writes, aggressive retry logic for ChromaDB stale handles, and a write-ahead log for audit trails. The 29 tools span palace reads (list/search/traverse), writes (add/update/delete drawers, sync), knowledge graph mutations (add/query/invalidate facts with temporal filtering), tunnels (cross-wing connections), diaries (agent journals in AAAK), and maintenance (reconnect, hook settings).",
+      "keywords": [
+        "MCP",
+        "JSON-RPC",
+        "tools",
+        "stdio",
+        "cache",
+        "staleness",
+        "inode",
+        "mtime",
+        "retry",
+        "KnowledgeGraph",
+        "WAL",
+        "audit",
+        "chunking",
+        "idempotency",
+        "AAAK",
+        "diary",
+        "tunnels",
+        "warmup",
+        "idle",
+        "watchdog"
+      ]
+    },
+    {
+      "id": "hooks",
+      "label": "Hooks & Auto-save",
+      "group": "Interfaces",
+      "url": "hooks.html",
+      "summary": "The hooks system (Stop and PreCompact) auto-saves session transcripts to the palace in the background without blocking the chat window. The Stop hook fires every 15 human messages (configurable) to checkpoint the conversation; the PreCompact hook saves everything just before context compression. Both hooks mine the JSONL transcript directly into drawers, then optionally ingest project files and notify the AI via systemMessage (silent mode, default v3.3.0+) or block the AI to save via MCP tools (legacy). This design saves approximately USD 1 per session by eliminating token retransmission of diary blocks in the chat.",
+      "keywords": [
+        "hook",
+        "auto-save",
+        "Stop",
+        "PreCompact",
+        "silent-mode",
+        "blocking-mode",
+        "PID-slot",
+        "transcript-mining",
+        "detached-subprocess",
+        "diary-write",
+        "wing-derivation",
+        "palace-root-kill-switch"
+      ]
+    },
+    {
+      "id": "llm-integration",
+      "label": "LLM Integration",
+      "group": "Cross-cutting",
+      "url": "llm-integration.html",
+      "summary": "MemPalace layers optional, pluggable LLM assistance over five domains: entity refinement, closet regeneration, corpus-origin detection, room detection, and fact-checking. Every LLM step is opt-in and local-first — Ollama, LM Studio, and llama.cpp on localhost are the default, with OpenAI-compatible and Anthropic providers available only via explicit BYOK. External endpoints always trigger a privacy warning before first use, and when an LLM is unavailable or fails the system falls back to its heuristic/regex baseline and records what happened. No operation ever blocks on an LLM, and no data is silently discarded.",
+      "keywords": [
+        "llm_client",
+        "ollama",
+        "openai-compat",
+        "anthropic",
+        "provider",
+        "local-first",
+        "never-silent-fallback",
+        "privacy-by-architecture",
+        "entity-refinement",
+        "llm_refine",
+        "closet-regeneration",
+        "closet_llm",
+        "corpus-origin",
+        "fact-checker",
+        "room-detection",
+        "check_available",
+        "is_external_service",
+        "endpoint-locality",
+        "json-parsing",
+        "retry-backoff",
+        "tailscale-cgnat",
+        "rfc1918",
+        "mdns",
+        "edit-distance",
+        "relationship-mismatch",
+        "stale-fact"
+      ]
+    },
+    {
+      "id": "i18n",
+      "label": "Internationalization",
+      "group": "Cross-cutting",
+      "url": "i18n.html",
+      "summary": "MemPalace localizes UI and entity detection across 14 languages via JSON catalogs in mempalace/i18n/. The loader handles case-insensitive BCP 47 tags, dotted-key interpolation, and language-aware entity patterns. Non-Latin scripts are kept intact through script-aware word boundaries that account for combining marks Python's \\b drops. An optional multilingual embeddinggemma-300m model (0.88 cross-lingual cosine similarity) drops in beside the English-only all-MiniLM default.",
+      "keywords": [
+        "internationalization",
+        "i18n",
+        "BCP 47",
+        "locale",
+        "embedding",
+        "embeddinggemma",
+        "multilingual",
+        "entity detection",
+        "boundary_chars",
+        "combining marks",
+        "AAAK dialect",
+        "script-aware",
+        "word boundary",
+        "case-insensitive language codes",
+        "Matryoshka representation learning"
+      ]
+    },
+    {
+      "id": "security-privacy",
+      "label": "Security & Privacy",
+      "group": "Cross-cutting",
+      "url": "security-privacy.html",
+      "summary": "MemPalace is designed with privacy-by-architecture: all data lives locally, no external APIs for core operations, zero phone-home. This architectural guarantee is reinforced by defense-in-depth input validation (sanitize_name/content), prompt contamination prevention (query_sanitizer), MCP stdio protection, symlink-attack rejection in export, shell hook hardening, and strict file permissions (0o600/0o700).",
+      "keywords": [
+        "sanitize_name",
+        "sanitize_content",
+        "query_sanitizer",
+        "prompt contamination",
+        "symlink rejection",
+        "O_NOFOLLOW",
+        "file permissions",
+        "0o600",
+        "0o700",
+        "UTF-8 encoding",
+        "stdio redirection",
+        "lone surrogates",
+        "path traversal",
+        "privacy-by-architecture",
+        "MCP protection",
+        "hook script",
+        "input validation"
+      ]
+    },
+    {
+      "id": "maintenance",
+      "label": "Repair, Sync & Maintenance",
+      "group": "Cross-cutting",
+      "url": "maintenance.html",
+      "summary": "Seven modules provide incremental-only Palace maintenance: repair.py detects and fixes HNSW index divergence and SQLite corruption with extraction-cap guards; sync.py removes gitignored files using the same matchers as mining; migrate.py rebuilds Palaces across ChromaDB versions; exporter.py streams markdown exports with symlink safety; dedup.py finds near-identical drawers via cosine distance; spellcheck.py auto-corrects user messages while preserving technical terms; sweeper.py catches message-granular content that file-level miners dropped. All critical operations are crash-safe and follow the never-destroy promise.",
+      "keywords": [
+        "repair",
+        "sync",
+        "migrate",
+        "exporter",
+        "dedup",
+        "spellcheck",
+        "sweeper",
+        "HNSW",
+        "SQLite",
+        "divergence",
+        "crash-safe",
+        "gitignore",
+        "symlink",
+        "idempotent",
+        "extraction-cap",
+        "max_seq_id",
+        "FTS5",
+        "ChromaDB",
+        "incremental-only",
+        "never-destroy"
+      ]
+    },
+    {
+      "id": "benchmarks",
+      "label": "Benchmarks",
+      "group": "Cross-cutting",
+      "url": "benchmarks.html",
+      "summary": "MemPalace achieves 96.6% recall@5 on LongMemEval using raw semantic search with zero API calls, demonstrating that verbatim text storage with embeddings outperforms LLM-based fact extraction. A progression to 98.4% (hybrid, held-out) and ≥99% (with LLM rerank) is achieved via keyword overlap, temporal reasoning, and preference extraction — each improvement grounded in analysis of specific failure patterns. The benchmark suite spans three academic datasets (LongMemEval, LoCoMo, ConvoMem) with published methodology, auditable result files, and a deliberate refusal to teach-to-the-test for the final 0.6%.",
+      "keywords": [
+        "longmemeval",
+        "locomo",
+        "convomem",
+        "r@5",
+        "recall",
+        "ndcg",
+        "hybrid",
+        "rerank",
+        "embedding",
+        "chromadb",
+        "keyword overlap",
+        "temporal reasoning",
+        "preference extraction",
+        "held-out",
+        "teaching-to-the-test",
+        "benchmark integrity",
+        "semantic search",
+        "person names",
+        "quoted phrases",
+        "nostalgia patterns"
+      ]
+    },
+    {
+      "id": "surprises",
+      "label": "Surprises & Gotchas",
+      "group": "Cross-cutting",
+      "url": "surprises.html",
+      "summary": "A curated, cross-cutting collection of the highest-signal findings in MemPalace: non-obvious design choices, clever patterns, and the traps that bite without warning. Every entry is traced to a real line of code and grouped into insights, gotchas, performance, and security. It is where the verbatim-always, local-first, never-corrupt philosophy meets the messy reality of ChromaDB internals, cross-platform shells, Unicode boundaries, and weak local LLMs.",
+      "keywords": [
+        "surprises",
+        "gotchas",
+        "insights",
+        "performance",
+        "security",
+        "reentrant lock",
+        "self-deadlock",
+        "bash 3.2",
+        "mapfile",
+        "os.kill",
+        "GetExitCodeProcess",
+        "word boundary",
+        "combining marks",
+        "HNSW",
+        "pickle sniff-test",
+        "stdio redirect",
+        "file descriptor",
+        "query sanitizer",
+        "system prompt contamination",
+        "BM25 IDF",
+        "absolute cosine",
+        "closets signal not gate",
+        "verbatim text",
+        "Mem0",
+        "fact checker",
+        "predicate normalization",
+        "foreign key soft constraint",
+        "RTF striprtf",
+        "MarkItDown",
+        "init idempotent",
+        "corpus origin",
+        "ChromaDB 10K truncation",
+        "SQLITE_MAX_VARIABLE_NUMBER",
+        "divergence floor",
+        "sync threshold",
+        "emotion detection",
+        "Stop hook async",
+        "PreCompact sync",
+        "file endpoint rejection",
+        "embeddinggemma",
+        "L2 cosine mismatch",
+        "COCA filter",
+        "date interval"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "architecture",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "Wings, rooms, drawers, and closets are the core data model that every component operates on"
+    },
+    {
+      "source": "architecture",
+      "target": "search",
+      "rel": "related",
+      "label": "Hybrid BM25 + vector search is the retrieval mechanism at L3; closets are ranking signals"
+    },
+    {
+      "source": "architecture",
+      "target": "mining-projects",
+      "rel": "related",
+      "label": "Project miner is the primary ingestion path, feeding drawers into the architecture"
+    },
+    {
+      "source": "architecture",
+      "target": "knowledge-graph",
+      "rel": "related",
+      "label": "Entity-first design principle; KG stores relationships extracted from drawers"
+    },
+    {
+      "source": "architecture",
+      "target": "security-privacy",
+      "rel": "related",
+      "label": "Local-first, zero external APIs, privacy by architecture - core to system design"
+    },
+    {
+      "source": "architecture",
+      "target": "cli",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "architecture",
+      "target": "mcp-server",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "palace-model",
+      "target": "architecture",
+      "rel": "related",
+      "label": "The Palace Model is the core spatial structure described in the system architecture; this page details how the model is implemented."
+    },
+    {
+      "source": "palace-model",
+      "target": "aaak-dialect",
+      "rel": "related",
+      "label": "Closets and their pointer-line format connect to AAAK compression, the symbolic dialect that lets LLMs scan the index efficiently."
+    },
+    {
+      "source": "palace-model",
+      "target": "knowledge-graph",
+      "rel": "related",
+      "label": "The temporal knowledge graph stores entity relationships and dates, complementing the spatial palace structure with temporal and semantic edges."
+    },
+    {
+      "source": "palace-model",
+      "target": "search",
+      "rel": "related",
+      "label": "Search uses closets as the primary index and falls back to drawer search; the retrieval layer depends on the palace model's structure."
+    },
+    {
+      "source": "palace-model",
+      "target": "mining-projects",
+      "rel": "related",
+      "label": "Project mining creates drawers, rooms, wings, and entities, populating the palace model with content."
+    },
+    {
+      "source": "palace-model",
+      "target": "mining-conversations",
+      "rel": "related",
+      "label": "Conversation mining also creates drawers and diarized rooms, bringing transcripts into the palace with temporal dating."
+    },
+    {
+      "source": "palace-model",
+      "target": "mining-projects",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "palace-model",
+      "target": "mining-conversations",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "palace-model",
+      "target": "search",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "palace-model",
+      "target": "knowledge-graph",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "palace-model",
+      "target": "mcp-server",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "mining-projects",
+      "target": "mining-conversations",
+      "rel": "related",
+      "label": "Parallel miner for chat exports; shares chunking, entity extraction, room routing, and idempotent drawer logic with project miner"
+    },
+    {
+      "source": "mining-projects",
+      "target": "entities",
+      "rel": "related",
+      "label": "Project scanner detects projects/people via git history and manifests; extracted entities populate known_entities.json for metadata tagging during ingest"
+    },
+    {
+      "source": "mining-projects",
+      "target": "aaak-dialect",
+      "rel": "related",
+      "label": "Closet pointers (topic|entities|date:Lstart-Lend|->ids) form the index layer that LLMs scan to locate relevant drawers without reading full content"
+    },
+    {
+      "source": "mining-projects",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "Drawers are stored in wings/rooms; closets create searchable cross-references; halls link entities within a wing; tunnels link wings by topic or entity"
+    },
+    {
+      "source": "mining-projects",
+      "target": "search",
+      "rel": "related",
+      "label": "Closets are scanned via FTS5; matching pointers trigger drawer retrieval; virtual line numbering applies when rendering results"
+    },
+    {
+      "source": "mining-projects",
+      "target": "architecture",
+      "rel": "related",
+      "label": "Project mining is the main ingest path; incremental append-only design is a core architectural principle enforced across all miners"
+    },
+    {
+      "source": "mining-projects",
+      "target": "palace-model",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "mining-conversations",
+      "target": "architecture",
+      "rel": "related",
+      "label": "Explains how conversation mining fits into the broader MemPalace ingest -> search -> retrieve pipeline and the role of the palace model (wings/rooms/drawers/closets)."
+    },
+    {
+      "source": "mining-conversations",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "Details the drawer/closet/hall structure that conversation mining populates; critical for understanding how room detection and hall routing work."
+    },
+    {
+      "source": "mining-conversations",
+      "target": "entities",
+      "rel": "related",
+      "label": "Entity extraction from conversation content is used to tag drawer metadata for filterable search; diary ingest also stamps entities on daily summaries."
+    },
+    {
+      "source": "mining-conversations",
+      "target": "aaak-dialect",
+      "rel": "related",
+      "label": "Closets created by diary ingest use the AAAK dialect for indexed summaries; related to how multi-topic packing avoids splitting mid-topic."
+    },
+    {
+      "source": "mining-conversations",
+      "target": "search",
+      "rel": "related",
+      "label": "Search queries return conversation drawers; understanding how room, hall, and entity metadata filter results clarifies why normalization includes room/hall detection."
+    },
+    {
+      "source": "mining-conversations",
+      "target": "backends",
+      "rel": "related",
+      "label": "Drawer and closet collections use RFC 001 backend abstraction (Chroma, SQLite, etc.); conversation mining is format-agnostic across backends."
+    },
+    {
+      "source": "entities",
+      "target": "mining-projects",
+      "rel": "related",
+      "label": "Project discovery via entity detection feeds the mining process; entities appear in closet pointers and hallways"
+    },
+    {
+      "source": "entities",
+      "target": "i18n",
+      "rel": "related",
+      "label": "Entity patterns, stopwords, and script-aware boundaries live in i18n/*lang*.json entity sections; multi-language support depends on i18n infrastructure"
+    },
+    {
+      "source": "entities",
+      "target": "search",
+      "rel": "related",
+      "label": "Entities in closet lines (2nd pipe field) are indexed and queryable; entity extraction enables entity-centric search"
+    },
+    {
+      "source": "entities",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "Entities key wings and rooms; closet pointers embed entities; hallways are entity-pair navigation structures"
+    },
+    {
+      "source": "entities",
+      "target": "llm-integration",
+      "rel": "related",
+      "label": "Corpus-origin Tier 2 uses optional LLM provider for platform detection and agent-persona extraction; detect_origin_llm calls provider.classify()"
+    },
+    {
+      "source": "entities",
+      "target": "security-privacy",
+      "rel": "related",
+      "label": "EntityRegistry.research() is local-only by default; Wikipedia lookups require explicit allow_network=True; respects privacy-by-architecture principle"
+    },
+    {
+      "source": "entities",
+      "target": "mining-projects",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "entities",
+      "target": "mining-conversations",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "entities",
+      "target": "aaak-dialect",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "entities",
+      "target": "llm-integration",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "entities",
+      "target": "i18n",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "AAAK closets are the index layer of the palace model; drawers hold the verbatim content closets point to."
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "mining-projects",
+      "rel": "related",
+      "label": "Project mining calls build_closet_lines() during file ingest to create closets alongside drawers."
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "search",
+      "rel": "related",
+      "label": "Retrieval uses closet-first hybrid ranking: closets scan fast, then boost matching drawers in the final score."
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "entities",
+      "rel": "related",
+      "label": "Entity extraction in closets uses i18n-aware patterns from entity_detector and i18n to handle non-Latin scripts."
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "i18n",
+      "rel": "related",
+      "label": "Closet entity detection relies on i18n patterns and script-aware boundaries to support Devanagari, Cyrillic, Arabic, etc."
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "llm-integration",
+      "rel": "related",
+      "label": "Optional LLM-assisted closet refinement (closet_llm.py) uses configured external endpoints to enhance regex closets."
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "palace-model",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "mining-projects",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "mining-conversations",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "entities",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "search",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "aaak-dialect",
+      "target": "i18n",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "search",
+      "target": "benchmarks",
+      "rel": "related",
+      "label": "Benchmarks page documents the 96.6% R@5 baseline, hybrid v4's 98.4% held-out performance, and explains why hybrid beats pure-vector for recall"
+    },
+    {
+      "source": "search",
+      "target": "knowledge-graph",
+      "rel": "related",
+      "label": "Temporal knowledge graph provides entity relationships and validity windows that could augment search ranking in future enhancements"
+    },
+    {
+      "source": "search",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "Searcher operates on the palace's drawer/closet structure; closets are the index layer that ranks drawer retrieval"
+    },
+    {
+      "source": "search",
+      "target": "aaak-dialect",
+      "rel": "related",
+      "label": "AAAK dialect generates closet content via entity/topic extraction, which searcher uses as ranking signal without depending on its lossiness"
+    },
+    {
+      "source": "search",
+      "target": "backends",
+      "rel": "related",
+      "label": "ChromaDB HNSW and SQLite FTS5 storage power vector candidates and the BM25-only fallback path"
+    },
+    {
+      "source": "search",
+      "target": "backends",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "knowledge-graph",
+      "target": "entities",
+      "rel": "related",
+      "label": "Entity system provides disambiguation and name normalization; KG queries rely on entity_id canonicalization"
+    },
+    {
+      "source": "knowledge-graph",
+      "target": "architecture",
+      "rel": "related",
+      "label": "KG is one pillar of MemPalace architecture alongside vector search and palace rooms; explains system topology"
+    },
+    {
+      "source": "knowledge-graph",
+      "target": "mcp-server",
+      "rel": "related",
+      "label": "MCP server exposes tool_kg_* functions; manages per-path KG caching and provides the public interface"
+    },
+    {
+      "source": "knowledge-graph",
+      "target": "entities",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "knowledge-graph",
+      "target": "search",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "knowledge-graph",
+      "target": "backends",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "backends",
+      "target": "search",
+      "rel": "related",
+      "label": "Search queries use the collection interface to retrieve ranked results and consults hnsw_capacity_status to detect divergence before vector queries."
+    },
+    {
+      "source": "backends",
+      "target": "maintenance",
+      "rel": "related",
+      "label": "Repair, sync, and quarantine tools depend on backend health checks (quarantine_stale_hnsw, quarantine_invalid_hnsw_metadata, collection_write_roundtrip_works) to diagnose and recover corrupted palaces."
+    },
+    {
+      "source": "backends",
+      "target": "architecture",
+      "rel": "related",
+      "label": "Architecture doc explains the role of backends in the overall MemPalace system: pluggable storage enabling future backends without touching mining or search code."
+    },
+    {
+      "source": "backends",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "Storage backends persist the palace model (wings, rooms, drawers) as indexed embeddings and metadata; the collection interface is how miners and searchers interact with that model."
+    },
+    {
+      "source": "backends",
+      "target": "mining-projects",
+      "rel": "related",
+      "label": "Project miners call get_collection with create=True and upsert documents/embeddings/metadata to populate the palace; this flow is protected by per-palace write locks."
+    },
+    {
+      "source": "backends",
+      "target": "search",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "backends",
+      "target": "knowledge-graph",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "cli",
+      "target": "entities",
+      "rel": "related",
+      "label": "cmd_init calls discover_entities and passes corpus_origin context to resolve ambiguous names; onboarding seeds the entity registry before mining."
+    },
+    {
+      "source": "cli",
+      "target": "search",
+      "rel": "related",
+      "label": "cmd_search dispatcher calls searcher.search(); instructions/search.md guides agents through MCP tools and CLI fallback; Layer 3 wraps semantic search logic."
+    },
+    {
+      "source": "cli",
+      "target": "mining-projects",
+      "rel": "related",
+      "label": "cmd_mine routes to project/convo/extract miners; onboarding is a prerequisite to mining; post-init mine prompt removes friction from the init→mine workflow."
+    },
+    {
+      "source": "cli",
+      "target": "llm-integration",
+      "rel": "related",
+      "label": "cmd_init calls get_provider and detect_origin_llm for optional Tier 2 LLM refinement; onboarding persists embedding model choice; consent gate for external APIs."
+    },
+    {
+      "source": "cli",
+      "target": "hooks",
+      "rel": "related",
+      "label": "cmd_hook routes to hooks_cli.run_hook for session-start/stop/precompact logic; these hooks auto-save memories and block before context compaction."
+    },
+    {
+      "source": "cli",
+      "target": "maintenance",
+      "rel": "related",
+      "label": "cmd_repair, cmd_repair_status, cmd_sync, cmd_migrate provide repair tooling; non-fatal mine errors surface SQLite integrity instructions via repair.print_sqlite_integrity_abort."
+    },
+    {
+      "source": "cli",
+      "target": "llm-integration",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "cli",
+      "target": "hooks",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "mcp-server",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "The MCP tools expose the palace structure (wings/rooms/drawers/tunnels) as read/write operations."
+    },
+    {
+      "source": "mcp-server",
+      "target": "knowledge-graph",
+      "rel": "related",
+      "label": "MCP tools wrap KnowledgeGraph mutations (add/query/invalidate/timeline) with retry-on-close and temporal filtering."
+    },
+    {
+      "source": "mcp-server",
+      "target": "search",
+      "rel": "related",
+      "label": "tool_search delegates to search_memories with vector-disabled fallback and query sanitization."
+    },
+    {
+      "source": "mcp-server",
+      "target": "backends",
+      "rel": "related",
+      "label": "MCP tools pull ChromaDB client via ChromaBackend with inode/mtime staleness detection and HNSW capacity probing."
+    },
+    {
+      "source": "mcp-server",
+      "target": "hooks",
+      "rel": "related",
+      "label": "MCP tools expose hook_settings and memories_filed_away for coordinating silent saves and diary writes via Claude Code hooks."
+    },
+    {
+      "source": "mcp-server",
+      "target": "security-privacy",
+      "rel": "related",
+      "label": "MCP server implements WAL audit trail, content redaction, path basename sanitization, and stdio protection to prevent JSON-RPC corruption."
+    },
+    {
+      "source": "mcp-server",
+      "target": "backends",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "mcp-server",
+      "target": "knowledge-graph",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "mcp-server",
+      "target": "search",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "mcp-server",
+      "target": "palace-model",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "hooks",
+      "target": "architecture",
+      "rel": "related",
+      "label": "Hooks are a critical component of the overall MemPalace pipeline, fitting into the data flow from harness to palace storage."
+    },
+    {
+      "source": "hooks",
+      "target": "mining-conversations",
+      "rel": "related",
+      "label": "PreCompact and Stop hooks invoke the conversation miner to ingest transcripts before compaction or on schedule."
+    },
+    {
+      "source": "hooks",
+      "target": "mcp-server",
+      "rel": "related",
+      "label": "Silent mode calls mcp_server.tool_diary_write directly; hooks are integrated with the tool layer via direct Python function calls."
+    },
+    {
+      "source": "hooks",
+      "target": "cli",
+      "rel": "related",
+      "label": "Hooks are invoked via CLI dispatcher (cmd_hook) and implement the hook event handlers (session-start, stop, precompact)."
+    },
+    {
+      "source": "hooks",
+      "target": "maintenance",
+      "rel": "related",
+      "label": "Hook logs and PID slots live in ~/.mempalace/hook_state/; stale slot cleanup and debuggging are maintenance tasks."
+    },
+    {
+      "source": "hooks",
+      "target": "security-privacy",
+      "rel": "related",
+      "label": "Hooks respect the palace root kill-switch and never access external APIs; all work is local, protecting user data."
+    },
+    {
+      "source": "hooks",
+      "target": "mining-projects",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "hooks",
+      "target": "mining-conversations",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "hooks",
+      "target": "mcp-server",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "hooks",
+      "target": "cli",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "llm-integration",
+      "target": "entities",
+      "rel": "related",
+      "label": "Entity refinement is one of the core LLM-integration touch points. llm_refine reclassifies regex-detected entities."
+    },
+    {
+      "source": "llm-integration",
+      "target": "aaak-dialect",
+      "rel": "related",
+      "label": "Closets (AAAK pointers) are regenerated/indexed by closet_llm. The dialect module defines the closet format."
+    },
+    {
+      "source": "llm-integration",
+      "target": "mining-projects",
+      "rel": "related",
+      "label": "Project mining creates initial regex closets and entity detections that LLM passes optionally refine."
+    },
+    {
+      "source": "llm-integration",
+      "target": "cli",
+      "rel": "related",
+      "label": "CLI dispatcher routes to llm_client for provider setup, room_detector_local for init, and corpus_origin detection."
+    },
+    {
+      "source": "llm-integration",
+      "target": "security-privacy",
+      "rel": "related",
+      "label": "Endpoint locality detection and privacy warnings are core to the security model. No external APIs silently."
+    },
+    {
+      "source": "llm-integration",
+      "target": "knowledge-graph",
+      "rel": "related",
+      "label": "Fact-checker validates text against KG relationships. KG is the authority for entity facts."
+    },
+    {
+      "source": "i18n",
+      "target": "entities",
+      "rel": "related",
+      "label": "Entity detection patterns in i18n drive the entity system; entity_detector.py directly calls get_entity_patterns()."
+    },
+    {
+      "source": "i18n",
+      "target": "aaak-dialect",
+      "rel": "related",
+      "label": "AAAK Dialect is localized via i18n; each locale's aaak.instruction guides lossy compression."
+    },
+    {
+      "source": "i18n",
+      "target": "llm-integration",
+      "rel": "related",
+      "label": "Multilingual embeddings (embeddinggemma vs minilm) are used for semantic search and knowledge graph queries."
+    },
+    {
+      "source": "i18n",
+      "target": "backends",
+      "rel": "related",
+      "label": "ChromaDB collections persist embedding function names; switching embedding models requires rebuild-index."
+    },
+    {
+      "source": "i18n",
+      "target": "cli",
+      "rel": "related",
+      "label": "CLI messages (mine_start, search_no_results, etc.) are all localized via i18n t() function."
+    },
+    {
+      "source": "i18n",
+      "target": "mining-projects",
+      "rel": "related",
+      "label": "Entity detection during mining uses get_entity_patterns() with entity_languages from config."
+    },
+    {
+      "source": "security-privacy",
+      "target": "architecture",
+      "rel": "related",
+      "label": "Privacy-by-architecture is a core design principle; security layers reinforce the local-only guarantee."
+    },
+    {
+      "source": "security-privacy",
+      "target": "hooks",
+      "rel": "related",
+      "label": "Hook scripts (mempal_save_hook.sh) implement hardened JSON parsing and path validation to safely ingest auto-save triggers."
+    },
+    {
+      "source": "security-privacy",
+      "target": "mcp-server",
+      "rel": "related",
+      "label": "MCP server uses input sanitizers at tool boundaries and query sanitizer for search contamination mitigation."
+    },
+    {
+      "source": "security-privacy",
+      "target": "backends",
+      "rel": "related",
+      "label": "ChromaDB and SQLite storage backends receive sanitized, validated input before any write operation."
+    },
+    {
+      "source": "security-privacy",
+      "target": "llm-integration",
+      "rel": "related",
+      "label": "LLM endpoint configuration validates URL scheme (http/https only) to prevent file:// exfiltration."
+    },
+    {
+      "source": "security-privacy",
+      "target": "maintenance",
+      "rel": "related",
+      "label": "Repair and migration operations respect the same input validation and file permission constraints."
+    },
+    {
+      "source": "security-privacy",
+      "target": "mcp-server",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "security-privacy",
+      "target": "cli",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "security-privacy",
+      "target": "hooks",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "security-privacy",
+      "target": "backends",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "maintenance",
+      "target": "backends",
+      "rel": "related",
+      "label": "Maintenance operations depend on ChromaBackend for collection lifecycle and direct SQLite access for recovery paths."
+    },
+    {
+      "source": "maintenance",
+      "target": "palace-model",
+      "rel": "related",
+      "label": "Maintenance concepts like drawers, wings, rooms, and closets are defined by the Palace model; repair/sync/export all operate on these structures."
+    },
+    {
+      "source": "maintenance",
+      "target": "security-privacy",
+      "rel": "related",
+      "label": "Exporter's symlink defense and spellcheck's entity-registry preservation align with security-by-architecture and privacy-preserving design."
+    },
+    {
+      "source": "maintenance",
+      "target": "mining-conversations",
+      "rel": "related",
+      "label": "Sweeper complements file-level miners by catching message-granular content; sync uses the same gitignore matcher infrastructure as miner.py."
+    },
+    {
+      "source": "maintenance",
+      "target": "llm-integration",
+      "rel": "related",
+      "label": "Spellcheck integrates optional autocorrect and entity registry; repair's extraction-cap guard is informed by understanding of ChromaDB's internal limits."
+    },
+    {
+      "source": "maintenance",
+      "target": "backends",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "benchmarks",
+      "target": "index",
+      "rel": "related",
+      "label": "Benchmarks validate the core retrieval claims in MemPalace's positioning and home narrative"
+    },
+    {
+      "source": "benchmarks",
+      "target": "search",
+      "rel": "related",
+      "label": "Benchmark retrieval functions directly test the semantic search and ranking layers that power search"
+    },
+    {
+      "source": "benchmarks",
+      "target": "llm-integration",
+      "rel": "related",
+      "label": "LLM reranking (optional) uses Claude Haiku/Sonnet; the benchmark measures how LLM reasoning bridges semantic gaps that embeddings cannot close"
+    },
+    {
+      "source": "benchmarks",
+      "target": "mcp-server",
+      "rel": "related",
+      "label": "MCP tools support programmatic memory queries; benchmarks validate the underlying retrieval that MCP surfaces"
+    },
+    {
+      "source": "benchmarks",
+      "target": "mining-conversations",
+      "rel": "related",
+      "label": "Benchmarks ingest mined conversation data; the quality of mining affects what retrieval has to work with"
+    },
+    {
+      "source": "benchmarks",
+      "target": "search",
+      "rel": "uses",
+      "label": ""
+    },
+    {
+      "source": "benchmarks",
+      "target": "knowledge-graph",
+      "rel": "uses",
+      "label": ""
+    }
+  ],
+  "concepts": [
+    {
+      "term": "AAAK Dialect",
+      "definition": "Lossy symbolic compression format (entities, topics, emotions, flags) that lets an LLM scan thousands of closet entries instantly and know exactly which drawer to open.",
+      "page": "architecture"
+    },
+    {
+      "term": "AAAK Dialect",
+      "definition": "A structured symbolic summarization format extracting entities (people), topics (key phrases), quotes (5-55 char snippets), emotional tone (3 codes like vul+joy), and importance flags (ORIGIN, CORE, PIVOT) from content into pipe-separated lines readable by any LLM without decompression.",
+      "page": "aaak-dialect"
+    },
+    {
+      "term": "AAAK Dialect",
+      "definition": "Compressed notation (entity codes, emotion markers, pipe-separated fields) for efficient memory storage that remains readable to humans and LLMs; generated on init as aaak_entities.md.",
+      "page": "cli"
+    },
+    {
+      "term": "AAAK Dialect",
+      "definition": "Compressed memory format using entity codes (ALC, JOR), emotion markers (*warm*, *fierce*), and pipe-separated fields for agents to write dense diary entries.",
+      "page": "mcp-server"
+    },
+    {
+      "term": "AAAK Dialect Instruction",
+      "definition": "Localized compression instruction stored in each locale's i18n JSON (e.g. Japanese vs English version), consumed by Dialect.compress() to guide LLM-based lossy summarization.",
+      "page": "i18n"
+    },
+    {
+      "term": "Agent Personas",
+      "definition": "Names the user has assigned to AI agents they converse with (e.g., Echo, Sparrow, Claude-instance-2). Extracted by Tier 2 (LLM) during corpus-origin detection. When corpus_origin context is passed to detect_entities, candidates matching agent-persona names are reclassified from people/uncertain into a separate agent_personas bucket.",
+      "page": "entities"
+    },
+    {
+      "term": "auto_save Config",
+      "definition": "Boolean setting (default True, hooks.auto_save) that gates all Stop and PreCompact hook functionality; when False, hooks pass through silently.",
+      "page": "hooks"
+    },
+    {
+      "term": "Backend",
+      "definition": "Pluggable storage interface (base.py). ChromaDB is the default reference implementation; custom backends subclass BaseBackend and BaseCollection.",
+      "page": "architecture"
+    },
+    {
+      "term": "BaseBackend",
+      "definition": "Per-palace factory contract: owns get_collection, close_palace, health, and optional detect hooks. Lightweight on construction (no I/O), connection deferred to get_collection. Thread-safe for concurrent multi-palace access.",
+      "page": "backends"
+    },
+    {
+      "term": "BaseCollection",
+      "definition": "Abstract interface every backend must implement: add, upsert, query, get, delete, count, and optional update/health/close methods. Per-collection read/write contract consumed by miners, searchers, and repair tools.",
+      "page": "backends"
+    },
+    {
+      "term": "BCP 47 Language Tag",
+      "definition": "Standardized language code (RFC 5646), case-insensitive; MemPalace normalizes via _canonical_lang() so PT-BR, pt-br, Pt-Br all map to the same file.",
+      "page": "i18n"
+    },
+    {
+      "term": "Benchmark integrity flag",
+      "definition": "Hybrid v4's last 0.6% (100% from 99.4%) came from analyzing three specific failed questions and building targeted fixes — teaching-to-the-test acknowledged and disclosed rather than hidden.",
+      "page": "benchmarks"
+    },
+    {
+      "term": "BM25-only fallback",
+      "definition": "SQLite FTS5-based search used when HNSW vector index is corrupted or unloadable, enabling graceful degradation to keyword search without segfaulting the server.",
+      "page": "search"
+    },
+    {
+      "term": "Cache Invalidation",
+      "definition": "Detection of external writes via inode + mtime checks on chroma.sqlite3, forcing ChromaDB client/collection rebuild to prevent stale HNSW indices.",
+      "page": "mcp-server"
+    },
+    {
+      "term": "Candidate strategy",
+      "definition": "Policy for gathering candidates before hybrid re-rank: 'vector' (default) uses top n_results*3 from HNSW; 'union' also pulls BM25-only candidates from SQLite FTS5 to widen the re-rank pool.",
+      "page": "search"
+    },
+    {
+      "term": "ChromaDB version migration",
+      "definition": "Direct SQLite extraction path for palaces unreadable by current chromadb version; writes to fresh palace, then atomic swap. Automatic migration on 1.5.x+ makes manual migrate rarely needed except for downgrades.",
+      "page": "backends"
+    },
+    {
+      "term": "Closet",
+      "definition": "A searchable index layer using AAAK compression. Stores topic pointers, entity names, and quote fragments - scanned by LLM to identify relevant drawers without reading all content.",
+      "page": "architecture"
+    },
+    {
+      "term": "Closet",
+      "definition": "A searchable index record (in mempalace_closets collection) containing compact topic/entity/quote pointer lines that reference one or more drawers. Built during mining by extract→pointer→pack logic; packed greedily up to 1,500 chars per closet.",
+      "page": "palace-model"
+    },
+    {
+      "term": "Closet",
+      "definition": "A searchable index of pointers linking a source file to its drawers. Each pointer includes extracted topics/entities, Tier 6a date:line locators, and drawer IDs. Drawers are materialized on search hit; closets are scanned first.",
+      "page": "mining-projects"
+    },
+    {
+      "term": "Closet Boost",
+      "definition": "Hybrid retrieval optimization: when a searcher matches a closet, it boosts the ranking (up to 0.40) of drawers from that source file. Rank-based (ordinal position) rather than distance-based, more reliable on narrative content where distances cluster.",
+      "page": "aaak-dialect"
+    },
+    {
+      "term": "Closet boost",
+      "definition": "Ranking signal where a matching closet (topic index layer) reduces the effective distance of drawers from its source file by 4-40% depending on closet rank, clamped to [0, 2] to preserve cosine invariants.",
+      "page": "search"
+    },
+    {
+      "term": "Closet packing",
+      "definition": "Atomic grouping of diary topics into fixed-character closets (indexed summaries) that never split mid-topic, with full rebuild on content changes to prevent orphaned closets.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "Closet Pointer Entities",
+      "definition": "Extracted proper nouns embedded in closet lines as the 2nd pipe-separated field. Detected via i18n-aware patterns on a content window. Entities appearing 2+ times in the window are extracted (max 5), deduped, ranked by frequency. Feeds palace-level searching and hallway computation.",
+      "page": "entities"
+    },
+    {
+      "term": "Closet regeneration",
+      "definition": "Optional regeneration of keyword/topic indices (closets) from drawer content via LLM, overlaying richer topic extraction on top of regex baselines. Fallback: regex closets remain untouched if LLM fails.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "Closets",
+      "definition": "ChromaDB index documents (1500 chars max) holding topic pointers back to drawers. Each line is atomic: topic|entities|→drawer_a,drawer_b. Created during mining, rebuilt on re-mine, queried first during search to identify relevant drawers before fetching verbatim content.",
+      "page": "aaak-dialect"
+    },
+    {
+      "term": "COCA Content-Word Filter",
+      "definition": "Tier 2 linguistics cleanup: a frozenset of ~600 common English words (code, phase, brutal, line, note) that appear capitalized but are not proper nouns. Blocks false-positive entity detection on sentence-start words. Multi-word candidates intentionally bypass this filter to preserve compounds like 'Claude Code'.",
+      "page": "entities"
+    },
+    {
+      "term": "Collection metric invariant",
+      "definition": "Collections created with hnsw:space=cosine for consistent cosine-distance-based similarity scoring. Legacy palaces missing this metadata silently use L2 distance, breaking downstream relevance interpretation.",
+      "page": "backends"
+    },
+    {
+      "term": "Combining Mark",
+      "definition": "Non-spacing diacritical mark (Unicode categories Mc/Mn) like Hindi matra (ा) or Arabic vowel (َ); Python's \\b word boundary ignores them, causing truncation. MemPalace fixes this via script-aware lookaround boundaries.",
+      "page": "i18n"
+    },
+    {
+      "term": "Confidence score",
+      "definition": "A per-triple float (default 1.0) indicating certainty. Currently not used in ranking but reserved for future fact-assessment integrations and conflict resolution.",
+      "page": "knowledge-graph"
+    },
+    {
+      "term": "Corpus-Origin Detection",
+      "definition": "Two-tier system (Tier 1 heuristic + optional Tier 2 LLM) that determines whether a corpus is AI-dialogue vs narrative. Tier 1 uses brand-term regex (unambiguous: 'Claude Code', ambiguous: 'Claude') with co-occurrence rules. Tier 2 (LLM-optional) extracts platform identity and agent-persona names. Persona-matched candidates are reclassified from people->agent_personas to prevent false positive family/relationship inference.",
+      "page": "entities"
+    },
+    {
+      "term": "Corpus-origin detection",
+      "definition": "Two-tier detection of whether content is AI-dialogue. Tier 1: fast regex heuristic. Tier 2: optional LLM confirmation + persona extraction. Tier 2 merges results, never overwrites heuristic confidence.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "Cosine distance",
+      "definition": "Vector similarity metric in the [0, 2] range used by ChromaDB's HNSW index; 0 = identical vectors, 2 = opposite. MemPalace interprets it as absolute distance (not relative-to-max) to ensure stable ranking under candidate addition/removal.",
+      "page": "search"
+    },
+    {
+      "term": "Crash-safe upsert pattern",
+      "definition": "Deterministic drawer IDs (e.g. sweep_SESSION_UUID) that allow re-upsert to idempotently dedupe on reruns, making sweeper and other ingest paths resumable after failure.",
+      "page": "maintenance"
+    },
+    {
+      "term": "Detached Subprocess",
+      "definition": "Hook-spawned mines run as fully detached processes using POSIX start_new_session or Windows process groups, so the hook exits immediately and the background work continues.",
+      "page": "hooks"
+    },
+    {
+      "term": "Diary",
+      "definition": "A dated journal entry or conversation log mined from a transcript file. The timestamp (ISO YYYY-MM-DD) is extracted from the filename, frontmatter, content, or mtime and stored as content_date in drawer metadata, enabling temporal grouping.",
+      "page": "palace-model"
+    },
+    {
+      "term": "Disambiguation Context",
+      "definition": "For ambiguous words (ever, grace, may, Rose) that are also common English words, EntityRegistry._disambiguate() checks surrounding context against person-context patterns (said, with, 's) and concept-context patterns (have you, if you, would). Context-derived confidence adjusts the classification decision.",
+      "page": "entities"
+    },
+    {
+      "term": "Drawer",
+      "definition": "A single chunk of verbatim user content (never summarized or paraphrased). The atomic storage unit that is queried, ranked, and returned in search results.",
+      "page": "architecture"
+    },
+    {
+      "term": "Drawer",
+      "definition": "A chunk of verbatim source text (~800 chars), immutable once written. Identified by drawer_ID = drawer_WING_ROOM_SHA256-hash(source-file+chunk-index). Stores original content, entities, halls, dates, and line numbers.",
+      "page": "palace-model"
+    },
+    {
+      "term": "Drawer",
+      "definition": "A single chunk of verbatim text from a source file, stored with metadata (wing, room, line range, date, entities). The atomic unit of search in the palace.",
+      "page": "mining-projects"
+    },
+    {
+      "term": "Drawer sweep",
+      "definition": "Timestamp-coordinated, idempotent message-level ingestion that catches individual messages missed by file-level chunking; uses a cursor and deterministic IDs to resume cleanly after crashes.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "Drawer-grep enrichment",
+      "definition": "When a closet-boosted match spans multiple chunks in a source file, the system selects the chunk with the highest keyword-term overlap and returns it plus immediate neighbors for context.",
+      "page": "search"
+    },
+    {
+      "term": "Dynamics",
+      "definition": "Living-connection math: Hebbian potentiation (strength grows on co-access), Ebbinghaus decay (fades over time), Cepeda spacing effect (stability grows on spaced reinforcement). Applied identically to hallways and tunnels to rank by salience.",
+      "page": "palace-model"
+    },
+    {
+      "term": "Effective distance",
+      "definition": "The distance after closet boost is applied: max(0.0, min(2.0, raw_dist - boost)), ensuring the result stays in valid cosine range [0, 2].",
+      "page": "search"
+    },
+    {
+      "term": "Embedding Function (EF)",
+      "definition": "ChromaDB-compatible callable returning vector embeddings. Two choices: minilm (384-dim, English-only, faster) or embeddinggemma (384-dim via Matryoshka truncation, multilingual, 0.88 cross-lingual cosine similarity).",
+      "page": "i18n"
+    },
+    {
+      "term": "Embedding model choice",
+      "definition": "Onboarding asks user to pick between embeddinggemma (multilingual, 300 MB, default) or minilm (English-only, 30 MB); choice persists in config.json so future runs skip the prompt.",
+      "page": "cli"
+    },
+    {
+      "term": "Emotion Codes",
+      "definition": "Single-letter abbreviations mapping emotional tone (vul=vulnerability, joy=joy, fear=fear, etc.) extracted from content keywords or metadata. Up to 3 codes per line; helps LLMs prioritize emotionally significant moments during retrieval.",
+      "page": "aaak-dialect"
+    },
+    {
+      "term": "Entity Cache",
+      "definition": "_entity_cache dict keyed on tuple(languages); caches merged entity patterns to avoid recompiling across get_entity_patterns() calls.",
+      "page": "i18n"
+    },
+    {
+      "term": "Entity Detection Patterns",
+      "definition": "Language-specific regex sets for candidate_patterns, person_verb_patterns, dialogue_patterns, project_verb_patterns, pronouns, stopwords; merged per-language via get_entity_patterns().",
+      "page": "i18n"
+    },
+    {
+      "term": "Entity disambiguation",
+      "definition": "Person/project/concept nodes identified by lowercase-slugified names (entity_id). The registry in entity_registry.py and fact_checker.py detect duplicates and confusion; the KG enforces deterministic lookups via this slug.",
+      "page": "knowledge-graph"
+    },
+    {
+      "term": "Entity extraction for metadata",
+      "definition": "Tagging drawers with known-entity names (from ~/.mempalace/known_entities.json) plus capitalized words appearing 2+ times in the first 5000 chars of content. Filtered through COCA common-words list to drop noise.",
+      "page": "mining-projects"
+    },
+    {
+      "term": "Entity refinement",
+      "definition": "Optional reclassification of regex-detected entities (candidates from prose) into person/project/topic/common-word/ambiguous via LLM, with batch processing to bound token usage and contextual sampling to improve signal.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "Entity Stoplist",
+      "definition": "Hardcoded set of 50+ common English words that look like proper nouns but are usually sentence-starters (The, When, User) or weekday/month names. Filtered during entity extraction so fake entities don't clutter closet pointers.",
+      "page": "aaak-dialect"
+    },
+    {
+      "term": "EntityRegistry",
+      "definition": "Persistent ~/.mempalace/entity_registry.json storing three tiers: (1) onboarding (user explicitly confirmed), (2) learned (high-confidence detections from sessions), (3) wiki (researched via Wikipedia API, local-only by default for privacy). Supports ambiguous-flag disambiguation, alias tracking, and relationship metadata.",
+      "page": "entities"
+    },
+    {
+      "term": "Exchange pair",
+      "definition": "One user turn (prefixed >) plus the AI response that follows; the primary chunking unit in conversation mining, preserving Q+A semantics rather than arbitrary character boundaries.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "Extract mode",
+      "definition": "Chunking strategy: 'exchange' (default) preserves conversation structure, while 'general' applies heuristic keyword matching to extract 5 memory types (decisions, preferences, milestones, problems, emotional) with per-chunk classification.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "Extraction-cap guard (issue #1208)",
+      "definition": "Safety check in repair.py::check_extraction_safety that aborts rebuild when extracted drawer count (via ChromaDB API) falls short of SQLite ground-truth count, preventing silent data loss.",
+      "page": "maintenance"
+    },
+    {
+      "term": "Fact-checking",
+      "definition": "Offline verification of text against entity registry (edit distance ≤ 2) and knowledge graph (relationship mismatch, stale facts). Purely local; no API; zero cost.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "File permission hardening",
+      "definition": "Config files, people maps, and exported directories are created with 0o600 (owner read/write only) or 0o700 (owner only) permissions, atomically via umask or os.open flags to prevent TOCTOU races.",
+      "page": "security-privacy"
+    },
+    {
+      "term": "FTS5 virtual table rebuild",
+      "definition": "SQLite full-text-search index that can become inconsistent after multiple collection deletes; repair.py::_vacuum_and_rebuild_fts5 atomically reconstructs it without touching row data.",
+      "page": "maintenance"
+    },
+    {
+      "term": "Gitignore-aware sync",
+      "definition": "sync.py uses the same GitignoreMatcher infrastructure as miner.py, so files excluded from mining are also removed from Palace during sync if they become gitignored.",
+      "page": "maintenance"
+    },
+    {
+      "term": "Hall detection",
+      "definition": "Content-type categorization (emotional, technical, family, etc.) based on keyword scoring across the first 3000 chars. Rooms organize by TOPIC; halls organize by FEELING/TYPE.",
+      "page": "mining-projects"
+    },
+    {
+      "term": "Hallway",
+      "definition": "A within-wing connector materializing entity-pair co-occurrence. If entities Aya and Lumi appear together in 2+ drawers in the same wing, a hallway records the pair, count, and rooms where they co-occurred. Persisted in hallways.json.",
+      "page": "palace-model"
+    },
+    {
+      "term": "Held-out evaluation (98.4% R@5, 450q)",
+      "definition": "Clean train/test split: hybrid_v4 tuned on 50 dev questions, validated on 450 previously unseen questions to measure honest generalization (no teaching-to-the-test).",
+      "page": "benchmarks"
+    },
+    {
+      "term": "HNSW capacity divergence",
+      "definition": "Stale max_elements setting in HNSW metadata causing it to report fewer capacity than SQLite rows, eventually triggering segfaults — detected via hnsw_capacity_status and fixed by rebuild.",
+      "page": "maintenance"
+    },
+    {
+      "term": "HNSW capacity drift",
+      "definition": "Divergence between sqlite embedding count and HNSW index element count. Signals missing or corrupt vector data; corrected by quarantine checks before open and by divergence probes that trigger fallback to BM25 search.",
+      "page": "backends"
+    },
+    {
+      "term": "Hook script sanitization",
+      "definition": "The bash save hook parses JSON input safely without eval, validates transcript paths (suffix checks, .. rejection), sanitizes session IDs to alphanumerics, and logs parse failures to aid debugging.",
+      "page": "security-privacy"
+    },
+    {
+      "term": "Hooks",
+      "definition": "JSON-based stdin/stdout system (session-start, stop, precompact) for auto-save every 15 human messages or before context compaction; integrates with Claude Code and Codex harnesses.",
+      "page": "cli"
+    },
+    {
+      "term": "Hybrid ranking",
+      "definition": "Convex combination of vector similarity (60% weight) and normalized BM25 score (40% weight) applied at re-rank time. Candidates are scored as: 0.6 * vec_sim + 0.4 * bm25_norm, then sorted.",
+      "page": "search"
+    },
+    {
+      "term": "Hybrid retrieval (98.4%)",
+      "definition": "Two-stage ranking: semantic retrieval of top-50 candidates, then re-scoring via keyword overlap (up to 30% distance reduction for matching keywords) plus temporal proximity boost for time-anchored questions.",
+      "page": "benchmarks"
+    },
+    {
+      "term": "i18n-aware Entity Detection",
+      "definition": "Localization system supporting combining marks (Devanagari ा ी, Arabic harakat, Thai), Cyrillic, accented Latin. Each language declares boundary_chars to expand Python's \\b regex to scripts where word boundaries aren't \\w transitions. Closets in any script are extracted identically.",
+      "page": "aaak-dialect"
+    },
+    {
+      "term": "Idempotency",
+      "definition": "Re-mining the same file produces deterministic drawer IDs, so upsert to the same rows. The project miner uses source_file + chunk_index + SHA-256 to make IDs stable across re-runs. Mtime-based detection re-mines only if the file changed.",
+      "page": "mining-projects"
+    },
+    {
+      "term": "Idempotent init",
+      "definition": "mempalace init produces the same output on re-run by filtering out mempalace's own artifacts (entities.json, mempalace.yaml) from corpus-origin samples so detection doesn't drift.",
+      "page": "cli"
+    },
+    {
+      "term": "Idle Auto-Exit",
+      "definition": "Daemon watchdog thread that exits the MCP process after MEMPALACE_MCP_IDLE_HOURS (default 8h) with no requests, releasing ChromaDB file handles on Windows.",
+      "page": "mcp-server"
+    },
+    {
+      "term": "Importance Flags",
+      "definition": "Binary metadata tags (ORIGIN=founding moment, CORE=identity pillar, PIVOT=turning point, SENSITIVE=private) extracted from content keywords or zettel metadata to signal which drawers hold foundational or sensitive information.",
+      "page": "aaak-dialect"
+    },
+    {
+      "term": "Incremental state",
+      "definition": "Per-(palace, diary-dir) state file tracking content hash and entry count to skip unchanged diary files and detect in-place edits without re-ingesting entire days.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "Incremental-only invariant",
+      "definition": "Maintenance operations append new data or delete explicitly-marked corrupt entries, but never overwrite existing correct data — a Palace crash mid-operation leaves intact rows untouched.",
+      "page": "maintenance"
+    },
+    {
+      "term": "Input validation sanitizers",
+      "definition": "Functions like sanitize_name(), sanitize_content(), and sanitize_kg_value() that enforce safe character sets, length bounds, null-byte rejection, lone-surrogate stripping, and path-traversal prevention at the API boundary.",
+      "page": "security-privacy"
+    },
+    {
+      "term": "Invalidation",
+      "definition": "Closing a fact by setting its valid_to date. The original triple with NULL valid_to is updated to have an ended timestamp; no rows are deleted, preserving audit trail and time-travel queries.",
+      "page": "knowledge-graph"
+    },
+    {
+      "term": "JSON-decode resilience",
+      "definition": "LLM responses are parsed with multi-strategy fallback: first try raw JSON, then extract from markdown backticks, then scan for braced/bracketed payloads. Only if all strategies fail is the batch skipped with an error recorded.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "Knowledge Graph",
+      "definition": "SQLite-backed temporal entity-relationship graph. Stores (subject, predicate, object) triples with valid_from/valid_to dates for entity-first reasoning.",
+      "page": "architecture"
+    },
+    {
+      "term": "L0-L3 Wake-up Stack",
+      "definition": "Four memory layers: L0 (user identity), L1 (essential story auto-generated from palace), L2 (on-demand wing/room retrieval), L3 (deep semantic search). L0+L1 inject ~600-900 tokens; L2/L3 add context on demand.",
+      "page": "architecture"
+    },
+    {
+      "term": "LLM endpoint validation",
+      "definition": "Rejects non-HTTP(S) schemes (file://, ftp://, etc.) in LLM_ENDPOINT to prevent misconfiguration from exfiltrating local files via a rogue endpoint.",
+      "page": "security-privacy"
+    },
+    {
+      "term": "LLM rerank (≥99%)",
+      "definition": "Optional third pass: send top-K retrieved sessions to Claude Haiku with the question; Haiku selects the most relevant session to promote to rank 1, without changing the rest of the ranking.",
+      "page": "benchmarks"
+    },
+    {
+      "term": "Local-first principle",
+      "definition": "LLM assistance defaults to user-hosted Ollama/LM Studio/llama.cpp on localhost (offline, no API required). External providers are supported only via explicit BYOK; never enabled silently.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "Lossy Summarization",
+      "definition": "AAAK extracts key signals from content (not a compression) but preserves 100% recall because drawers hold the original verbatim text. Information selected for the index is a subset, but nothing is lost—the retrieval path always returns exact words from the source.",
+      "page": "aaak-dialect"
+    },
+    {
+      "term": "Matryoshka Representation Learning (MRL)",
+      "definition": "Training technique allowing embedding models to produce useful outputs at any dimensionality. EmbeddinggemmaONNX truncates 768-dim output to 384-dim to be a drop-in ChromaDB replacement.",
+      "page": "i18n"
+    },
+    {
+      "term": "MCP Protocol",
+      "definition": "Model Context Protocol — a JSON-RPC 2.0 request/response interface over stdio for Claude Code and Claude Desktop to invoke tools without network round-trips.",
+      "page": "mcp-server"
+    },
+    {
+      "term": "MCP stdio protection",
+      "definition": "Redirects stdout to stderr before heavy imports so transitive dependencies (like onnxruntime, telemetry libraries) that print to C-level stdout cannot break JSON-RPC parsing in Claude Desktop.",
+      "page": "security-privacy"
+    },
+    {
+      "term": "Never-silent-fallback",
+      "definition": "When LLM is unavailable or fails, the system always falls back to its heuristic/regex baseline and records what happened. No data is discarded silently; the user is informed.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "Non-Latin Word Boundaries",
+      "definition": "Locales with combining-mark scripts (Devanagari, Arabic, Thai, Khmer) declare boundary_chars in i18n entity sections. These expand Python's default \\b to a lookaround-based boundary that preserves marks, so names like अनीता match correctly instead of truncating to अनीत.",
+      "page": "entities"
+    },
+    {
+      "term": "Normalization",
+      "definition": "Format auto-detection and conversion of diverse chat export schemas (7+ formats) to a canonical >-prefixed transcript format with noise stripping and tool-result truncation.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "NORMALIZE_VERSION",
+      "definition": "Schema versioning constant (v2) that gates incremental ingest and triggers auto-purge of pre-v2 drawers on schema bumps, preventing mixed old/new rows in the same source.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "Okapi-BM25",
+      "definition": "Probabilistic keyword matching algorithm that scores documents based on term frequency and inverse document frequency (IDF), tuned with k1=1.5 and b=0.75 per standard conventions.",
+      "page": "search"
+    },
+    {
+      "term": "Palace Root Kill-switch",
+      "definition": "If ~/.mempalace/ is removed or is not a directory, all hook side effects (mining, logging, state creation) short-circuit immediately without disk access.",
+      "page": "hooks"
+    },
+    {
+      "term": "Palace structure",
+      "definition": "Wings (top-level: projects or people), Rooms (topics/domains), Closets (summaries), Drawers (verbatim memories); Halls connect rooms within wings, Tunnels connect rooms across wings.",
+      "page": "cli"
+    },
+    {
+      "term": "PalaceRef",
+      "definition": "Value object identifying a palace: id (cache key), optional local_path (filesystem), optional namespace (server-mode routing). Replaces legacy path-string arguments in RFC 001 migration.",
+      "page": "backends"
+    },
+    {
+      "term": "Pass 0",
+      "definition": "Corpus-origin detection run during init to classify whether a corpus is AI-dialogue (Claude, ChatGPT, Slack exports), using a two-tier system: Tier 1 regex heuristics (always runs, no API) + Tier 2 optional LLM refinement for platform/persona extraction.",
+      "page": "cli"
+    },
+    {
+      "term": "Per-target PID Guard",
+      "definition": "Atomic slot-based deduplication in ~/.mempalace/hook_state/mine_pids/: prevents concurrent mines of the same target by using O_CREAT|O_EXCL and per-target hash digests; stale PIDs are detected by age.",
+      "page": "hooks"
+    },
+    {
+      "term": "Poisoned max_seq_id",
+      "definition": "SQLite max_seq_id row corrupted by shim misfire, holding ~1.23e18 integer that silently suppresses queue writes; repaired via heuristic (collection MAX) or sidecar restoration.",
+      "page": "maintenance"
+    },
+    {
+      "term": "PreCompact Hook",
+      "definition": "Claude Code event fired right before context compression; always runs a synchronous mine to capture transcript data before the AI loses detailed context.",
+      "page": "hooks"
+    },
+    {
+      "term": "Preference extraction",
+      "definition": "16 regex patterns detect how users express preferences in conversation ('I've been having trouble with X', 'I prefer Y'); synthetic documents bridge vocabulary gaps between question phrasing and session text.",
+      "page": "benchmarks"
+    },
+    {
+      "term": "Privacy by architecture",
+      "definition": "The system physically cannot send data externally because it never leaves the local machine. No telemetry, no analytics, no phone-home. Core operations (mining, search, embedding, LLM calls) default to local-only; external providers require explicit user configuration.",
+      "page": "security-privacy"
+    },
+    {
+      "term": "Privacy-by-architecture",
+      "definition": "Endpoint locality is checked by URL parsing (localhost, RFC1918, Tailscale CGNAT, mDNS, IPv6 ULA ranges). External endpoints trigger a warning; local inference does not. file:// and non-HTTP schemes are rejected to prevent exfiltration.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "Prompt contamination mitigation",
+      "definition": "A four-stage extraction pipeline in query_sanitizer.py that recovers user intent from queries contaminated by prepended system prompts, preventing retrieval failure (89.8% -> 1.0% without, ~70-89% with sanitizer).",
+      "page": "security-privacy"
+    },
+    {
+      "term": "Provenance fields (RFC 002 §5.5)",
+      "definition": "Optional source_drawer_id, adapter_name, source_closet, and source_file track where a fact came from — the drawer that mentions it, the adapter that extracted it, or the file/closet it references.",
+      "page": "knowledge-graph"
+    },
+    {
+      "term": "Provider abstraction",
+      "definition": "Three provider classes (OllamaProvider, OpenAICompatProvider, AnthropicProvider) share a common interface (classify, check_available, is_external_service) to normalize JSON-mode requests across vendor differences.",
+      "page": "llm-integration"
+    },
+    {
+      "term": "QueryResult / GetResult",
+      "definition": "Typed frozen dataclasses replacing Chroma's raw dict returns. Preserve outer query dimension even when hits are empty; include optional dict-protocol shim for legacy callers; embeddings field is None unless explicitly requested.",
+      "page": "backends"
+    },
+    {
+      "term": "Raw baseline (96.6% R@5)",
+      "definition": "Semantic search with ChromaDB's default all-MiniLM-L6-v2 embeddings on verbatim session text, no heuristics or LLM calls — the reproducible, offline headline result.",
+      "page": "benchmarks"
+    },
+    {
+      "term": "Recall@k vs QA accuracy",
+      "definition": "Retrieval recall measures whether the correct session is in top-K results; QA accuracy measures whether an LLM generates a correct answer. The two metrics are independent — MemPalace's 96.6% is R@5, not end-to-end accuracy.",
+      "page": "benchmarks"
+    },
+    {
+      "term": "Registry entry-point discovery",
+      "definition": "Backend implementations announce themselves via setuptools entry points under mempalace.backends; discovered once per process at module load. Explicit register() wins on name conflict.",
+      "page": "backends"
+    },
+    {
+      "term": "Retry-on-Close",
+      "definition": "One-shot retry pattern in _call_kg for sqlite3.ProgrammingError when a KnowledgeGraph handle is closed mid-operation (race between tool call and reconnect).",
+      "page": "mcp-server"
+    },
+    {
+      "term": "RFC 002 source adapters",
+      "definition": "Pluggable ingestion contract (BaseSourceAdapter) for third-party sources (Cursor, GitHub, Slack APIs) with declared transformations, metadata schema, and privacy class.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "Room",
+      "definition": "A time-based or topic-based grouping within a wing (e.g., a day, a session, a discussion thread). Drawers live in rooms.",
+      "page": "architecture"
+    },
+    {
+      "term": "Room",
+      "definition": "A time-based or topic-based grouping within a wing, e.g. 'diary', 'meetings', 'design-docs'. Detected from file paths, filenames, or keywords during mining. Rooms span multiple wings via Tunnels.",
+      "page": "palace-model"
+    },
+    {
+      "term": "Room detection",
+      "definition": "Content-aware routing that assigns each file to a room based on folder path (highest priority), filename, or keyword scoring in the first ~2000 chars. Falls back to 'general' if no match.",
+      "page": "mining-projects"
+    },
+    {
+      "term": "Script-Aware Boundary",
+      "definition": "Regex lookaround ((?<=[chars])(?=[^chars])) that treats declared character ranges (e.g. Devanagari U+0900-U+097F) as word-internal, preserving combining marks and multi-codepoint names.",
+      "page": "i18n"
+    },
+    {
+      "term": "Silent Mode",
+      "definition": "Default (v3.3.0+) hook behavior: saves directly via Python API without returning decision:block; the AI sees only a systemMessage notification, zero chat window interruption.",
+      "page": "hooks"
+    },
+    {
+      "term": "Stdio Protection",
+      "definition": "Redirection of stdout and file-descriptor level (os.dup2) before heavy imports to prevent transitive dependencies (chromadb, onnxruntime) from writing banners/errors that corrupt JSON-RPC payloads.",
+      "page": "mcp-server"
+    },
+    {
+      "term": "Stop Hook",
+      "definition": "Claude Code event fired after each assistant response; counts human messages in the transcript and triggers auto-save when a threshold (SAVE_INTERVAL=15) is reached.",
+      "page": "hooks"
+    },
+    {
+      "term": "Symlink defense-in-depth",
+      "definition": "exporter.py::_safe_open_for_write uses O_NOFOLLOW on POSIX and pre-checks os.path.islink on Windows to prevent pre-placed symlinks from redirecting writes to system directories.",
+      "page": "maintenance"
+    },
+    {
+      "term": "Symlink rejection",
+      "definition": "Defense-in-depth guard that refuses to follow symlinks during export or file I/O; uses O_NOFOLLOW on POSIX systems to atomically reject symlinks at open time, closing the TOCTOU window.",
+      "page": "security-privacy"
+    },
+    {
+      "term": "Temporal query (as_of)",
+      "definition": "A query parameter returning only facts valid at a specified instant. Date-only queries like 'as_of=2026-01-15' normalize to 'T00:00:00Z'; the comparison logic handles legacy date-only values and canonical UTC datetimes.",
+      "page": "knowledge-graph"
+    },
+    {
+      "term": "Three mining modes",
+      "definition": "Projects (code/docs), Convos (chat exports with optional auto-classification), and Extract (binary office documents); each mode feeds a specialized miner with different chunking and metadata strategies.",
+      "page": "cli"
+    },
+    {
+      "term": "Tier 6a content dating",
+      "definition": "Automatic date extraction from filename, YAML frontmatter, content body, or mtime—in that priority order. Used to populate content_date in drawer metadata for Tier 6a closet pointers.",
+      "page": "mining-projects"
+    },
+    {
+      "term": "Timeline",
+      "definition": "A chronologically sorted view of facts for an entity or across the entire KG, ordered by valid_from (NULL values last). Limited to 100 rows; useful for narrative reconstruction.",
+      "page": "knowledge-graph"
+    },
+    {
+      "term": "Triple (RDF-style)",
+      "definition": "A fact expressed as subject→predicate→object (e.g., 'Alice' → 'works_at' → 'Acme Corp'). The core KG unit; predicates are normalized to lowercase and underscores.",
+      "page": "knowledge-graph"
+    },
+    {
+      "term": "Tunnel",
+      "definition": "A cross-wing link between two rooms (or synthetic topic:/entity: rooms). Explicit tunnels are user-created; topic and entity tunnels auto-generate when shared topics or entities are detected across wings. Persisted in tunnels.json.",
+      "page": "palace-model"
+    },
+    {
+      "term": "Tunnel",
+      "definition": "Explicit cross-wing connection (stored in tunnels.json) linking rooms that relate across projects/domains, complementing implicit graph edges from rooms spanning multiple wings.",
+      "page": "mcp-server"
+    },
+    {
+      "term": "Two-pass assistant retrieval",
+      "definition": "For questions about what the assistant said: pass 1 finds top-5 sessions using user turns only; pass 2 re-indexes those sessions with full text (user + assistant) to avoid diluting the global index.",
+      "page": "benchmarks"
+    },
+    {
+      "term": "Two-Signal-Category Rule",
+      "definition": "A person must exhibit signals from TWO different categories (dialogue, action, pronoun, direct-address) to confidently classify. Single-category hits (e.g., only action verbs) are downgraded to 'uncertain' to prevent false positives from syntactic patterns like 'Click, click, click...' being mistaken for person-entity 'Click'.",
+      "page": "entities"
+    },
+    {
+      "term": "UTF-8 encoding hardening",
+      "definition": "Windows stdio reconfiguration to UTF-8 with per-stream error policies (strict on server, replace on CLI) and surrogateescape on stdin to survive malformed bytes without UnicodeDecodeError.",
+      "page": "security-privacy"
+    },
+    {
+      "term": "Validity window",
+      "definition": "Optional valid_from/valid_to timestamps defining when a fact is true. Both can be ISO-8601 dates (YYYY-MM-DD) or canonical UTC datetimes (YYYY-MM-DDTHH:MM:SSZ). NULL means unbounded; values are inclusive on both ends.",
+      "page": "knowledge-graph"
+    },
+    {
+      "term": "Virtual line numbering",
+      "definition": "Line numbers added at read time (not stored on disk) when a drawer is retrieved. Enables Tier 6a closet pointers to jump to specific line ranges within a drawer without rewriting the stored text.",
+      "page": "mining-projects"
+    },
+    {
+      "term": "Wake-up context",
+      "definition": "L0 (identity from ~/.mempalace/identity.txt) + L1 (top 15 importance-scored drawers) injected into agent startup; ~600–900 tokens of critical facts without burning full context window.",
+      "page": "cli"
+    },
+    {
+      "term": "Wing",
+      "definition": "A broad category (person, project, topic) that groups related memory. Drawers are organized under wings.",
+      "page": "architecture"
+    },
+    {
+      "term": "Wing",
+      "definition": "A named broad category (person, project, department) derived from a directory name. Normalized to lowercase with underscores replacing hyphens and spaces. Drawers tagged with a wing can be filtered, scoped, or tracked as a unit.",
+      "page": "palace-model"
+    },
+    {
+      "term": "Wing Derivation",
+      "definition": "Hooks infer the project wing name from the JSONL transcript using: (1) cwd metadata, (2) encoded .claude/projects/ path decoding, (3) legacy -Projects- segment, or (4) default wing_sessions.",
+      "page": "hooks"
+    },
+    {
+      "term": "Wing resolution",
+      "definition": "Heuristic routing that auto-defaults conversation files from .claude/projects, .codex, or .gemini to wing_api, with fallback to dirname-based slugification for other sources.",
+      "page": "mining-conversations"
+    },
+    {
+      "term": "Write-Ahead Log (WAL)",
+      "definition": "JSONL audit trail at ~/.mempalace/wal/write_log.jsonl recording all drawer/KG mutations with content redaction for review and rollback.",
+      "page": "mcp-server"
+    },
+    {
+      "term": "Zettelkasten Index",
+      "definition": "Inspired by Niklas Luhmann's method: small cross-referenced index cards (closets) point to larger verbatim source materials (drawers). The AAAK format makes cards scannable in a single LLM context window, allowing semantic decisions about which drawer to retrieve without loading the drawer itself.",
+      "page": "aaak-dialect"
+    }
+  ],
+  "symbols": [
+    {
+      "name": "_apply_corpus_origin",
+      "kind": "function",
+      "file": "mempalace/entity_detector.py",
+      "line": 546,
+      "page": "entities"
+    },
+    {
+      "name": "_ask_embedding_model",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/onboarding.py",
+      "line": 88,
+      "page": "cli"
+    },
+    {
+      "name": "_bench_client",
+      "kind": "variable",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 97,
+      "page": "benchmarks"
+    },
+    {
+      "name": "_bm25_scores",
+      "kind": "function",
+      "file": "mempalace/searcher.py",
+      "line": 63,
+      "page": "search"
+    },
+    {
+      "name": "_call_kg",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/mcp_server.py",
+      "line": 248,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "_call_kg",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 248,
+      "page": "mcp-server"
+    },
+    {
+      "name": "_candidate_entity_words",
+      "kind": "function",
+      "file": "mempalace/palace.py",
+      "line": 215,
+      "page": "entities"
+    },
+    {
+      "name": "_candidate_entity_words",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 215,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "_canonical_lang",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 28,
+      "page": "i18n"
+    },
+    {
+      "name": "_canonical_tunnel_id",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace_graph.py",
+      "line": 441,
+      "page": "palace-model"
+    },
+    {
+      "name": "_claim_mine_slot",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 433,
+      "page": "hooks"
+    },
+    {
+      "name": "_detached_popen_kwargs",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 27,
+      "page": "hooks"
+    },
+    {
+      "name": "_endpoint_is_local",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/llm_client.py",
+      "line": 44,
+      "page": "llm-integration"
+    },
+    {
+      "name": "_extract_content_date",
+      "kind": "function",
+      "file": "mempalace/miner.py",
+      "line": 1157,
+      "page": "mining-projects"
+    },
+    {
+      "name": "_extract_drawer_ids_from_closet",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/searcher.py",
+      "line": 180,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "_extract_entities_for_metadata",
+      "kind": "function",
+      "file": "mempalace/miner.py",
+      "line": 845,
+      "page": "mining-projects"
+    },
+    {
+      "name": "_fresh_collection",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 146,
+      "page": "benchmarks"
+    },
+    {
+      "name": "_get_client",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 435,
+      "page": "mcp-server"
+    },
+    {
+      "name": "_get_coca_filter",
+      "kind": "function",
+      "file": "mempalace/entity_detector.py",
+      "line": 62,
+      "page": "entities"
+    },
+    {
+      "name": "_hallway_id",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hallways.py",
+      "line": 148,
+      "page": "palace-model"
+    },
+    {
+      "name": "_hybrid_rank",
+      "kind": "function",
+      "file": "mempalace/searcher.py",
+      "line": 122,
+      "page": "search"
+    },
+    {
+      "name": "_maybe_run_mine_after_init",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 409,
+      "page": "cli"
+    },
+    {
+      "name": "_merge_bm25_union_candidates",
+      "kind": "function",
+      "file": "mempalace/searcher.py",
+      "line": 637,
+      "page": "search"
+    },
+    {
+      "name": "_mine_already_running",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 366,
+      "page": "hooks"
+    },
+    {
+      "name": "_palace_root_exists",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 48,
+      "page": "hooks"
+    },
+    {
+      "name": "_reject_symlink()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/exporter.py",
+      "line": 30,
+      "page": "security-privacy"
+    },
+    {
+      "name": "_resolve_providers",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/embedding.py",
+      "line": 62,
+      "page": "i18n"
+    },
+    {
+      "name": "_run_pass_zero",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 106,
+      "page": "cli"
+    },
+    {
+      "name": "_safe_open_for_write",
+      "kind": "function",
+      "file": "mempalace/exporter.py",
+      "line": 44,
+      "page": "maintenance"
+    },
+    {
+      "name": "_safe_open_for_write()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/exporter.py",
+      "line": 44,
+      "page": "security-privacy"
+    },
+    {
+      "name": "_sanitize_session_id()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 118,
+      "page": "security-privacy"
+    },
+    {
+      "name": "_save_diary_direct",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 649,
+      "page": "hooks"
+    },
+    {
+      "name": "_script_boundary",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 113,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "_script_boundary",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 113,
+      "page": "i18n"
+    },
+    {
+      "name": "_spawn_mine",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 472,
+      "page": "hooks"
+    },
+    {
+      "name": "_temporal_filter_sql",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 106,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "_validate_transcript_path()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 124,
+      "page": "security-privacy"
+    },
+    {
+      "name": "_vector_disabled",
+      "kind": "module variable",
+      "file": "mempalace/mcp_server.py",
+      "line": 342,
+      "page": "mcp-server"
+    },
+    {
+      "name": "_wal_log",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 412,
+      "page": "mcp-server"
+    },
+    {
+      "name": "_wing_from_transcript_path",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 812,
+      "page": "hooks"
+    },
+    {
+      "name": "AAAK_SPEC",
+      "kind": "constant",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/mcp_server.py",
+      "line": 792,
+      "page": "cli"
+    },
+    {
+      "name": "add_drawer",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/miner.py",
+      "line": 1238,
+      "page": "palace-model"
+    },
+    {
+      "name": "add_triple",
+      "kind": "method",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 237,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "AnthropicProvider",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/llm_client.py",
+      "line": 367,
+      "page": "llm-integration"
+    },
+    {
+      "name": "apply_decay",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/dynamics.py",
+      "line": 163,
+      "page": "palace-model"
+    },
+    {
+      "name": "available_languages",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 45,
+      "page": "i18n"
+    },
+    {
+      "name": "BaseBackend",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/base.py",
+      "line": 17,
+      "page": "architecture"
+    },
+    {
+      "name": "BaseBackend",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/base.py",
+      "line": 308,
+      "page": "backends"
+    },
+    {
+      "name": "BaseCollection",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/base.py",
+      "line": 185,
+      "page": "backends"
+    },
+    {
+      "name": "BaseSourceAdapter",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/sources/base.py",
+      "line": 164,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "build_closet_lines",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 241,
+      "page": "architecture"
+    },
+    {
+      "name": "build_closet_lines",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 241,
+      "page": "palace-model"
+    },
+    {
+      "name": "build_closet_lines",
+      "kind": "function",
+      "file": "mempalace/palace.py",
+      "line": 241,
+      "page": "mining-projects"
+    },
+    {
+      "name": "build_closet_lines",
+      "kind": "function",
+      "file": "mempalace/palace.py",
+      "line": 241,
+      "page": "entities"
+    },
+    {
+      "name": "build_closet_lines",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 241,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "build_graph",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace_graph.py",
+      "line": 90,
+      "page": "palace-model"
+    },
+    {
+      "name": "build_palace_and_retrieve",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 163,
+      "page": "benchmarks"
+    },
+    {
+      "name": "build_palace_and_retrieve_hybrid",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 485,
+      "page": "benchmarks"
+    },
+    {
+      "name": "build_palace_and_retrieve_hybrid_v2",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 709,
+      "page": "benchmarks"
+    },
+    {
+      "name": "build_palace_and_retrieve_hybrid_v3",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 994,
+      "page": "benchmarks"
+    },
+    {
+      "name": "build_palace_and_retrieve_hybrid_v4",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 1339,
+      "page": "benchmarks"
+    },
+    {
+      "name": "check_extraction_safety",
+      "kind": "function",
+      "file": "mempalace/repair.py",
+      "line": 397,
+      "page": "maintenance"
+    },
+    {
+      "name": "check_text",
+      "kind": "function",
+      "file": "mempalace/fact_checker.py",
+      "line": 55,
+      "page": "search"
+    },
+    {
+      "name": "check_text",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/fact_checker.py",
+      "line": 55,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "check_text",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/fact_checker.py",
+      "line": 55,
+      "page": "llm-integration"
+    },
+    {
+      "name": "ChromaBackend",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 30,
+      "page": "architecture"
+    },
+    {
+      "name": "ChromaBackend",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 1182,
+      "page": "backends"
+    },
+    {
+      "name": "ChromaCollection",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 914,
+      "page": "backends"
+    },
+    {
+      "name": "chunk_exchanges",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/convo_miner.py",
+      "line": 138,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "chunk_text",
+      "kind": "function",
+      "file": "mempalace/miner.py",
+      "line": 472,
+      "page": "mining-projects"
+    },
+    {
+      "name": "classify_entity",
+      "kind": "function",
+      "file": "mempalace/entity_detector.py",
+      "line": 368,
+      "page": "entities"
+    },
+    {
+      "name": "CLOSET_CHAR_LIMIT",
+      "kind": "constant",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 149,
+      "page": "palace-model"
+    },
+    {
+      "name": "CLOSET_CHAR_LIMIT",
+      "kind": "constant",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 149,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "CLOSET_EXTRACT_WINDOW",
+      "kind": "constant",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 150,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "CLOSET_RANK_BOOSTS",
+      "kind": "constant",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/searcher.py",
+      "line": 871,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "CLOSET_RANK_BOOSTS",
+      "kind": "constant",
+      "file": "mempalace/searcher.py",
+      "line": 871,
+      "page": "search"
+    },
+    {
+      "name": "cmd_init",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 230,
+      "page": "cli"
+    },
+    {
+      "name": "cmd_mine",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 489,
+      "page": "cli"
+    },
+    {
+      "name": "cmd_wakeup",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 712,
+      "page": "cli"
+    },
+    {
+      "name": "compute_hallways_for_wing",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hallways.py",
+      "line": 161,
+      "page": "palace-model"
+    },
+    {
+      "name": "confirm_entities",
+      "kind": "function",
+      "file": "mempalace/entity_detector.py",
+      "line": 621,
+      "page": "entities"
+    },
+    {
+      "name": "create_tunnel",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace_graph.py",
+      "line": 488,
+      "page": "palace-model"
+    },
+    {
+      "name": "dedup_palace",
+      "kind": "function",
+      "file": "mempalace/dedup.py",
+      "line": 150,
+      "page": "search"
+    },
+    {
+      "name": "dedup_palace",
+      "kind": "function",
+      "file": "mempalace/dedup.py",
+      "line": 150,
+      "page": "maintenance"
+    },
+    {
+      "name": "detect_entities",
+      "kind": "function",
+      "file": "mempalace/entity_detector.py",
+      "line": 449,
+      "page": "entities"
+    },
+    {
+      "name": "detect_entities",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/entity_detector.py",
+      "line": 449,
+      "page": "i18n"
+    },
+    {
+      "name": "detect_hall",
+      "kind": "function",
+      "file": "mempalace/miner.py",
+      "line": 821,
+      "page": "mining-projects"
+    },
+    {
+      "name": "detect_origin_heuristic",
+      "kind": "function",
+      "file": "mempalace/corpus_origin.py",
+      "line": 166,
+      "page": "entities"
+    },
+    {
+      "name": "detect_origin_llm",
+      "kind": "function",
+      "file": "mempalace/corpus_origin.py",
+      "line": 374,
+      "page": "entities"
+    },
+    {
+      "name": "detect_room",
+      "kind": "function",
+      "file": "mempalace/miner.py",
+      "line": 425,
+      "page": "mining-projects"
+    },
+    {
+      "name": "detect_rooms_local",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/room_detector_local.py",
+      "line": 304,
+      "page": "llm-integration"
+    },
+    {
+      "name": "Dialect",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/dialect.py",
+      "line": 300,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "Dialect",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/dialect.py",
+      "line": 300,
+      "page": "i18n"
+    },
+    {
+      "name": "EmbeddinggemmaONNX",
+      "kind": "class",
+      "file": "mempalace/embedding.py",
+      "line": 140,
+      "page": "search"
+    },
+    {
+      "name": "EmbeddinggemmaONNX",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/embedding.py",
+      "line": 140,
+      "page": "i18n"
+    },
+    {
+      "name": "EntityRegistry",
+      "kind": "class",
+      "file": "mempalace/entity_registry.py",
+      "line": 273,
+      "page": "entities"
+    },
+    {
+      "name": "export_palace",
+      "kind": "function",
+      "file": "mempalace/exporter.py",
+      "line": 68,
+      "page": "maintenance"
+    },
+    {
+      "name": "extract_candidates",
+      "kind": "function",
+      "file": "mempalace/entity_detector.py",
+      "line": 181,
+      "page": "entities"
+    },
+    {
+      "name": "extract_candidates",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/entity_detector.py",
+      "line": 181,
+      "page": "i18n"
+    },
+    {
+      "name": "extract_drawers_from_sqlite",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/migrate.py",
+      "line": 52,
+      "page": "backends"
+    },
+    {
+      "name": "extract_keywords",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 553,
+      "page": "benchmarks"
+    },
+    {
+      "name": "extract_preferences",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 1157,
+      "page": "benchmarks"
+    },
+    {
+      "name": "extract_text",
+      "kind": "function",
+      "file": "mempalace/format_miner.py",
+      "line": 313,
+      "page": "mining-projects"
+    },
+    {
+      "name": "extract_via_sqlite",
+      "kind": "function",
+      "file": "mempalace/repair.py",
+      "line": 972,
+      "page": "maintenance"
+    },
+    {
+      "name": "file_already_mined",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 714,
+      "page": "architecture"
+    },
+    {
+      "name": "file_already_mined",
+      "kind": "function",
+      "file": "mempalace/palace.py",
+      "line": 714,
+      "page": "mining-projects"
+    },
+    {
+      "name": "get_adapter",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/sources/registry.py",
+      "line": 111,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "get_backend",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/registry.py",
+      "line": 109,
+      "page": "backends"
+    },
+    {
+      "name": "get_collection",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 61,
+      "page": "architecture"
+    },
+    {
+      "name": "get_embedding_function",
+      "kind": "function",
+      "file": "mempalace/embedding.py",
+      "line": 227,
+      "page": "search"
+    },
+    {
+      "name": "get_embedding_function",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/embedding.py",
+      "line": 227,
+      "page": "i18n"
+    },
+    {
+      "name": "get_entity_patterns",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 197,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "get_entity_patterns",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 197,
+      "page": "i18n"
+    },
+    {
+      "name": "get_provider",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/llm_client.py",
+      "line": 449,
+      "page": "llm-integration"
+    },
+    {
+      "name": "GetResult",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/base.py",
+      "line": 167,
+      "page": "backends"
+    },
+    {
+      "name": "GitignoreMatcher",
+      "kind": "class",
+      "file": "mempalace/miner.py",
+      "line": 166,
+      "page": "mining-projects"
+    },
+    {
+      "name": "handle_request",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 2447,
+      "page": "mcp-server"
+    },
+    {
+      "name": "hnsw_capacity_status",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 522,
+      "page": "backends"
+    },
+    {
+      "name": "hook_precompact",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 1002,
+      "page": "hooks"
+    },
+    {
+      "name": "hook_stop",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 877,
+      "page": "hooks"
+    },
+    {
+      "name": "ingest_diaries",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/diary_ingest.py",
+      "line": 102,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "invalidate",
+      "kind": "method",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 328,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "keyword_overlap",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 557,
+      "page": "benchmarks"
+    },
+    {
+      "name": "KnowledgeGraph",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 129,
+      "page": "architecture"
+    },
+    {
+      "name": "KnowledgeGraph",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 129,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "Layer0",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/layers.py",
+      "line": 34,
+      "page": "architecture"
+    },
+    {
+      "name": "Layer1",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/layers.py",
+      "line": 76,
+      "page": "architecture"
+    },
+    {
+      "name": "Layer1.generate",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/layers.py",
+      "line": 92,
+      "page": "cli"
+    },
+    {
+      "name": "LLMConfig",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/closet_llm.py",
+      "line": 93,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "LLMConfig",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/closet_llm.py",
+      "line": 93,
+      "page": "security-privacy"
+    },
+    {
+      "name": "LLMProvider",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/llm_client.py",
+      "line": 121,
+      "page": "llm-integration"
+    },
+    {
+      "name": "load_lang",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 50,
+      "page": "i18n"
+    },
+    {
+      "name": "MemoryStack",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/layers.py",
+      "line": 361,
+      "page": "architecture"
+    },
+    {
+      "name": "MemoryStack",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/layers.py",
+      "line": 361,
+      "page": "cli"
+    },
+    {
+      "name": "MempalaceConfig.hook_silent_save",
+      "kind": "property",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 590,
+      "page": "hooks"
+    },
+    {
+      "name": "MempalaceConfig.hooks_auto_save",
+      "kind": "property",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 340,
+      "page": "hooks"
+    },
+    {
+      "name": "MempalaceConfig.init()",
+      "kind": "method",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 610,
+      "page": "security-privacy"
+    },
+    {
+      "name": "migrate",
+      "kind": "function",
+      "file": "mempalace/migrate.py",
+      "line": 214,
+      "page": "maintenance"
+    },
+    {
+      "name": "mine_convos",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/convo_miner.py",
+      "line": 510,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "mine_formats",
+      "kind": "function",
+      "file": "mempalace/format_miner.py",
+      "line": 690,
+      "page": "mining-projects"
+    },
+    {
+      "name": "mine_palace_lock",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 589,
+      "page": "architecture"
+    },
+    {
+      "name": "ndcg",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 61,
+      "page": "benchmarks"
+    },
+    {
+      "name": "normalize",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/normalize.py",
+      "line": 113,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "NORMALIZE_VERSION",
+      "kind": "constant",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 58,
+      "page": "architecture"
+    },
+    {
+      "name": "normalize_wing_name",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 34,
+      "page": "palace-model"
+    },
+    {
+      "name": "OllamaProvider",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/llm_client.py",
+      "line": 205,
+      "page": "llm-integration"
+    },
+    {
+      "name": "OpenAICompatProvider",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/llm_client.py",
+      "line": 277,
+      "page": "llm-integration"
+    },
+    {
+      "name": "PALACE_PROTOCOL",
+      "kind": "constant",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/mcp_server.py",
+      "line": 783,
+      "page": "cli"
+    },
+    {
+      "name": "PalaceContext",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/sources/context.py",
+      "line": 48,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "PalaceRef",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/base.py",
+      "line": 75,
+      "page": "backends"
+    },
+    {
+      "name": "parse_time_offset_days",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/longmemeval_bench.py",
+      "line": 805,
+      "page": "benchmarks"
+    },
+    {
+      "name": "potentiate",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/dynamics.py",
+      "line": 110,
+      "page": "palace-model"
+    },
+    {
+      "name": "prefetch_mined_set",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 813,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "process_file",
+      "kind": "function",
+      "file": "mempalace/miner.py",
+      "line": 1268,
+      "page": "mining-projects"
+    },
+    {
+      "name": "quarantine_stale_hnsw",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 221,
+      "page": "backends"
+    },
+    {
+      "name": "query_entity",
+      "kind": "method",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 362,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "QueryResult",
+      "kind": "class",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/base.py",
+      "line": 130,
+      "page": "backends"
+    },
+    {
+      "name": "rebuild_from_sqlite",
+      "kind": "function",
+      "file": "mempalace/repair.py",
+      "line": 1050,
+      "page": "maintenance"
+    },
+    {
+      "name": "RebuildCollectionError",
+      "kind": "exception",
+      "file": "mempalace/repair.py",
+      "line": 181,
+      "page": "maintenance"
+    },
+    {
+      "name": "reconfigure_stdio_utf8_on_windows()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/_stdio.py",
+      "line": 31,
+      "page": "security-privacy"
+    },
+    {
+      "name": "refine_entities",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/llm_refine.py",
+      "line": 334,
+      "page": "llm-integration"
+    },
+    {
+      "name": "regenerate_closets",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/closet_llm.py",
+      "line": 206,
+      "page": "aaak-dialect"
+    },
+    {
+      "name": "regenerate_closets",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/closet_llm.py",
+      "line": 206,
+      "page": "llm-integration"
+    },
+    {
+      "name": "resolve_backend_for_palace",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/registry.py",
+      "line": 139,
+      "page": "backends"
+    },
+    {
+      "name": "run_instructions",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/instructions_cli.py",
+      "line": 16,
+      "page": "cli"
+    },
+    {
+      "name": "run_onboarding",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/onboarding.py",
+      "line": 390,
+      "page": "cli"
+    },
+    {
+      "name": "sanitize_content()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 181,
+      "page": "security-privacy"
+    },
+    {
+      "name": "sanitize_iso_temporal",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 133,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "sanitize_kg_value()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 72,
+      "page": "security-privacy"
+    },
+    {
+      "name": "sanitize_name()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 44,
+      "page": "security-privacy"
+    },
+    {
+      "name": "sanitize_query",
+      "kind": "function",
+      "file": "mempalace/query_sanitizer.py",
+      "line": 41,
+      "page": "search"
+    },
+    {
+      "name": "sanitize_query()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/query_sanitizer.py",
+      "line": 41,
+      "page": "security-privacy"
+    },
+    {
+      "name": "SAVE_INTERVAL",
+      "kind": "constant",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 22,
+      "page": "hooks"
+    },
+    {
+      "name": "score_entity",
+      "kind": "function",
+      "file": "mempalace/entity_detector.py",
+      "line": 282,
+      "page": "entities"
+    },
+    {
+      "name": "search_memories",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/searcher.py",
+      "line": 748,
+      "page": "architecture"
+    },
+    {
+      "name": "search_memories",
+      "kind": "function",
+      "file": "mempalace/searcher.py",
+      "line": 748,
+      "page": "search"
+    },
+    {
+      "name": "seed_from_entity_facts",
+      "kind": "method",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 529,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "spellcheck_user_text",
+      "kind": "function",
+      "file": "mempalace/spellcheck.py",
+      "line": 161,
+      "page": "maintenance"
+    },
+    {
+      "name": "strip_lone_surrogates()",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 29,
+      "page": "security-privacy"
+    },
+    {
+      "name": "strip_noise",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/normalize.py",
+      "line": 93,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "sweep",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/sweeper.py",
+      "line": 193,
+      "page": "mining-conversations"
+    },
+    {
+      "name": "sweep",
+      "kind": "function",
+      "file": "mempalace/sweeper.py",
+      "line": 193,
+      "page": "maintenance"
+    },
+    {
+      "name": "sync_palace",
+      "kind": "function",
+      "file": "mempalace/sync.py",
+      "line": 203,
+      "page": "maintenance"
+    },
+    {
+      "name": "t",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 62,
+      "page": "i18n"
+    },
+    {
+      "name": "timeline",
+      "kind": "method",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 462,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "tool_add_drawer",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 1105,
+      "page": "mcp-server"
+    },
+    {
+      "name": "tool_diary_write",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 1604,
+      "page": "mcp-server"
+    },
+    {
+      "name": "tool_kg_add",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/mcp_server.py",
+      "line": 1490,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "tool_kg_query",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/mcp_server.py",
+      "line": 1475,
+      "page": "knowledge-graph"
+    },
+    {
+      "name": "tool_kg_query",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 1475,
+      "page": "mcp-server"
+    },
+    {
+      "name": "tool_reconnect",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 1877,
+      "page": "mcp-server"
+    },
+    {
+      "name": "tool_search",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 877,
+      "page": "mcp-server"
+    },
+    {
+      "name": "tool_status",
+      "kind": "function",
+      "file": "mempalace/mcp_server.py",
+      "line": 737,
+      "page": "mcp-server"
+    },
+    {
+      "name": "TOOLS",
+      "kind": "dict",
+      "file": "mempalace/mcp_server.py",
+      "line": 1967,
+      "page": "mcp-server"
+    },
+    {
+      "name": "TruncationDetected",
+      "kind": "exception",
+      "file": "mempalace/repair.py",
+      "line": 382,
+      "page": "maintenance"
+    },
+    {
+      "name": "upsert_closet_lines",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 377,
+      "page": "palace-model"
+    },
+    {
+      "name": "upsert_closet_lines",
+      "kind": "function",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 377,
+      "page": "aaak-dialect"
+    }
+  ],
+  "surprises": [
+    {
+      "title": "Closets Are Ranking Signals, Never Gates",
+      "kind": "insight",
+      "detail": "The architecture explicitly forbids using closets as filters. A weak or missing closet pointer cannot hide a drawer that has strong BM25 signal. Closets only contribute a boost weight, so weak closets can only help search, never harm it - the opposite of typical RAG index designs.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/searcher.py",
+      "line": 10,
+      "page": "architecture"
+    },
+    {
+      "title": "Verbatim Always: Even Newlines and Formatting Preserved",
+      "kind": "insight",
+      "detail": "No summarization, paraphrasing, or lossy compression of drawer content. CLAUDE.md (line 22): 'If a user said it, we store exactly what they said.' This extends to whitespace, code formatting, and even Unicode surrogate pairs (handled by strip_lone_surrogates for Windows clipboard corruption).",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/miner.py",
+      "line": 4,
+      "page": "architecture"
+    },
+    {
+      "title": "Lock Holder Identity Recorded in Lock File",
+      "kind": "perf",
+      "detail": "When a mine holds the palace lock, the lock file body records the PID and first 3 argv entries (e.g., 'PID 12345 mempalace mine ~/palace'). If another mine contends, it reads this identity and includes it in the MineAlreadyRunning error message, so users see exactly which process is blocking them.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 570,
+      "page": "architecture"
+    },
+    {
+      "title": "Re-entrant Lock Tracking Per Thread + PID",
+      "kind": "gotcha",
+      "detail": "The system maintains a per-thread threading.local() set of lock keys the current thread holds. When a process forks, this set is inherited, but the PID check clears stale state so children correctly reacquire. This prevents self-deadlock when miner.mine() (outer lock) calls ChromaCollection.upsert() (same lock) from the same thread.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 509,
+      "page": "architecture"
+    },
+    {
+      "title": "Closet Char Limit Packs Greedily Without Splitting Lines",
+      "kind": "perf",
+      "detail": "Closets are packed greedily up to CLOSET_CHAR_LIMIT=1500 chars, but lines (topic pointers) are never split. If a line would overflow the current closet, it flows to a new closet (_01, _02, ...). This keeps closet pointers grep-friendly and atomic.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 149,
+      "page": "architecture"
+    },
+    {
+      "title": "L1 Importance Defaults to 3.0, Reads Multiple Field Names",
+      "kind": "insight",
+      "detail": "Layer1.generate() tries four metadata keys in order: 'importance', 'emotional_weight', 'weight', defaulting to 3.0 if none are found. This provides backward compatibility with older schemas and multiple naming conventions. No importance field means all drawers weighted equally, ranked only by order fetched.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/layers.py",
+      "line": 129,
+      "page": "architecture"
+    },
+    {
+      "title": "BM25 IDF Computed Over Candidate Set, Not Corpus",
+      "kind": "insight",
+      "detail": "BM25 rescoring is applied to the candidate set returned by vector search, not the full palace. IDF is computed locally from the candidates. This is correct for reranking a small set but would be inaccurate over the full palace - a term rare overall but common in the candidate set gets inflated IDF, which is exactly right for discriminating within those results.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/searcher.py",
+      "line": 75,
+      "page": "architecture"
+    },
+    {
+      "title": "Windows File Locking: Byte 0 Only, Position-Dependent",
+      "kind": "security",
+      "detail": "On Windows, msvcrt.locking() locks a specific byte range at the current file position. Byte 0 is explicitly locked; holder identity is written from byte 1 onward. This prevents collisions between lock acquisition and diagnostic identity reads. The code seeks to position 0 before locking so holders and contenders lock the same byte.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 649,
+      "page": "architecture"
+    },
+    {
+      "title": "STDOut Redirected to StdErr Before Heavy Imports",
+      "kind": "security",
+      "detail": "MCP server redirects stdout->stderr at both Python and file-descriptor level before importing chromadb/onnxruntime, because those dependencies print banners and errors directly to stdout (sometimes at C level), breaking Claude Desktop's JSON-RPC parser. Real stdout FD is saved and restored before entering the MCP protocol loop.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/mcp_server.py",
+      "line": 22,
+      "page": "architecture"
+    },
+    {
+      "title": "Drawers Are Immutable; Metadata Is Updated In-Place",
+      "kind": "insight",
+      "detail": "Once a drawer's content is written, it never changes. Re-mining a file deletes the old drawers for that source_file and writes new ones. But the drawer's document text is append-only by design. The metadata (entities, hall, content_date) can be updated on upsert, but the verbatim content block is frozen. This matches the 'Incremental only' principle: never destroy data to rebuild.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 365,
+      "page": "palace-model"
+    },
+    {
+      "title": "Closets Are Not Stored as Individual Records; They're Batched",
+      "kind": "insight",
+      "detail": "Each Closet ID (e.g., closet_base_01, closet_base_02) is a single upsert covering multiple pointer lines, packed greedily. They're not one pointer line per closet; rather, pointer lines are batched into closets up to the char limit. This packing is deterministic — the same source file produces the same closet numbering.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 388,
+      "page": "palace-model"
+    },
+    {
+      "title": "Dynamics Are Preserved Across Re-Mines to Prevent Reset",
+      "kind": "gotcha",
+      "detail": "When a hallway or tunnel is recomputed (e.g., on a fresh mine of the wing), the code explicitly copies over the prior record's strength, stability, last_activated, and access_count before initializing any missing fields. Without this preservation, every mine would reset the connection weights to defaults, wiping accumulated salience. This is a subtle but critical detail for the living-connection layer.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hallways.py",
+      "line": 256,
+      "page": "palace-model"
+    },
+    {
+      "title": "Topic and Entity Tunnels Use Synthetic Room Prefixes",
+      "kind": "insight",
+      "detail": "Auto-generated topic and entity tunnels don't link literal rooms; they use synthetic room identifiers: topic:Angular, entity:Ben. This namespaces them away from folder-derived rooms so a wing with a literal 'Angular' folder room remains distinct from a 'Angular' topic tunnel. The prefix is also visible to LLMs scanning the tunnel list, making the distinction machine-readable.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace_graph.py",
+      "line": 723,
+      "page": "palace-model"
+    },
+    {
+      "title": "Tier 6a Date+Line Segment Is Backward Compatible",
+      "kind": "perf",
+      "detail": "Closet pointers have two formats: legacy 3-segment (topic|entities|→drawer_ids) and Tier 6a 4-segment (topic|entities|YYYY-MM-DD:Lstart-Lend|→drawer_ids). The builder tries to emit the 4-segment form when line_start/line_end and filed_at (or content_date) are available, but falls back to 3-segment if any field is missing. This allows closet pointers from pre-Tier-6a drawers and direct callers without metadata to coexist with modern pointers in the same collection.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 264,
+      "page": "palace-model"
+    },
+    {
+      "title": "Drawer IDs are file+chunk, not timestamp-based",
+      "kind": "insight",
+      "detail": "Deterministic IDs (SHA of source_file + chunk_index) mean re-runs idempotently upsert without needing version fields or UUID tracking. A file moved to a different path produces a different drawer ID (intentional—it's a different source). The trade-off: if a user renames or relocates a source, old drawers remain orphaned until explicitly purged. This is acceptable because drawers carry source_file metadata for retrieval.",
+      "file": "mempalace/miner.py",
+      "line": 1380,
+      "page": "mining-projects"
+    },
+    {
+      "title": "Mtime tolerance of <0.001s prevents spurious re-mines",
+      "kind": "perf",
+      "detail": "Without this tolerance, slow filesystems or CI environments could trigger redundant re-mines on every run even if the file wasn't actually modified. The tolerance accounts for filesystem timestamp precision (ext4 is nanosecond, NTFS is 100ns). This is a defense-in-depth measure against unnecessary embedding re-compute.",
+      "file": "mempalace/palace.py",
+      "line": 777,
+      "page": "mining-projects"
+    },
+    {
+      "title": "Chunk boundary logic prefers paragraph breaks over line breaks",
+      "kind": "perf",
+      "detail": "chunk_text() looks for paragraph boundaries (\\n\\n) within the target chunk range, then line boundaries (\\n), before breaking arbitrarily. This keeps semantic units together. The 'rough 50% rule' (break only if newline is > chunk_size//2 away) prevents edge-case pathological breaks on files with rare newlines.",
+      "file": "mempalace/miner.py",
+      "line": 533,
+      "page": "mining-projects"
+    },
+    {
+      "title": "Format miner is fully separate, not edits to miner.py",
+      "kind": "insight",
+      "detail": "Binary file extraction (PDF, DOCX, RTF) could have been bundled into miner.py, but instead lives in format_miner.py—a third parallel miner. This follows the existing miner-per-content-type pattern. The trade-off is code duplication, but the benefit is smaller review surface and failure isolation—a format-miner bug cannot affect project/convo mining.",
+      "file": "mempalace/format_miner.py",
+      "line": 1,
+      "page": "mining-projects"
+    },
+    {
+      "title": "RTF files bypass MarkItDown and use striprtf instead",
+      "kind": "gotcha",
+      "detail": "MarkItDown 0.1.5 cannot convert RTF (returns raw \\rtf1\\ansi control codes unchanged). format_miner routes .rtf to striprtf (line 387-390, verified empirically 2026-05-19 on 52 real RTF files). This per-format dispatch is invisible to callers—both transformers produce Markdown text that flows into the normal chunker.",
+      "file": "mempalace/format_miner.py",
+      "line": 387,
+      "page": "mining-projects"
+    },
+    {
+      "title": "Tie-Break Safety: < Cursor, Not <= Cursor",
+      "kind": "insight",
+      "detail": "The sweep uses < cursor (strictly earlier) instead of <= cursor. When multiple messages share the same ISO-8601 timestamp and only some were ingested before a crash, a <= skip would lose the rest forever. The < skip allows deterministic drawer IDs to deduplicate at the cursor boundary on re-run, making resumption safe.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/sweeper.py",
+      "line": 20,
+      "page": "mining-conversations"
+    },
+    {
+      "title": "Slack Multi-Party Speakers: Role Alternation",
+      "kind": "gotcha",
+      "detail": "Slack exports have no inherent 'user' or 'assistant'. The parser assigns alternating roles to different speaker IDs, prefixing each message with the speaker ID so downstream chunking (which relies on > markers) still works. A provenance footer marks the transcript as Slack-imported so consumers know speaker roles are positional, not verified.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/normalize.py",
+      "line": 446,
+      "page": "mining-conversations"
+    },
+    {
+      "title": "Memory Type Metadata: Per-Chunk Classification",
+      "kind": "insight",
+      "detail": "In 'general' extract_mode, chunks from general_extractor carry a per-chunk memory_type (decision/preference/milestone/problem/emotional). Rather than using a file-level room, each chunk's memory_type becomes its drawer room. Room count deltas are accumulated per chunk, not per file, allowing fine-grained room stats.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/convo_miner.py",
+      "line": 419,
+      "page": "mining-conversations"
+    },
+    {
+      "title": "Stale Drawer Purge: Pre-v2 Rows Don't Coexist with v2",
+      "kind": "perf",
+      "detail": "When normalize_version increments (v1 to v2), _source_file_delete_ids filters by extract_mode and removes all pre-v2 drawers for the source before upserting fresh chunks. This prevents mixed schema rows and ensures schema bumps apply uniformly. Legacy drawers without extract_mode metadata are treated as 'exchange' mode for cleanup.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/convo_miner.py",
+      "line": 395,
+      "page": "mining-conversations"
+    },
+    {
+      "title": "Diary Full Rebuild on In-Place Edits",
+      "kind": "insight",
+      "detail": "If content_hash changes but entry_count stays the same (e.g., editing a sentence within an entry), full_rebuild is triggered. This catches content re-ordering and in-place changes that would otherwise leave stale closets. The purge-before-insert pattern ensures orphaned closets from prior runs don't survive.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/diary_ingest.py",
+      "line": 171,
+      "page": "mining-conversations"
+    },
+    {
+      "title": "Multi-Word Candidates Bypass COCA Filter",
+      "kind": "insight",
+      "detail": "Single-word candidates apply the COCA content-word filter to suppress 'Code', 'Phase', 'Note', etc. But multi-word candidates are intentionally NOT filtered. This preserves compound names like 'Claude Code' (where 'Code' alone would be suppressed). A deliberate design decision favoring recall over precision.",
+      "file": "mempalace/entity_detector.py",
+      "line": 217,
+      "page": "entities"
+    },
+    {
+      "title": "Two-Signal-Category Enforcement Against Syntactic Artifacts",
+      "kind": "gotcha",
+      "detail": "A word like 'Click' appearing 15 times can match the person-verb pattern repeatedly, accumulating high person_score from a single signal category. The two-signal-category rule prevents this from classifying Click as a person unless it also exhibits dialogue markers, pronouns, or direct address.",
+      "file": "mempalace/entity_detector.py",
+      "line": 404,
+      "page": "entities"
+    },
+    {
+      "title": "Ambiguous-Term Co-Occurrence Rules Out Literal False Positives",
+      "kind": "security",
+      "detail": "A French novel with character 'Claude', astrology corpus full of 'Gemini', or poetry about 'haiku' could false-positive as AI-dialogue. The co-occurrence rule (ambiguous terms only count if unambiguous term or turn-marker present) solves this, preventing real family members from being marked as AI personas.",
+      "file": "mempalace/corpus_origin.py",
+      "line": 215,
+      "page": "entities"
+    },
+    {
+      "title": "Pronoun-Only Classification Requires High Ratio",
+      "kind": "insight",
+      "detail": "A diary protagonist mentioned 100 times, referenced with pronouns 20 times, scores person via pronoun signal alone only if pronoun_hits >= 5 AND pronoun_hits / frequency >= 0.2. This 20% ratio threshold prevents common sentence-start words that incidentally appear near pronouns from qualifying.",
+      "file": "mempalace/entity_detector.py",
+      "line": 416,
+      "page": "entities"
+    },
+    {
+      "title": "Closet Entity Dedup Happens Pre-Sort, Pre-Cap",
+      "kind": "perf",
+      "detail": "Entity dedup in closet lines uses word_freq dict counting, a single-pass O(n) dedup. Only after counting do we filter (>= 2), sort by frequency, cap at 5. Efficient but relies on correct word-boundary extraction to avoid double-counting 'Max' and 'max'.",
+      "file": "mempalace/palace.py",
+      "line": 280,
+      "page": "entities"
+    },
+    {
+      "title": "Closets Are Secondary Ranking Signal, Not Primary Gate",
+      "kind": "insight",
+      "detail": "The searcher always runs the full drawer query first. Closets boost results, never gate them. Comment (line 826): 'Closets are a ranking SIGNAL, never a first-pass filter... weak-closets regression where narrative content produces low-signal closets... and closet-first routing hides drawers that direct search would find.' This is a deliberate rejection of closet-first indexing in favor of hybrid scoring—100% recall requires never hiding drawers.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/searcher.py",
+      "line": 823,
+      "page": "aaak-dialect"
+    },
+    {
+      "title": "Emotion Detection Is Keyword-Based, No LLM",
+      "kind": "perf",
+      "detail": "Plain-text emotion detection (_detect_emotions, line 430) searches for 30+ keywords in lowercase text (love→love, feared→fear, happy→joy). No ML, no API. Result: instant, deterministic, zero tokens. Only 3 codes per line; redundant codes deduped. Fast signal for triage.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/dialect.py",
+      "line": 430,
+      "page": "aaak-dialect"
+    },
+    {
+      "title": "Closet_llm Uses Stdlib urllib, Not Requests or SDK",
+      "kind": "security",
+      "detail": "LLMConfig validates endpoint scheme strictly: if scheme not in ('http', 'https'): raise ValueError. This rejects file:// URLs at parse time, preventing a misconfigured LLM_ENDPOINT from exfiltrating local files. Privacy by architecture, checked on init, not at call time.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/closet_llm.py",
+      "line": 96,
+      "page": "aaak-dialect"
+    },
+    {
+      "title": "Tier 6a Date+Line Locators: Optional but Backward-Compatible",
+      "kind": "insight",
+      "detail": "Closet format supports two variants: legacy 3-segment (topic|entities|→drawer) and Tier 6a 4-segment (topic|entities|YYYY-MM-DD:Lstart-Lend|→drawer). The function emits legacy if metadata is missing or unparseable, so old closets work in new code. New drawers get date+line pointers for jump-to-location on disk.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 247,
+      "page": "aaak-dialect"
+    },
+    {
+      "title": "Regex Closets Have No Stop-Word Filter; Seed Noise",
+      "kind": "gotcha",
+      "detail": "build_closet_lines() extracts topics via action-verb regex (built|fixed|wrote...) but does NOT filter the matched phrases through a stop-word list. So a topic like 'built the the the' can be extracted verbatim. COCA filter helps with common words (Code, Line), but dialect.py's _STOP_WORDS are not applied to regex closet extraction. This is an inconsistency; dialect closets use _STOP_WORDS, closet_llm ones are manually curated.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/palace.py",
+      "line": 287,
+      "page": "aaak-dialect"
+    },
+    {
+      "title": "Raw verbatim text baseline beats extraction-based systems by 2x",
+      "kind": "insight",
+      "detail": "MemPalace's baseline (96.6% R@5 on LongMemEval with zero LLM) outperforms Mem0's LLM-extracted memories by over 2x. Extraction loses context: when Mem0 extracts 'user prefers PostgreSQL' and discards the conversation, it loses why they prefer it, what alternatives were considered, and what they'd said before. MemPalace stores everything verbatim and lets search find it.",
+      "file": "benchmarks/BENCHMARKS.md",
+      "line": 1,
+      "page": "search"
+    },
+    {
+      "title": "Closet boosts use rank, not absolute distance, as the signal",
+      "kind": "gotcha",
+      "detail": "CLOSET_RANK_BOOSTS = [0.40, 0.25, 0.15, 0.08, 0.04] uses the closet's ordinal position, not its absolute distance, to decide boost magnitude. Narrative content produces closet distances in the 1.2-1.5 range regardless of match quality, making absolute distance unreliable. Rank is more stable. Distances > 1.5 bypass boosts entirely (CLOSET_DISTANCE_CAP).",
+      "file": "mempalace/searcher.py",
+      "line": 871,
+      "page": "search"
+    },
+    {
+      "title": "Absolute cosine similarity prevents ranking instability under candidate changes",
+      "kind": "perf",
+      "detail": "Vector similarity is computed as max(0, 1 - distance), using absolute distance not relative-to-max. Adding/removing a candidate cannot reshuffle other candidates. If similarity were (max_dist - dist) / max_dist, adding a very-close result would increase max_dist and reshuffle all other scores. Absolute scoring is essential for stable, predictable ranking.",
+      "file": "mempalace/searcher.py",
+      "line": 160,
+      "page": "search"
+    },
+    {
+      "title": "Query sanitizer prevents catastrophic recall cliff from system-prompt contamination",
+      "kind": "security",
+      "detail": "When AI agents prepend system prompts to search queries (2000+ chars), embedding models represent the concatenated string as a single vector where the prompt dominates the actual question, causing recall to drop from ~90% to 1% silently. The sanitizer's 4-step approach recovers to 70-80% worst-case instead of catastrophic failure.",
+      "file": "mempalace/query_sanitizer.py",
+      "line": 9,
+      "page": "search"
+    },
+    {
+      "title": "Dedup is chunk-precise, not file-precise, to allow same-source multi-chunk retrieval",
+      "kind": "insight",
+      "detail": "When merging BM25 and vector candidates, dedup key is (_source_file_full, _chunk_index). A single source file may be split into 10 drawers; BM25 might find chunk 3 (high keyword match) while vector found chunk 7 (high semantic match). Both should be in the rerank pool. File-level dedup would silently drop one; chunk-level dedup lets the same source contribute multiple perspectives.",
+      "file": "mempalace/searcher.py",
+      "line": 684,
+      "page": "search"
+    },
+    {
+      "title": "Date-only facts are interpreted as full-day intervals at query time",
+      "kind": "insight",
+      "detail": "Legacy triples stored with valid_from='2026-01-01' (no time) are normalized to '2026-01-01T00:00:00Z' at query time, while valid_to='2026-01-01' becomes '2026-01-01T23:59:59Z'. This allows as_of queries using canonical UTC datetimes (e.g., '2026-01-15T10:30:00Z') to still match date-only facts. The trick is in _temporal_start_key and _temporal_end_key functions and their SQL equivalents, which treat a date as a 24-hour window rather than a point.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 56,
+      "page": "knowledge-graph"
+    },
+    {
+      "title": "Invalidation is idempotent: calling it twice on the same fact is safe",
+      "kind": "gotcha",
+      "detail": "The invalidate method searches for triples with valid_to IS NULL (line 340). If called twice on the same fact, the second call finds no matches and does nothing, which is semantically correct but might surprise callers expecting an error. The implementation is forgiving, which aligns with CLAUDE.md's 'incremental-only' principle—operations are replay-safe.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 340,
+      "page": "knowledge-graph"
+    },
+    {
+      "title": "Predicates are always lowercased and space→underscore normalized",
+      "kind": "gotcha",
+      "detail": "When adding a triple, predicates are normalized to lowercase with underscores (line 282). This means 'Child Of', 'child_of', and 'CHILD_OF' all map to the same predicate. This is intentional (simplifies predicate discovery), but callers expecting case preservation will be surprised.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 282,
+      "page": "knowledge-graph"
+    },
+    {
+      "title": "The KG does NOT enforce referential integrity at write time",
+      "kind": "gotcha",
+      "detail": "Although the schema declares FOREIGN KEY (subject) REFERENCES entities(id), the KG auto-creates missing entities on-the-fly (lines 288–295). This means you can add a triple for entities that don't yet exist. The foreign key constraint is a soft constraint (no immediate error), but it documents the intent. This is intentional: it allows flexible triple creation without pre-populating the entity table.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 288,
+      "page": "knowledge-graph"
+    },
+    {
+      "title": "Timeline queries are limited to 100 rows; if you have more, they are silently truncated",
+      "kind": "perf",
+      "detail": "The timeline method (line 476) uses LIMIT 100, which is a reasonable default for interactive queries but can silently hide facts if your timeline exceeds 100 entries. There is no pagination mechanism; a follow-up query or API design change would be needed for larger timelines.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/knowledge_graph.py",
+      "line": 476,
+      "page": "knowledge-graph"
+    },
+    {
+      "title": "HNSW Link/Data Ratio is a Corrupted-Index Canary",
+      "kind": "insight",
+      "detail": "When link_lists.bin grows >10x larger than data_level0.bin, the HNSW graph is structurally unsound—Chroma can segfault in native code even if mtime looks fresh and index_metadata.pickle is valid. This threshold is set empirically (healthy palaces <1x, #1218 saw 300x). The ratio check is intentionally not gated by mtime: a 10x misbalance is unsafe regardless of recency.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 36,
+      "page": "backends"
+    },
+    {
+      "title": "Pickle Protocol Sniff-Test Avoids Deserialization",
+      "kind": "security",
+      "detail": "_segment_appears_healthy never deserializes index_metadata.pickle—it only checks start byte 0x80 (pickle PROTO marker) and end byte 0x2e (pickle STOP). This detects complete writes vs. truncation/zero-fill without risk of arbitrary code execution if the pickle is malicious.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 161,
+      "page": "backends"
+    },
+    {
+      "title": "Reentrant Locking Prevents Self-Deadlock on Mine Pipeline",
+      "kind": "gotcha",
+      "detail": "mine_palace_lock must use a per-thread holder set (palace.py) to short-circuit reentrant acquisition. The mine pipeline calls get_collection then ChromaCollection.upsert, which tries to acquire the same lock. Without the guard, the inner upsert blocks on a second flock (Linux fcntl locks are per file descriptor), causing self-deadlock on a single thread.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 938,
+      "page": "backends"
+    },
+    {
+      "title": "Divergence Threshold Scales Dynamically with Sync Threshold",
+      "kind": "perf",
+      "detail": "The HNSW divergence floor is max(2000, 2x sync_threshold) because ChromaDB batches flushes at sync_threshold intervals (default 1000, set to 50K in PR #1191 to prevent link_lists.bin bloat). A fixed floor of 2000 would flag every actively-written palace as diverged once the unwritten tail exceeded 1K records. By scaling with sync_threshold, the probe distinguishes normal flush-lag from real corruption (#1222's 176K divergence).",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 567,
+      "page": "backends"
+    },
+    {
+      "title": "Legacy Palaces Silent-Fail on L2 Distance When Expecting Cosine",
+      "kind": "gotcha",
+      "detail": "Collections created before hnsw:space metadata was mandatory silently use ChromaDB's default (L2/Euclidean). The searcher's cosine similarity formula max(0, 1 - distance) then produces floors of 0 because L2 distances exceed 1.0. The metadata mismatch is not caught at query time—it only surfaces as nonsensical relevance scores. searcher.py emits a stderr notice recommending repair rebuild-index, but the palace still functions in degraded mode.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/backends/chroma.py",
+      "line": 1169,
+      "page": "backends"
+    },
+    {
+      "title": "Heuristic truth wins over weak LLM",
+      "kind": "insight",
+      "detail": "Tier 2 LLM can extract persona names and platform, but its likely_ai_dialogue answer is DISCARDED if it differs from confident Tier 1 heuristic (line 145). This design (PR #1211 review) protects against weak local models (e.g. Ollama gemma4:e4b) flipping confident regex answers. The LLM is a scalpel, not a hammer.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 145,
+      "page": "cli"
+    },
+    {
+      "title": "Init re-run is NOT idempotent by default, but made so via filtering",
+      "kind": "gotcha",
+      "detail": "Without the artifact-skip logic (line 74–81), re-running init would pick up the entities.json and mempalace.yaml it wrote on the first run, changing corpus-origin density and producing a different classification. The filter makes it idempotent — a non-obvious but critical detail for multi-user teams or CI systems.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 74,
+      "page": "cli"
+    },
+    {
+      "title": "Corpus-origin evidence is immutable once prefixed",
+      "kind": "gotcha",
+      "detail": "When _run_pass_zero detects that evidence lines are already prefixed ('Tier-1 heuristic: '), it skips re-prefixing (line 158–167). This allows origin.json to be read multiple times without duplicating prefixes, but also means once written, evidence trails are frozen. Re-running --redetect-origin on mine (line 498) only runs Tier 1 heuristics (no LLM), so evidence cannot be upgraded post-init.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 158,
+      "page": "cli"
+    },
+    {
+      "title": "Multilingual embedding is default; English-only is opt-down",
+      "kind": "insight",
+      "detail": "onboarding._ask_embedding_model (line 88) defaults to 'embeddinggemma' (300 MB multilingual) because cross-lingual cosine similarity under English-only MiniLM collapses to ~0.35 (essentially random). Non-English content silently breaks under MiniLM, so multilingual is the safe default even though it costs 10x more disk.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/onboarding.py",
+      "line": 88,
+      "page": "cli"
+    },
+    {
+      "title": "Wake-up context is best-effort, never blocks",
+      "kind": "perf",
+      "detail": "stack.wake_up() gracefully degrades when palace doesn't exist, is empty, or ChromaDB read fails (layers.py:96–97, 122). Missing palace returns 'No palace found' message. This ensures the CLI command never crashes even in degraded states — the AI gets some guidance or learns there's nothing in the palace.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/layers.py",
+      "line": 96,
+      "page": "cli"
+    },
+    {
+      "title": "Transitive Dependency Stdio Corruption Blocker",
+      "kind": "security",
+      "detail": "ChromaDB → ONNX/posthog and other transitive dependencies write JSON banners to stdout at C level (not via Python), breaking the JSON-RPC parser in Claude Desktop. The solution (os.dup2 before imports) is nonobvious — redirecting sys.stdout alone doesn't catch fd-level writes from C libraries. The workaround must happen at import time, not in main().",
+      "file": "mempalace/mcp_server.py",
+      "line": 26,
+      "page": "mcp-server"
+    },
+    {
+      "title": "ChromaDB Silent Truncation at 10K Rows",
+      "kind": "gotcha",
+      "detail": "_fetch_all_metadata paginates col.get() in 1000-row batches (line 621) because ChromaDB silently truncates results at 10K without raising. Warm metadata cache only applies when where=None (line 649) — filtered queries always paginate fresh to avoid stale subsets.",
+      "file": "mempalace/mcp_server.py",
+      "line": 615,
+      "page": "mcp-server"
+    },
+    {
+      "title": "One-Shot Retry on KG Close Instead of Loop",
+      "kind": "perf",
+      "detail": "_call_kg retries at most once on sqlite3.ProgrammingError (line 282) rather than spinning — a second close is a lost race, not a transient. The tradeoff is that reconnect-during-handler still fails on second attempt, but avoids hung loops (line 263).",
+      "file": "mempalace/mcp_server.py",
+      "line": 248,
+      "page": "mcp-server"
+    },
+    {
+      "title": "HNSW Capacity Probe Before Client Open",
+      "kind": "insight",
+      "detail": "_refresh_vector_disabled_flag() (line 350) reads pure sqlite + pickle metadata from chromadb's segment files to detect index divergence WITHOUT opening a PersistentClient. This avoids segfaults on load (issue #1222) by gating the chromadb client open. The probe is pure filesystem read with zero chromadb interaction.",
+      "file": "mempalace/mcp_server.py",
+      "line": 350,
+      "page": "mcp-server"
+    },
+    {
+      "title": "Agent Diaries Normalized to Lowercase for Case-Insensitive Reads",
+      "kind": "insight",
+      "detail": "agent_name is normalized to .lower() at write (line 1617) and read (line 1745) so 'Claude', 'claude', 'CLAUDE' all resolve to the same diary. This breaks pre-fix mixed-case entries unless repaired, but keeps future reads robust (issue #1243). Filters on wing + room='diary' + agent (lines 1758-1760).",
+      "file": "mempalace/mcp_server.py",
+      "line": 1617,
+      "page": "mcp-server"
+    },
+    {
+      "title": "Stop Hook Runs Asynchronously (Background Mining), PreCompact Runs Synchronously",
+      "kind": "insight",
+      "detail": "Stop hook spawns mines with _spawn_mine (background via detached subprocess & flag in shell), exiting immediately to stay under 500ms budget. PreCompact hook uses subprocess.run (synchronous), blocking until the mine completes. This split design: Stop optimizes latency (background work), PreCompact optimizes safety (sync ensures data is saved before compaction loses it).",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 472,
+      "page": "hooks"
+    },
+    {
+      "title": "Windows Process Detection Cannot Use os.kill(pid, 0)",
+      "kind": "gotcha",
+      "detail": "On Windows, os.kill(sig) terminates the process (maps to TerminateProcess). The code uses ctypes to call GetExitCodeProcess instead. If the call fails or process handle is invalid, it returns False (dead). This cross-platform difference is buried in a utility function but is critical for correctness.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 342,
+      "page": "hooks"
+    },
+    {
+      "title": "Silent Mode Defaults to True on Config Read Failure",
+      "kind": "perf",
+      "detail": "When hook_silent_save config is unreadable (missing, corrupted, or AttributeError), the code defaults to True (silent mode) rather than blocking. Safe-default design: if config breaks, save in background so users don't lose data or get stuck in an infinite block loop. The fallback is logged as a WARNING.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 900,
+      "page": "hooks"
+    },
+    {
+      "title": "Token Savings of USD ~1/session via Background Mining",
+      "kind": "perf",
+      "detail": "Previous versions asked the AI to write diary entries in chat, costing ~USD 1 per session in token retransmission. v3.3.0+ silent mode saves directly via Python API (tool_diary_write), so the AI never writes diary blocks in chat. The systemMessage notification (✦ N memories...) is negligible. This alone justifies the shift from blocking to silent mode.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/MISSION.md",
+      "line": 30,
+      "page": "hooks"
+    },
+    {
+      "title": "Hook Timeout is 30s But Mine Timeout is 60s+",
+      "kind": "insight",
+      "detail": "The hook command timeout in .claude/settings.local.json is 30 seconds (harness kills the hook if it takes longer). But the mine subprocess itself can run up to 60+ seconds (timeout=60 in precompact subprocess.run, or unlimited if MEMPALACE_MINE_TIMEOUT_HOURS > 0.05 hours). The hook spawns the mine and exits; the mine runs independently in background. This architecture keeps hook latency under 500ms (performance budget) while allowing substantive work.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/hooks/README.md",
+      "line": 30,
+      "page": "hooks"
+    },
+    {
+      "title": "Shell Hook Uses sed Instead of bash 4+ mapfile",
+      "kind": "gotcha",
+      "detail": "macOS ships bash 3.2.57 (Apple's GPLv3 cutoff, 2006), which lacks mapfile/readarray (bash 4.0+). The shell hook parses Python output via sed -n 'Np' (classic, portable) instead of mapfile. Without this, every value would fall back to default on macOS and hooks would silently produce zero saves (issue #1440). This is a subtle portability gotcha.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/hooks/mempal_save_hook.sh",
+      "line": 118,
+      "page": "hooks"
+    },
+    {
+      "title": "Wing Derivation Tries cwd Metadata First (Most Reliable)",
+      "kind": "insight",
+      "detail": "The wing name derivation (_wing_from_transcript_path) checks the JSONL transcript for embedded cwd metadata first, before decoding the transcript path. This is the most reliable method because Claude Code records the working directory on most message types. Only if cwd is missing does it fall back to path decoding (heuristic) or defaults to wing_sessions. This priority order avoids silent misclassification.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/hooks_cli.py",
+      "line": 839,
+      "page": "hooks"
+    },
+    {
+      "title": "Ollama's num_ctx parameter is forwarded via **kwargs for context-window tuning",
+      "kind": "insight",
+      "detail": "OllamaProvider accepts num_ctx (optional int) as a constructor kwarg, allowing callers to tune context window per model without modifying the provider interface. The factory forwards unknown kwargs (**provider_kwargs) to the chosen provider, so get_provider(..., num_ctx=8192) works seamlessly. This is elegant extensibility: each provider ignores kwargs it doesn't recognize.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/llm_client.py",
+      "line": 214,
+      "page": "llm-integration"
+    },
+    {
+      "title": "corpus_origin Tier-2 result merging is a careful non-overwrite dance, not a simple merge",
+      "kind": "gotcha",
+      "detail": "After discovering that Tier-2 LLM (weak local model) can flip Tier-1 heuristic confidence (issue #1211), the code was updated to preserve Tier-1's likely_ai_dialogue + confidence while merging Tier-2's platform/user/personas into the result. The evidence trails are concatenated (not deduplicated) to preserve both signal paths for auditability. This is a non-obvious invariant enforced in the CLI, not in corpus_origin.py itself.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/cli.py",
+      "line": 145,
+      "page": "llm-integration"
+    },
+    {
+      "title": "Closet regeneration pagination avoids SQLite SQLITE_MAX_VARIABLE_NUMBER crashes",
+      "kind": "perf",
+      "detail": "Large palaces (10k+ drawers) would crash on a single get(limit=total) call because SQLite's SQLITE_MAX_VARIABLE_NUMBER (32766) limit is hit inside ChromaDB. The code pages in batches of 5000, processing each batch and continuing. Without this, regenerate_closets fails silently on large palaces (issue #802, #850, #1073).",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/closet_llm.py",
+      "line": 236,
+      "page": "llm-integration"
+    },
+    {
+      "title": "Non-HTTP/HTTPS endpoint schemes are explicitly rejected to prevent exfiltration",
+      "kind": "security",
+      "detail": "closet_llm validates that LLM_ENDPOINT uses http:// or https:// only. A misconfigured file:// endpoint (or similar) cannot be used to read local files and exfiltrate them. The check is defensive (the code never builds such a URL intentionally, but the validation is explicit).",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/closet_llm.py",
+      "line": 106,
+      "page": "llm-integration"
+    },
+    {
+      "title": "Fact-checker extracts claims conservatively with two regex patterns, not full NLP",
+      "kind": "insight",
+      "detail": "Only two surface forms are recognized: 'X is Y's Z' and 'X's Z is Y' (both resolve to triple (X, Z, Y) — subject, predicate, object). No NLP; just regex. This is intentional: the detector is ultra-conservative, only flagging contradictions it's certain about. Unrecognized relationship forms are silently missed (false-negatives), not misinterpreted (false-positives).",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/fact_checker.py",
+      "line": 47,
+      "page": "llm-integration"
+    },
+    {
+      "title": "Python's \\b Silently Truncates Names with Combining Marks",
+      "kind": "gotcha",
+      "detail": "\\b is a transition between \\w (Unicode Letter/Number) and non-\\w, but Unicode Marks (category Mc/Mn) are non-\\w. So अनीता at a word boundary becomes अनीत if \\b is used literally. MemPalace's solution—script-aware lookaround boundaries—is elegant but non-obvious.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 119,
+      "page": "i18n"
+    },
+    {
+      "title": "14 Languages But Only 3 Have Full Entity Patterns",
+      "kind": "insight",
+      "detail": "Only zh-CN, hi, and ko declare boundary_chars and full entity sections. ja.json and pt-br.json have no entity section, so they fall back to English patterns. Most locales translate UI strings but reuse English entity detection.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n",
+      "line": 1,
+      "page": "i18n"
+    },
+    {
+      "title": "Multilingual Embeddings Trade Speed for Quality",
+      "kind": "perf",
+      "detail": "EmbeddinggemmaONNX achieves 0.88 cross-lingual cosine similarity (vs MiniLM's 0.35) but is slower: 300MB lazy-downloaded model, slower tokenizer, higher inference cost. Onboarding defaults to embeddinggemma for new users but existing palaces use minilm for backward compatibility.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/embedding.py",
+      "line": 140,
+      "page": "i18n"
+    },
+    {
+      "title": "Entity Cache Shares Across Different Case Variants",
+      "kind": "insight",
+      "detail": "get_entity_patterns() normalizes language codes to canonical form before cache lookup, so (PT-BR, en) and (pt-br, en) hit the same cache entry, reducing redundant merges.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/i18n/__init__.py",
+      "line": 231,
+      "page": "i18n"
+    },
+    {
+      "title": "EmbeddinggemmaONNX Persists Its Name in ChromaDB Collections",
+      "kind": "gotcha",
+      "detail": "The name() method returns 'embeddinggemma_300m', and ChromaDB persists this on the collection. Switching models without rebuilding makes ChromaDB reject the old collection on name mismatch—intentional, forcing 'mempalace repair rebuild-index', but surprising.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/embedding.py",
+      "line": 159,
+      "page": "i18n"
+    },
+    {
+      "title": "Lone Surrogate Issue Was Triggered by MCP Clients",
+      "kind": "gotcha",
+      "detail": "The _LONE_SURROGATE_RE pattern exists because Claude Desktop and other MCP clients occasionally relay lone UTF-16 surrogates when copying binary or corrupted data from the clipboard. This is not a user error - it's a platform quirk. Without strip_lone_surrogates(), ChromaDB crashes with -32000 (unexpected) when encoding, making memory operations silently fail. The fix is simple but essential.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/config.py",
+      "line": 22,
+      "page": "security-privacy"
+    },
+    {
+      "title": "Query Sanitizer Recovers 70-89% in Worst Case",
+      "kind": "insight",
+      "detail": "Issue #333 showed that without sanitization, system-prompt-contaminated queries drop to 1.0% retrieval (complete failure). With the four-stage sanitizer, worst-case (tail truncation fallback) is ~70-80%, and common cases (question extraction, tail sentence) hit 85-89%. This is not a perfect solution but a pragmatic mitigation: a searchable degradation beats silent failure.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/query_sanitizer.py",
+      "line": 10,
+      "page": "security-privacy"
+    },
+    {
+      "title": "MCP Stdio Redirection Uses File Descriptors, Not Just Python",
+      "kind": "perf",
+      "detail": "The mcp_server.py redirects stdout to stderr at both the Python level (sys.stdout = sys.stderr) and the file-descriptor level (os.dup2(2, 1)). This is necessary because transitive C libraries (onnxruntime, telemetry) print directly to fd 1 (C stdout), bypassing Python's sys.stdout. Skipping the fd-level redirect would still fail.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/mempalace/mcp_server.py",
+      "line": 37,
+      "page": "security-privacy"
+    },
+    {
+      "title": "Bash 3.2 Compat Prevents Use of mapfile",
+      "kind": "gotcha",
+      "detail": "macOS ships bash 3.2.57 (frozen in 2006 at GPLv3 cutoff). mapfile and readarray builtins only arrived in bash 4.0 (2009). The save hook can't use them; instead it parses Python output with sed -n 'Np' to read individual lines into shell variables. On a stock macOS, mapfile would silently fail, causing every hook value to default and produce zero saves (#1440).",
+      "file": "/Users/tigor/Projects/_forked/mempalace/hooks/mempal_save_hook.sh",
+      "line": 119,
+      "page": "security-privacy"
+    },
+    {
+      "title": "Transcript Path Validation Mirrors Between Shell and Python",
+      "kind": "insight",
+      "detail": "The shell hook (mempal_save_hook.sh:219-230) and the Python hooks_cli.py (_validate_transcript_path, line 124) both enforce the same checks: .json/.jsonl suffix only, no '..' traversal segments. This is defense-in-depth: the shell guards input to the Python mining commands, and Python validates separately so either layer can catch breakout attempts. Both use the same rejection logic.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/hooks/mempal_save_hook.sh",
+      "line": 217,
+      "page": "security-privacy"
+    },
+    {
+      "title": "Metadata sanitization coercion on empty dict",
+      "kind": "insight",
+      "detail": "Lines 150-154 in repair.py: when extracted drawers have None or {} metadata (from sparse historical writes), repair coerces to {\"_repaired_empty_meta\": True} to pass chromadb 1.5.x upsert validation. The sentinel is discoverable later via where={\"_repaired_empty_meta\": True}, turning a silent failure into a queryable state.",
+      "file": "mempalace/repair.py",
+      "line": 150,
+      "page": "maintenance"
+    },
+    {
+      "title": "Poisoned max_seq_id detection uses float64 ceiling (2^53)",
+      "kind": "gotcha",
+      "detail": "Lines 1336-1342 in repair.py: the threshold for detecting corrupted max_seq_id rows is 1 << 53 (~9e15), chosen because real embeddings_queue seq_ids never reach that magnitude and the 0.6.x shim's misfire yields ~1.23e18, safely above the threshold. A clever heuristic that avoids false positives.",
+      "file": "mempalace/repair.py",
+      "line": 1342,
+      "page": "maintenance"
+    },
+    {
+      "title": "Cursor comparison uses lexical < on ISO-8601 strings",
+      "kind": "insight",
+      "detail": "Lines 147-177 in sweeper.py: get_palace_cursor returns max(timestamps) and the sweep compares via < cursor without parsing. ISO-8601 strings sort lexically in the correct order, so no date parsing is needed. This is both elegant and avoids timezone misinterpretation.",
+      "file": "mempalace/sweeper.py",
+      "line": 147,
+      "page": "maintenance"
+    },
+    {
+      "title": "Greedy dedup sorts by document length, keeps longest",
+      "kind": "perf",
+      "detail": "Lines 79-128 in dedup.py: the dedup_source_group function sorts by doc length descending and keeps if not too similar to already-kept drawers. Not optimal for lossy dedup (shortest are often noise), but deterministic and recoverable.",
+      "file": "mempalace/dedup.py",
+      "line": 87,
+      "page": "maintenance"
+    },
+    {
+      "title": "Sync's strict apply safety: requires explicit scope",
+      "kind": "security",
+      "detail": "Lines 224-229 in sync.py: apply mode (dry_run=False) refuses to run without explicit wing= or project_dirs=, preventing accidental full-palace pruning. Auto-detection is only enabled in dry-run mode, a safety-by-design pattern.",
+      "file": "mempalace/sync.py",
+      "line": 224,
+      "page": "maintenance"
+    },
+    {
+      "title": "Spellcheck edit-distance guard varies by word length",
+      "kind": "insight",
+      "detail": "Lines 202-208 in spellcheck.py: max_edits is 2 for words ≤7 chars, 3 for longer. This prevents autocorrect from turning 'a' into 'the' while allowing 'knoe' → 'know'. A pragmatic guard against over-aggressive correction.",
+      "file": "mempalace/spellcheck.py",
+      "line": 206,
+      "page": "maintenance"
+    },
+    {
+      "title": "Raw text beats LLM-extracted memory by 2.1×",
+      "kind": "insight",
+      "detail": "ConvoMem shows MemPalace (92.9% average recall) vs Mem0 (30–45%). Mem0 uses an LLM to extract structured memories; MemPalace stores verbatim text. The simpler approach wins because it doesn't discard information — when an LLM extraction fails, the original text is lost, but MemPalace's embedding model can find it later. This contradicts the field's consensus that AI-powered extraction is necessary for memory systems.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/BENCHMARKS.md",
+      "line": 109,
+      "page": "benchmarks"
+    },
+    {
+      "title": "Hybrid v1 weight 0.30 is globally optimal, not locally tuned",
+      "kind": "perf",
+      "detail": "100-question samples showed 99% R@5 at weight 0.40, suggesting 0.40 was better. Full 500-question run reveals this was sampling variance. On all 500 questions, weights 0.30 and 0.40 are equivalent (97.8% vs 97.4%). The lesson: validate on the full dataset, not subsamples.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/HYBRID_MODE.md",
+      "line": 177,
+      "page": "benchmarks"
+    },
+    {
+      "title": "Two-pass assistant retrieval outperforms global indexing",
+      "kind": "gotcha",
+      "detail": "A naive fix for 'what did you say' questions is to index all turns (user + assistant) globally. This dilutes semantic signal — every session's assistant text competes with every other. The two-pass approach (find the session first using user turns, then search full text within that session) outperforms global indexing because it avoids the dilution.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/BENCHMARKS.md",
+      "line": 193,
+      "page": "benchmarks"
+    },
+    {
+      "title": "Temporal boost maxes at 40%, not 100% — semantic matching still wins",
+      "kind": "insight",
+      "detail": "A 40% maximum reduction means excellent semantic matches cannot be completely overridden by temporal proximity. Temporal correctness is a hint, not a rule. This prevents cases where a session from the wrong time period but with perfect semantic match gets demoted below a wrong session that just happens to be from the right date.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/HYBRID_MODE.md",
+      "line": 544,
+      "page": "benchmarks"
+    },
+    {
+      "title": "The 99.4% → 100% step teaches to the test; 98.4% on unseen is the honest claim",
+      "kind": "security",
+      "detail": "Hybrid v4's three fixes (quoted phrase, person name, nostalgia patterns) were developed by directly examining three specific failed questions. This is methodological contamination — the fixes are proven to work on those three questions, but may not generalize. The held-out evaluation of 98.4% R@5 on 450 unseen questions proves the earlier improvements (v1–v3) generalize, but v4's step remains internally contaminated. The authors disclose this rather than hiding it.",
+      "file": "/Users/tigor/Projects/_forked/mempalace/benchmarks/BENCHMARKS.md",
+      "line": 489,
+      "page": "benchmarks"
+    }
+  ]
+}

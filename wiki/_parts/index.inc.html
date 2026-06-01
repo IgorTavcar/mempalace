@@ -1,0 +1,150 @@
+<header class="page-head">
+  <div class="page-kicker">MemPalace Wiki</div>
+  <h1>MemPalace</h1>
+  <p class="lead">Local-first AI memory &mdash; verbatim storage, pluggable retrieval, ~96.6% R@5 with zero API calls.</p>
+</header>
+
+<div class="summary">
+  MemPalace is a memory system for AI agents and the humans who work with them: it stores every word you share <em>verbatim</em>, indexes it as a spatial &ldquo;memory palace&rdquo; of <a href="palace-model.html">wings, rooms, and drawers</a>, and retrieves it with hybrid semantic + keyword search &mdash; all on your own machine, no API key required. It never summarizes, never paraphrases, and never phones home; the index is structured so searches can be scoped, but retrieval stays unstructured enough to surface a half-remembered conversation from a vague query. This wiki is a deep, cross-linked map of how the whole thing works &mdash; written for <strong>humans</strong> browsing the architecture and for <strong>agents</strong> grepping for the exact module, symbol, and line that does the thing. Start anywhere: every page links to its neighbors, and the <a href="#palace-graph">graph below</a> shows how the areas connect.
+</div>
+<div class="stat-grid">
+  <div class="stat"><div class="num">~30k</div><div class="lbl">lines of Python</div></div>
+  <div class="stat"><div class="num">~48</div><div class="lbl">modules</div></div>
+  <div class="stat"><div class="num">29</div><div class="lbl">MCP tools</div></div>
+  <div class="stat"><div class="num">14</div><div class="lbl">UI locales</div></div>
+  <div class="stat"><div class="num">96.6%</div><div class="lbl">R@5 raw, zero LLM</div></div>
+  <div class="stat"><div class="num">3.3.6</div><div class="lbl">current version</div></div>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 The core idea</div>
+  <p>
+    MemPalace separates <strong>storage</strong> from <strong>retrieval</strong>: content is stored <em>verbatim</em> in drawers (never lossy), indexed by a <em>structured</em> symbolic layer (<a href="aaak-dialect.html">AAAK closets</a>: entities, topics, quotes), and pulled back by <em>unstructured</em> hybrid search (vector + BM25). The index is a ranking signal, never a gate &mdash; a weak or missing pointer can only help a search, never hide a drawer &mdash; which is why 100% recall is the design requirement rather than a side effect. Store it structured, find it unstructured.
+  </p>
+</div>
+
+<h2 id="palace-graph">The knowledge graph</h2>
+<p>
+  MemPalace has three concerns &mdash; getting data <em>in</em> (ingestion), getting it <em>out</em> (retrieval), and the interfaces that drive both. The diagram below maps the major areas and the real dependencies between them. Click any node to open its page.
+</p>
+<div class="graph-wrap">
+<pre class="mermaid">graph LR
+  subgraph Ingestion
+    mining_projects["Project Mining"]
+    mining_convos["Conversation Mining"]
+    entities["Entity System"]
+    aaak["AAAK Dialect &amp; Closets"]
+  end
+  subgraph Retrieval
+    search["Search &amp; Retrieval"]
+    backends["Storage Backends"]
+    kg["Knowledge Graph"]
+  end
+  subgraph Interfaces
+    cli["CLI"]
+    mcp["MCP Server"]
+    hooks["Hooks &amp; Auto-save"]
+  end
+  subgraph Core
+    palace["Palace Model"]
+    arch["Architecture"]
+  end
+
+  mining_projects --> palace
+  mining_convos --> palace
+  hooks --> mining_convos
+  entities --> palace
+  entities --> kg
+  aaak --> search
+  palace --> search
+  search --> backends
+  mining_projects --> entities
+  cli --> mining_projects
+  cli --> search
+  mcp --> palace
+  mcp --> kg
+  mcp --> search
+  kg --> search
+  arch --> palace
+
+  click mining_projects "mining-projects.html"
+  click mining_convos "mining-conversations.html"
+  click entities "entities.html"
+  click aaak "aaak-dialect.html"
+  click search "search.html"
+  click backends "backends.html"
+  click kg "knowledge-graph.html"
+  click cli "cli.html"
+  click mcp "mcp-server.html"
+  click hooks "hooks.html"
+  click palace "palace-model.html"
+  click arch "architecture.html"</pre>
+</div>
+
+<h2 id="explore">Explore the palace</h2>
+<div class="tile-grid">
+  <a class="tile" href="architecture.html"><div class="tile-icon">🏛️</div><h3>Architecture</h3><p>The component map, the L0&ndash;L3 wake-up stack, and the five non-negotiable principles.</p></a>
+  <a class="tile" href="palace-model.html"><div class="tile-icon">🗝️</div><h3>The Palace Model</h3><p>Wings, rooms, drawers, closets, hallways, tunnels, and the living-connection dynamics.</p></a>
+  <a class="tile" href="mining-projects.html"><div class="tile-icon">⛏️</div><h3>Project Mining</h3><p>Turning a directory tree of files into verbatim, idempotently-stored, searchable drawers.</p></a>
+  <a class="tile" href="mining-conversations.html"><div class="tile-icon">💬</div><h3>Conversation Mining</h3><p>Normalizing chat exports &mdash; Claude Code, ChatGPT, Gemini, Slack &mdash; and filing them message by message.</p></a>
+  <a class="tile" href="entities.html"><div class="tile-icon">🧑‍🤝‍🧑</div><h3>Entity System</h3><p>Auto-detecting and disambiguating the people, projects, and systems in your text.</p></a>
+  <a class="tile" href="aaak-dialect.html"><div class="tile-icon">🃏</div><h3>AAAK Dialect &amp; Closets</h3><p>A compact symbolic index an LLM can scan in one pass to know exactly which drawer to open.</p></a>
+  <a class="tile" href="search.html"><div class="tile-icon">🔎</div><h3>Search &amp; Retrieval</h3><p>Hybrid BM25 + vector retrieval tuned for 100% recall, with closets as a boost not a gate.</p></a>
+  <a class="tile" href="knowledge-graph.html"><div class="tile-icon">🕸️</div><h3>Temporal Knowledge Graph</h3><p>Entity&rarr;predicate&rarr;entity facts with validity windows, in local SQLite, queryable by time.</p></a>
+  <a class="tile" href="backends.html"><div class="tile-icon">🔌</div><h3>Storage Backends</h3><p>A pluggable typed storage interface &mdash; ChromaDB today, anything you subclass tomorrow.</p></a>
+  <a class="tile" href="cli.html"><div class="tile-icon">⌨️</div><h3>CLI &amp; Onboarding</h3><p>The human entry point: init, mine, search, wake-up, status, repair, and guided first-run.</p></a>
+  <a class="tile" href="mcp-server.html"><div class="tile-icon">🛠️</div><h3>MCP Server &amp; Tools</h3><p>Around 29 Model-Context-Protocol tools that let an agent live inside the palace.</p></a>
+  <a class="tile" href="hooks.html"><div class="tile-icon">🪝</div><h3>Hooks &amp; Auto-save</h3><p>Background filing that keeps memory off the chat window and under the performance budget.</p></a>
+  <a class="tile" href="llm-integration.html"><div class="tile-icon">🤖</div><h3>LLM Integration</h3><p>Optional, local-first LLM assistance &mdash; Ollama by default, external BYOK never silently.</p></a>
+  <a class="tile" href="i18n.html"><div class="tile-icon">🌍</div><h3>Internationalization</h3><p>14 UI locales, 100+ embedding languages, and non-Latin entity detection.</p></a>
+  <a class="tile" href="security-privacy.html"><div class="tile-icon">🔒</div><h3>Security &amp; Privacy</h3><p>Privacy by architecture, plus input validation, prompt-contamination defense, and hardening.</p></a>
+  <a class="tile" href="maintenance.html"><div class="tile-icon">🧹</div><h3>Repair, Sync &amp; Maintenance</h3><p>Keeping a long-lived palace consistent, deduplicated, and recoverable &mdash; never destructively.</p></a>
+  <a class="tile" href="benchmarks.html"><div class="tile-icon">📊</div><h3>Benchmarks</h3><p>Reproducible recall numbers across LongMemEval, LoCoMo, and ConvoMem &mdash; honest methodology.</p></a>
+  <a class="tile" href="glossary.html"><div class="tile-icon">📖</div><h3>Glossary</h3><p>Every palace term in one place: wing, room, drawer, closet, hallway, tunnel, AAAK, and more.</p></a>
+  <a class="tile" href="surprises.html"><div class="tile-icon">✨</div><h3>Surprises &amp; Gotchas</h3><p>The non-obvious design decisions, sharp edges, and clever details scattered across the codebase.</p></a>
+</div>
+
+<h2 id="principles">Design principles</h2>
+<p>
+  These come straight from <code>CLAUDE.md</code> and are described there as <em>non-negotiable</em> &mdash; every PR, feature, and refactor must honor them. They are the constitution that every other page enforces in code.
+</p>
+<dl class="concepts">
+  <dt>Verbatim always</dt>
+  <dd>Never summarize, paraphrase, or lossy-compress user data. The system searches the index and returns the original words &mdash; whitespace, code formatting, and all. This is the foundational promise; see <a href="palace-model.html">drawers</a>.</dd>
+  <dt>Incremental only</dt>
+  <dd>Append-only ingest after the initial build. Never destroy existing data to rebuild &mdash; a crash mid-operation must leave the existing palace untouched. Re-mining a file deletes only that file&rsquo;s stale drawers, then inserts fresh ones. See <a href="mining-projects.html">project mining</a> and <a href="maintenance.html">maintenance</a>.</dd>
+  <dt>Entity-first</dt>
+  <dd>Everything is keyed by real names, disambiguated by DOB, ID, or context. People matter more than topics &mdash; the <a href="entities.html">entity system</a> and <a href="knowledge-graph.html">knowledge graph</a> embody this.</dd>
+  <dt>Local-first, zero external API by default</dt>
+  <dd>All extraction, chunking, embedding, and LLM-assisted refinement runs on your machine using local runtimes (Ollama, LM Studio, llama.cpp). External providers are BYOK only &mdash; never required, never a silent fallback. See <a href="llm-integration.html">LLM integration</a>.</dd>
+  <dt>Performance budgets</dt>
+  <dd>Hooks under 500&nbsp;ms; startup injection under 100&nbsp;ms. Memory should feel instant, so the <a href="hooks.html">hooks</a> and the wake-up stack are tuned to stay off the critical path.</dd>
+  <dt>Privacy by architecture</dt>
+  <dd>The system physically cannot leak your data because it never leaves your machine &mdash; no telemetry, no phone-home, no external dependency for core operations. See <a href="security-privacy.html">security &amp; privacy</a>.</dd>
+  <dt>Background everything</dt>
+  <dd>Filing, indexing, timestamps, and pipeline work happen via background <a href="hooks.html">hooks</a>. Nothing interrupts the conversation, and zero tokens are spent on bookkeeping in the chat window &mdash; roughly USD&nbsp;1 saved per session.</dd>
+</dl>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Why &ldquo;background everything&rdquo; matters</div>
+  <p>
+    In earlier versions the diary write fired <em>in the chat window</em>, re-transmitting the same blocks every turn at about USD&nbsp;1.13 per session. Moving filing, timestamping, and palace writes into background <a href="hooks.html">hooks</a> dropped that to zero &mdash; the content never enters the context window at all. Performance budgets (hooks &lt; 500&nbsp;ms, injection &lt; 100&nbsp;ms) keep memory invisible and instant.
+  </p>
+</div>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Privacy is structural, not a setting</div>
+  <p>
+    There is no &ldquo;cloud sync&rdquo; toggle to forget to turn off. Core operations &mdash; mining, embedding, search, the knowledge graph &mdash; run entirely on localhost, so the system <em>cannot</em> exfiltrate data it never sends. External LLMs are an explicit, per-use BYOK choice that triggers a privacy warning, never a silent default. See <a href="security-privacy.html">Security &amp; Privacy</a>.
+  </p>
+</div>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">The full component map, the wake-up stack, and how the principles are enforced in code.</div></a>
+    <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">Method-of-loci + Zettelkasten mapped onto wings, rooms, drawers, closets, and tunnels.</div></a>
+    <a class="related-card" href="glossary.html"><span class="rc-group">Overview</span><div class="rc-title">Glossary</div><div class="rc-desc">Definitions for every palace term used across the wiki, in one searchable place.</div></a>
+    <a class="related-card" href="surprises.html"><span class="rc-group">Overview</span><div class="rc-title">Surprises &amp; Gotchas</div><div class="rc-desc">The non-obvious details and sharp edges that make the system tick &mdash; worth reading early.</div></a>
+  </div>
+</div>

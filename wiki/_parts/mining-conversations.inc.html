@@ -1,0 +1,253 @@
+<header class="page-head">
+  <div class="page-kicker">Ingestion</div>
+  <h1>Conversation Mining</h1>
+  <p class="lead">Normalizing AI chat transcripts and filing them verbatim, message by message.</p>
+</header>
+
+<div class="summary">
+  MemPalace converts diverse chat export formats — Claude Code JSONL, ChatGPT, Gemini CLI, OpenAI Codex, Slack, and Claude.ai JSON — into a canonical <code>&gt;</code>-prefixed transcript via the <code>--mode convos</code> pipeline. The primary miner chunks by exchange pair (question + answer) or extracts five memory types in general mode, while a secondary <em>sweeper</em> catches per-message outliers that fall between file-level chunk boundaries. A separate diary path files daily summaries atomically per day with SHA-256 change detection, and an RFC&nbsp;002 adapter contract opens the door to pluggable third-party sources.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+<p>
+  Conversation mining is a multi-path pipeline. Files enter through <code>scan_convos</code>, are auto-detected and normalized to a transcript, then chunked into drawers within the <a href="palace-model.html">palace model</a>. Two ingest paths run independently — a fast file-level miner and a resume-safe message-level sweep — plus a dedicated diary ingest. Unlike <a href="mining-projects.html">project mining</a>, which chunks at fixed character size, conversation mining preserves conversational structure as the primary unit.
+</p>
+
+<h3>Format detection &amp; normalization</h3>
+<p>
+  The <code>normalize</code> function (<code>normalize.py:113</code>) auto-detects the export format from file extension and content shape, then dispatches to format-specific parsers (Claude Code JSONL, ChatGPT mapping tree, Gemini CLI, Slack JSON export, and more). Each parser extracts <code>(role, text)</code> message pairs and converts them to the canonical <code>&gt;</code>-prefixed transcript. System tags, hook output, and tool-result content are selectively stripped or truncated to remove noise without losing substance.
+</p>
+<div class="code-caption">normalize.py:632 · role/text pairs → &gt;-prefixed transcript</div>
+<pre><code class="language-python">def _messages_to_transcript(messages: list, spellcheck: bool = True) -&gt; str:
+    """Convert [(role, text), ...] to transcript format with &gt; markers."""
+    lines = []
+    i = 0
+    while i &lt; len(messages):
+        role, text = messages[i]
+        if role == "user":
+            if _fix is not None:
+                text = _fix(text)
+            lines.append(f"&gt; {text}")
+            if i + 1 &lt; len(messages) and messages[i + 1][0] == "assistant":
+                lines.append(messages[i + 1][1])
+                i += 2
+            else:
+                i += 1
+        else:
+            lines.append(text)
+            i += 1
+        lines.append("")
+    return "\n".join(lines)</code></pre>
+
+<h3>Primary file-level mining</h3>
+<p>
+  After normalization, content is chunked by <code>chunk_exchanges</code> (<code>convo_miner.py:138</code>), which detects Q+A pairs (lines starting with <code>&gt;</code>) and groups each user turn with the AI response that follows as a single unit. If fewer than three quote-marker lines are found, the fallback chunks by paragraph breaks, then by line groups for content without paragraph structure. The <code>_emit_bounded</code> helper keeps each chunk within the <code>CHUNK_SIZE</code> limit (800 chars) while respecting <code>MIN_CHUNK_SIZE</code> (30 chars), never silently dropping trailing text. On each drawer upsert, room detection scores content against topic keywords (technical, architecture, planning, decisions, problems) and hall detection routes via cached config keywords.
+</p>
+<div class="code-caption">convo_miner.py:174 · exchange-pair chunking, AI response preserved verbatim</div>
+<pre><code class="language-python">def _chunk_by_exchange(lines: list, chunk_size: int, min_chunk_size: int) -&gt; list:
+    """One user turn (&gt;) + the AI response that follows = one or more chunks."""
+    chunks = []
+    i = 0
+    while i &lt; len(lines):
+        line = lines[i]
+        if line.strip().startswith("&gt;"):
+            user_turn = line.strip()
+            i += 1
+            ai_lines = []
+            while i &lt; len(lines):
+                next_line = lines[i]
+                if next_line.strip().startswith("&gt;") or next_line.strip().startswith("---"):
+                    break
+                if next_line.strip():
+                    ai_lines.append(next_line.strip())
+                i += 1
+            ai_response = " ".join(ai_lines)
+            content = f"{user_turn}\n{ai_response}" if ai_response else user_turn
+            _emit_bounded(chunks, content, chunk_size, min_chunk_size)
+        else:
+            i += 1
+    return chunks</code></pre>
+
+<h3>Idempotent rebuild on schema bump</h3>
+<p>
+  When <code>NORMALIZE_VERSION</code> increments (e.g. v1&nbsp;→&nbsp;v2), <code>prefetch_mined_set</code> (<code>palace.py:813</code>) scans the palace once to collect every source file already mined at the current version in a single paginated query, avoiding O(n) per-file lookups. For any source file not in that set, the file-level miner purges <em>all</em> prior drawers via <code>_source_file_delete_ids</code> (which handles legacy <code>extract_mode</code> absence) before upserting fresh chunks. Stale-version hits in <code>file_already_mined</code> return <code>False</code>, triggering purge-before-insert so pre-v2 drawers never survive alongside v2 drawers from the same source.
+</p>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p>
+    <code>prefetch_mined_set</code> (<code>convo_miner.py:608</code>) turns an O(n) flood of per-file queries into one paginated scan. On a 150k-drawer palace with 2000 files, swapping ~2&nbsp;s-per-file lookups for a single pass saves roughly an hour of wall-clock time per ingest run.
+  </p>
+</div>
+
+<h3>Message-level sweep (secondary path)</h3>
+<p>
+  The <code>sweep</code> function (<code>sweeper.py:193</code>) provides a second ingest path that bypasses file-level chunking and processes per-message records directly from Claude Code JSONL. For each <code>session_id</code> it fetches the max timestamp of existing drawers (the cursor), then iterates the JSONL. Each message gets a deterministic drawer ID keyed by <code>(session_id, message_uuid)</code>, so reruns automatically deduplicate via pre-flight existence checks — making the sweep idempotent and resume-safe. This keeps the primary miner fast and simple while the sweep runs independently on JSONL sources; the two coordinate only through deterministic IDs, never shared state.
+</p>
+<div class="code-caption">sweeper.py:268 · cursor-based skip logic for idempotent sweep</div>
+<pre><code class="language-python">for rec in parse_claude_jsonl(jsonl_path):
+    sid = rec["session_id"]
+    if sid not in cursors:
+        cursors[sid] = get_palace_cursor(collection, sid)
+    cursor = cursors[sid]
+    if cursor is not None and rec["timestamp"] &lt; cursor:
+        drawers_skipped += 1
+        continue
+    drawer_id = _drawer_id_for_message(sid, rec["uuid"])
+    document = f"{rec['role'].upper()}: {rec['content']}"
+    metadata = {
+        "session_id": sid,
+        "timestamp": rec["timestamp"],
+        "message_uuid": rec["uuid"],
+        "role": rec["role"],
+        "source_file": source_label or jsonl_path,
+        "filed_at": datetime.now().isoformat(),
+        "ingest_mode": "sweep",
+    }</code></pre>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Tie-break safety: &lt; cursor, not &le; cursor</div>
+  <p>
+    The sweep skips messages with <code>timestamp &lt; cursor</code> (strictly earlier), not <code>&le; cursor</code>. Multiple messages can share one ISO-8601 timestamp; if only some siblings were ingested before a crash, a <code>&le;</code> skip would lose the rest forever. Skipping with <code>&lt;</code> lets the deterministic drawer IDs deduplicate exactly at the cursor boundary on re-run, so resumption never drops data (<code>sweeper.py:20</code>).
+  </p>
+</div>
+
+<h3>Diary ingest with incremental detection</h3>
+<p>
+  Daily summary files (<code>*.md</code> in the diary dir) are split on <code>##</code> entry headers by <code>ingest_diaries</code> (<code>diary_ingest.py:102</code>) and stored as per-entry drawers. The function tracks entry count and a SHA-256 content hash in a per-(palace, diary-dir) state file under <code>~/.mempalace/state/</code>. On re-run, if the hash matches and <code>force=False</code>, the file is skipped entirely. If the hash differs, a full rebuild purges all prior drawers for that source file before fresh entries are written. New entries are packed into closets — indexed summaries in the <a href="aaak-dialect.html">AAAK dialect</a> — atomically grouped by topic without splitting mid-topic.
+</p>
+<div class="code-caption">diary_ingest.py:159 · content-hash detection and full-rebuild trigger</div>
+<pre><code class="language-python">state_key = f"{wing}|{diary_path.name}"
+prev_entry = state.get(state_key, {})
+prev_hash = prev_entry.get("content_hash")
+curr_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+if not force:
+    if prev_hash is not None:
+        if curr_hash == prev_hash:
+            continue
+content_changed = prev_hash is not None and curr_hash != prev_hash
+full_rebuild = force or content_changed
+if full_rebuild:
+    try:
+        drawers_col.delete(where={"source_file": source_file})
+    except Exception as exc:
+        logger.debug("legacy purge skipped for %s: %s", source_file, exc, exc_info=True)</code></pre>
+
+<h3>RFC 002 plugin scaffolding</h3>
+<p>
+  The <code>sources/</code> module defines the <code>BaseSourceAdapter</code> contract (<code>base.py:164</code>), registry discovery via entry points (<code>registry.py</code>), a transformation pipeline (<code>transforms.py</code>), and a <code>PalaceContext</code> facade (<code>context.py:48</code>). Third-party adapters register through setuptools entry points (<code>mempalace.sources</code>) and declare their metadata schema, supported modes (<code>chunked_content</code> / <code>whole_record</code>), and transformations (<code>utf8_replace_invalid</code>, <code>whitespace_collapse_internal</code>, <code>strip_tool_chrome</code>, …). A conformance suite verifies that adapter output can be reproduced from source bytes using only the declared transformations, in order. Adapters yield <code>SourceItemMetadata</code> ahead of <code>DrawerRecord</code> for lazy-fetch optimization, and core checks <code>is_current</code> to skip already-ingested items; an empty <code>declared_transformations</code> set marks a byte-preserving adapter.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Exchange pair</dt>
+  <dd>One user turn (prefixed <code>&gt;</code>) plus the AI response that follows; the primary chunking unit in conversation mining, preserving Q+A semantics rather than arbitrary character boundaries.</dd>
+  <dt>Extract mode</dt>
+  <dd>Chunking strategy: <code>exchange</code> (default) preserves conversation structure, while <code>general</code> applies heuristic keyword matching to extract five memory types (decisions, preferences, milestones, problems, emotional) with per-chunk classification.</dd>
+  <dt>Normalization</dt>
+  <dd>Format auto-detection and conversion of diverse chat export schemas (7+ formats) to a canonical <code>&gt;</code>-prefixed transcript with noise stripping and tool-result truncation.</dd>
+  <dt>Drawer sweep</dt>
+  <dd>Timestamp-coordinated, idempotent message-level ingestion that catches individual messages missed by file-level chunking; uses a cursor and deterministic IDs to resume cleanly after crashes.</dd>
+  <dt>NORMALIZE_VERSION</dt>
+  <dd>Schema versioning constant (v2) that gates incremental ingest and triggers auto-purge of pre-v2 drawers on schema bumps, preventing mixed old/new rows in the same source.</dd>
+  <dt>Wing resolution</dt>
+  <dd>Heuristic routing that auto-defaults conversation files from <code>.claude/projects</code>, <code>.codex</code>, or <code>.gemini</code> to <code>wing_api</code>, with fallback to dirname-based slugification for other sources.</dd>
+  <dt>Closet packing</dt>
+  <dd>Atomic grouping of diary topics into fixed-character closets (indexed summaries) that never split mid-topic, with full rebuild on content changes to prevent orphaned closets.</dd>
+  <dt>Incremental state</dt>
+  <dd>Per-(palace, diary-dir) state file tracking content hash and entry count to skip unchanged diary files and detect in-place edits without re-ingesting entire days.</dd>
+  <dt>RFC 002 source adapters</dt>
+  <dd>Pluggable ingestion contract (<code>BaseSourceAdapter</code>) for third-party sources (Cursor, GitHub, Slack APIs) with declared transformations, metadata schema, and privacy class.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<h3>Noise stripping: line-anchored patterns only</h3>
+<p>
+  All noise-removal patterns (<code>_NOISE_TAG_PATTERNS</code>, <code>_NOISE_LINE_PATTERNS</code>, <code>_HOOK_LINE_RE</code>, <code>_COLLAPSED_LINES_RE</code>) are anchored to line boundaries and refuse to cross blank lines (<code>normalize.py:40</code>). This prevents a stray unclosed tag or malformed hook line in one message from eating content in adjacent messages. After stripping, consecutive blank-line runs collapse to at most three blank lines (<code>strip_noise</code>, <code>normalize.py:93</code>).
+</p>
+
+<h3>Tool-result formatting: head/tail windows</h3>
+<p>
+  Bash tool results are sampled with a head (20 lines) plus tail (20 lines) window when output exceeds 40 lines, with a marker for omitted lines (<code>normalize.py:564</code>). Grep/Glob results cap at 20 matches. Read/Edit/Write results are omitted entirely (the content already lives in the palace or git). Unknown tools fall back to a 2048-byte cap. Crucially, this truncation is applied per-message and never across message boundaries.
+</p>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Slack speakers are positional, not verified</div>
+  <p>
+    Slack exports have no inherent <code>user</code> or <code>assistant</code> role. The parser (<code>normalize.py:446</code>) assigns alternating roles to distinct speaker IDs and prefixes each message with the speaker ID so downstream chunking (which relies on <code>&gt;</code> markers) still works. A provenance footer marks the transcript as Slack-imported so consumers know the speaker roles are positional, not authenticated.
+  </p>
+</div>
+
+<h3>Per-chunk memory-type rooms</h3>
+<p>
+  In <code>general</code> extract mode, chunks from <code>general_extractor</code> carry a per-chunk <code>memory_type</code> — decision, preference, milestone, problem, or emotional (<code>convo_miner.py:419</code>). Rather than assigning a single file-level room, each chunk's <code>memory_type</code> becomes its drawer room, and room-count deltas accumulate per chunk rather than per file, allowing fine-grained room stats.
+</p>
+
+<details class="collapsible">
+  <summary>Edge cases &amp; details</summary>
+  <ul>
+    <li><strong>Wing resolution heuristic</strong> (<code>convo_miner.py:456</code>): <code>_is_ai_tool_path</code> detects <code>.claude/projects</code> (not <code>.claude</code> itself), <code>.codex</code>, and <code>.gemini</code> path segments; <code>_resolve_wing</code> then defaults such sources to <code>wing_api</code>, grouping Claude Code, Codex, and Gemini conversations under one wing. Other sources fall back to <code>normalize_wing_name</code> on the directory basename.</li>
+    <li><strong>Honest rerun metrics</strong> (<code>sweeper.py:183</code>, <code>sweeper.py:237</code>): <code>sweep_id = f"sweep_{session_id}_{message_uuid}"</code> and a pre-flight existence check count new vs. already-present rows separately, so rerun counts never inflate.</li>
+    <li><strong>Stale-drawer purge</strong> (<code>convo_miner.py:395</code>): legacy drawers without <code>extract_mode</code> metadata are treated as <code>exchange</code> mode for cleanup, allowing old/new coexistence only within the current schema.</li>
+    <li><strong>Diary full rebuild on in-place edits</strong> (<code>diary_ingest.py:171</code>): if the content hash changes but entry count stays the same, a full rebuild still fires and purge-before-insert (<code>diary_ingest.py:205</code>) clears orphaned closets.</li>
+    <li><strong>Legacy state fallback</strong> (<code>diary_ingest.py:152</code>): state without <code>content_hash</code> falls back to size comparison, then backfills the hash.</li>
+  </ul>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>mine_convos</td><td>func</td><td><code>convo_miner.py:510</code></td><td>Entry point for file-level conversation mining; acquires the palace lock and calls <code>_mine_convos_impl</code> with the ingest mode (exchange or general).</td></tr>
+    <tr><td>normalize</td><td>func</td><td><code>normalize.py:113</code></td><td>Auto-detects chat export format and normalizes to a <code>&gt;</code>-prefixed transcript; dispatches to format-specific parsers.</td></tr>
+    <tr><td>chunk_exchanges</td><td>func</td><td><code>convo_miner.py:138</code></td><td>Primary chunking strategy: groups user turns (<code>&gt;</code>) with AI responses, falling back to paragraph/line-group chunking.</td></tr>
+    <tr><td>sweep</td><td>func</td><td><code>sweeper.py:193</code></td><td>Message-level secondary ingestion path; uses a cursor plus deterministic IDs for idempotent, resume-safe per-message mining.</td></tr>
+    <tr><td>ingest_diaries</td><td>func</td><td><code>diary_ingest.py:102</code></td><td>Ingests daily summaries with incremental change detection; splits by <code>##</code> headers, packs closets, purges stale closets on rebuild.</td></tr>
+    <tr><td>strip_noise</td><td>func</td><td><code>normalize.py:93</code></td><td>Removes Claude Code system tags, hook output, and UI chrome using line-anchored patterns that refuse to cross blank lines.</td></tr>
+    <tr><td>prefetch_mined_set</td><td>func</td><td><code>palace.py:813</code></td><td>Single paginated scan collecting all source files at the current <code>NORMALIZE_VERSION</code>, enabling O(1) skip checks.</td></tr>
+    <tr><td>BaseSourceAdapter</td><td>class</td><td><code>sources/base.py:164</code></td><td>Abstract contract for RFC 002 source adapters; defines <code>ingest()</code>, <code>describe_schema()</code>, <code>is_current()</code>, and transformation declarations.</td></tr>
+    <tr><td>get_adapter</td><td>func</td><td><code>sources/registry.py:111</code></td><td>Returns a cached adapter instance; discovers entry points on first call and caches instances per adapter name.</td></tr>
+    <tr><td>PalaceContext</td><td>class</td><td><code>sources/context.py:48</code></td><td>Facade passed to adapters; bundles drawer/closet collections, knowledge graph, config, and progress hooks, shielding adapters from direct palace imports.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Exchange pair as chunking unit (not fixed char size)</dt>
+  <dd>Preserving Q+A semantics keeps a user's question and the AI's answer together in one drawer, making <a href="search.html">search</a> results coherent and enabling exchange-level retrieval. Fixed-char chunking — as used in project mining — would split exchange pairs arbitrarily and lose context. The fallback to paragraph-then-line-group chunking accommodates content without quote markers.</dd>
+  <dt>Extract mode as a dual path (exchange vs. general memory types)</dt>
+  <dd>Exchange mode serves conversation-as-conversation use cases; general mode supports decision/preference/problem tracking for non-conversational summaries like meeting notes and journaling. Making it a per-ingest flag (not a runtime toggle) gives each source consistent room classification, and the state file gates incremental re-runs per mode.</dd>
+  <dt>Per-message sweep as a secondary path, not primary</dt>
+  <dd>The sweeper catches individual messages that fall between file-level chunk boundaries without adding complexity to the primary miner. Separation of concerns keeps the file miner fast and simple while the sweep runs independently on JSONL sources, coordinating only through idempotent drawer IDs.</dd>
+  <dt>Wing auto-detection from path, fallback to dirname</dt>
+  <dd>Claude Code / Codex / Gemini conversations are API-sourced and group under <code>wing_api</code> by default, not per-project. A user-provided <code>--wing</code> always wins. For non-AI-tool sources, the dirname basename is more useful than a generic API label; <code>_resolve_wing</code> centralizes this fallback ordering.</dd>
+  <dt>Diary state file in <code>~/.mempalace/state/</code>, not the user's diary dir</dt>
+  <dd>State files should not clutter user content directories or risk accidental edits. Keying by <code>sha256(palace_path|diary_dir)</code> lets multiple diary folders map to the same palace without conflicts, and enables incremental ingest plus in-place edit detection without re-hashing unchanged content every run.</dd>
+</dl>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Stale rows never coexist across schema versions</div>
+  <p>
+    When <code>NORMALIZE_VERSION</code> bumps v1&nbsp;→&nbsp;v2, <code>_source_file_delete_ids</code> (<code>convo_miner.py:395</code>) filters by <code>extract_mode</code> and removes every pre-v2 drawer for a source before upserting fresh chunks. This guarantees schema bumps apply uniformly — mixed-schema rows are impossible — and incremental reruns stay safe.
+  </p>
+</div>
+
+<h2>Data flow</h2>
+<p>
+  Chat export files enter via <code>scan_convos</code>, are auto-detected and normalized to the <code>&gt;</code>-prefixed transcript format by <code>normalize.py</code>, then chunked by <code>convo_miner.py</code> as either exchange pairs or general memory types. Each chunk is assigned a room via keyword scoring and a hall via cached config keywords, and gets a deterministic drawer ID — <code>sha256(source_file|extract_mode|chunk_index)[:24]</code>. On ingest, pre-v2 drawers are purged, then fresh chunks are upserted in batches with metadata (wing, room, hall, <code>filed_at</code>, <code>normalize_version</code>, <code>extract_mode</code>).
+</p>
+<p>
+  In parallel, the sweep path processes Claude Code JSONL message-by-message, with per-message drawer IDs keyed by <code>(session_id, uuid)</code> and timestamp-cursor logic to resume safely. Diary files follow a third path: split by <code>##</code> entry headers, hashed for change detection, and upserted per-entry with closet packing for indexed summaries. All paths stamp <code>ingest_mode</code> (<code>convos</code>, <code>sweep</code>, or <code>diary</code>) and <code>source_file</code> for provenance. RFC 002 source adapters declare their transformations and are invoked through a <code>PalaceContext</code> facade that shields them from direct palace imports. Drawer and closet collections sit behind the RFC 001 <a href="backends.html">backend abstraction</a>, so mining is format-agnostic across Chroma, SQLite, and others.
+</p>
+
+<div class="related"><h2>See also</h2><div class="related-grid">
+  <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">How conversation mining fits the broader ingest → search → retrieve pipeline.</div></a>
+  <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">The drawer/closet/hall structure that mining populates and routes into.</div></a>
+  <a class="related-card" href="mining-projects.html"><span class="rc-group">Ingestion</span><div class="rc-title">Project Mining</div><div class="rc-desc">The sibling pipeline that chunks at fixed char size instead of exchange pairs.</div></a>
+  <a class="related-card" href="entities.html"><span class="rc-group">Ingestion</span><div class="rc-title">Entity System</div><div class="rc-desc">Entity extraction tags drawer metadata for filterable search; diary ingest stamps entities too.</div></a>
+  <a class="related-card" href="aaak-dialect.html"><span class="rc-group">Ingestion</span><div class="rc-title">AAAK Dialect &amp; Closets</div><div class="rc-desc">The dialect diary closets use for indexed summaries packed without splitting mid-topic.</div></a>
+  <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Why normalization computes room, hall, and entity metadata that filters query results.</div></a>
+</div></div>

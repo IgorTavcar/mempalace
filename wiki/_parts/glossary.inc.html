@@ -1,0 +1,660 @@
+<header class="page-head">
+  <div class="page-kicker">Overview</div>
+  <h1>Glossary</h1>
+  <p class="lead">Every term in the palace, defined and linked.</p>
+</header>
+
+<div class="summary">
+  One alphabetized reference for the whole MemPalace vocabulary &mdash; the spatial model (wings, rooms,
+  drawers, closets, hallways, tunnels), the retrieval stack (hybrid BM25 + vector, HNSW, the L0&ndash;L3
+  wake-up layers), the ingestion machinery (AAAK dialect, incremental ingest, sweeps, entity disambiguation),
+  and the cross-cutting principles (local-first, BYOK, privacy by architecture). Each definition ends with a
+  <strong>&rarr;</strong> pointer to the page that covers it in depth.
+</div>
+
+<div id="toc"></div>
+
+<p class="note">
+  Jump to a letter:
+  <a href="#A">A</a> &middot; <a href="#B">B</a> &middot; <a href="#C">C</a> &middot; <a href="#D">D</a> &middot;
+  <a href="#E">E</a> &middot; <a href="#F">F</a> &middot; <a href="#G">G</a> &middot; <a href="#H">H</a> &middot;
+  <a href="#I">I</a> &middot; <a href="#J">J</a> &middot; <a href="#K">K</a> &middot; <a href="#L">L</a> &middot;
+  <a href="#M">M</a> &middot; <a href="#N">N</a> &middot; <a href="#O">O</a> &middot; <a href="#P">P</a> &middot;
+  <a href="#Q">Q</a> &middot; <a href="#R">R</a> &middot; <a href="#S">S</a> &middot; <a href="#T">T</a> &middot;
+  <a href="#U">U</a> &middot; <a href="#V">V</a> &middot; <a href="#W">W</a> &middot; <a href="#Z">Z</a>
+</p>
+
+<h2 id="A">A</h2>
+<dl class="concepts">
+  <dt>AAAK Dialect</dt>
+  <dd>A structured symbolic summarization format that extracts entities (people), topics (key phrases), quotes
+    (5&ndash;55 char snippets), emotional tone codes (up to 3 per line, e.g. <code>vul+joy</code>), and importance
+    flags (ORIGIN, CORE, PIVOT) into pipe-separated lines any LLM can scan in a single pass &mdash; without
+    decompression. It is lossy by selection, never by destruction: the drawers still hold the verbatim text.
+    &rarr; <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></dd>
+
+  <dt>Agent Personas</dt>
+  <dd>Names a user has assigned to the AI agents they converse with (Echo, Sparrow, Claude-instance-2). Tier 2
+    LLM corpus-origin detection extracts them, and candidates matching a persona name are reclassified out of the
+    <em>people</em> bucket into <code>agent_personas</code> to prevent false family/relationship inference.
+    &rarr; <a href="entities.html">Entity System</a></dd>
+
+  <dt>as_of (temporal query)</dt>
+  <dd>A knowledge-graph query parameter returning only facts valid at a specified instant. A date-only value like
+    <code>as_of=2026-01-15</code> normalizes to <code>T00:00:00Z</code>, and the comparison logic handles both legacy
+    date-only values and canonical UTC datetimes. &rarr; <a href="knowledge-graph.html">Temporal Knowledge Graph</a></dd>
+
+  <dt>auto_save</dt>
+  <dd>Boolean config flag (<code>hooks.auto_save</code>, default <code>True</code>) that gates all Stop and PreCompact
+    hook functionality. When <code>False</code>, hooks pass through silently and do no background filing.
+    &rarr; <a href="hooks.html">Hooks &amp; Auto-save</a></dd>
+</dl>
+
+<h2 id="B">B</h2>
+<dl class="concepts">
+  <dt>BaseBackend</dt>
+  <dd>The per-palace factory contract (RFC 001): owns <code>get_collection</code>, <code>close_palace</code>,
+    <code>health</code>, and optional detect hooks. Lightweight on construction (no I/O); connection is deferred to
+    <code>get_collection</code> and it is thread-safe for concurrent multi-palace access.
+    &rarr; <a href="backends.html">Storage Backends</a></dd>
+
+  <dt>BaseCollection</dt>
+  <dd>The abstract per-collection interface every backend must implement: <code>add</code>, <code>upsert</code>,
+    <code>query</code>, <code>get</code>, <code>delete</code>, <code>count</code>, and optional
+    <code>update</code>/<code>health</code>/<code>close</code>. The read/write contract consumed by miners, searchers,
+    and repair tools. &rarr; <a href="backends.html">Storage Backends</a></dd>
+
+  <dt>BCP 47 Language Tag</dt>
+  <dd>The standardized, case-insensitive language code (RFC 5646). MemPalace normalizes via
+    <code>_canonical_lang()</code> so <code>PT-BR</code>, <code>pt-br</code>, and <code>Pt-Br</code> all resolve to the
+    same locale file. &rarr; <a href="i18n.html">Internationalization</a></dd>
+
+  <dt>BM25 (Okapi-BM25)</dt>
+  <dd>The probabilistic keyword-matching algorithm that scores documents by term frequency and inverse document
+    frequency (IDF), tuned with <code>k1=1.5</code> and <code>b=0.75</code>. In MemPalace, IDF is computed over the
+    candidate set (not the whole corpus) and BM25 also powers the FTS5 fallback when the vector index is unusable.
+    &rarr; <a href="search.html">Search &amp; Retrieval</a></dd>
+
+  <dt>BYOK (Bring Your Own Key)</dt>
+  <dd>The policy for external LLM providers: they are supported only when a user explicitly supplies credentials, and
+    are never enabled silently or by default. Local inference (Ollama/LM Studio/llama.cpp) needs no key.
+    &rarr; <a href="llm-integration.html">LLM Integration</a></dd>
+</dl>
+
+<h2 id="C">C</h2>
+<dl class="concepts">
+  <dt>Cache Invalidation</dt>
+  <dd>Detection of external writes to <code>chroma.sqlite3</code> via inode + mtime checks, forcing a ChromaDB
+    client/collection rebuild so the MCP server never serves results off a stale HNSW index.
+    &rarr; <a href="mcp-server.html">MCP Server &amp; Tools</a></dd>
+
+  <dt>Candidate strategy</dt>
+  <dd>The policy for gathering candidates before hybrid re-rank: <code>vector</code> (default) takes the top
+    <code>n_results*3</code> from HNSW, while <code>union</code> also pulls BM25-only candidates from SQLite FTS5 to
+    widen the re-rank pool. &rarr; <a href="search.html">Search &amp; Retrieval</a></dd>
+
+  <dt>Closet</dt>
+  <dd>A searchable index record in the <code>mempalace_closets</code> collection holding compact
+    topic&middot;entity&middot;quote pointer lines that reference one or more drawers. Built during mining
+    (extract&rarr;pointer&rarr;pack, greedily up to 1,500 chars) and scanned first during search to decide which
+    verbatim drawers to fetch. &rarr; <a href="palace-model.html">The Palace Model</a></dd>
+
+  <dt>Closet boost</dt>
+  <dd>A ranking signal: when a query matches a closet, the effective cosine distance of drawers from its source file
+    is reduced by 4&ndash;40% (rank-based, clamped to <code>[0, 2]</code>). Closets are boosts, <em>never gates</em>,
+    so a weak closet can only help a result, never hide one. &rarr; <a href="search.html">Search &amp; Retrieval</a></dd>
+
+  <dt>Closet packing</dt>
+  <dd>Atomic grouping of pointer lines into fixed-character closets that never split mid-topic, packed greedily up to
+    <code>CLOSET_CHAR_LIMIT=1500</code>; a re-mine does a full rebuild to avoid orphaned closets.
+    &rarr; <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></dd>
+
+  <dt>COCA Content-Word Filter</dt>
+  <dd>A frozenset of ~600 common English words (<em>code, phase, brutal, line, note</em>) that appear capitalized but
+    are not proper nouns. It blocks false-positive entity detection on sentence-start words; multi-word candidates
+    intentionally bypass it so compounds like <em>Claude Code</em> survive.
+    &rarr; <a href="entities.html">Entity System</a></dd>
+
+  <dt>Combining Mark</dt>
+  <dd>A non-spacing diacritical mark (Unicode Mc/Mn), e.g. a Hindi matra (&#x093E;) or Arabic vowel. Python's
+    <code>\b</code> word boundary ignores them and truncates names, so MemPalace uses script-aware lookaround
+    boundaries instead. &rarr; <a href="i18n.html">Internationalization</a></dd>
+
+  <dt>Confidence score</dt>
+  <dd>A per-triple float (default <code>1.0</code>) recording certainty in a knowledge-graph fact. Stored but not yet
+    used in ranking; reserved for future fact-assessment and conflict resolution.
+    &rarr; <a href="knowledge-graph.html">Temporal Knowledge Graph</a></dd>
+
+  <dt>Corpus-Origin Detection</dt>
+  <dd>A two-tier system that decides whether a corpus is AI-dialogue or human narrative. Tier 1 is a fast brand-term
+    regex heuristic (always on, no API); Tier 2 is an optional LLM pass that confirms and extracts platform identity
+    and agent-persona names &mdash; merging into, never overwriting, the heuristic.
+    &rarr; <a href="entities.html">Entity System</a></dd>
+
+  <dt>Cosine distance</dt>
+  <dd>The vector-similarity metric in the <code>[0, 2]</code> range used by ChromaDB's HNSW index (0 = identical,
+    2 = opposite). MemPalace reads it as an absolute distance, not relative-to-max, so rankings stay stable as
+    candidates are added or removed. &rarr; <a href="search.html">Search &amp; Retrieval</a></dd>
+
+  <dt>Crash-safe upsert</dt>
+  <dd>The pattern of using deterministic drawer IDs (e.g. <code>sweep_SESSION_UUID</code>) so a re-upsert
+    idempotently dedupes on reruns, making sweeps and other ingest paths resumable after a failure.
+    &rarr; <a href="maintenance.html">Repair, Sync &amp; Maintenance</a></dd>
+</dl>
+
+<h2 id="D">D</h2>
+<dl class="concepts">
+  <dt>Detached Subprocess</dt>
+  <dd>Hook-spawned mines run as fully detached processes (POSIX <code>start_new_session</code> or Windows process
+    groups), so the hook returns immediately while background filing continues.
+    &rarr; <a href="hooks.html">Hooks &amp; Auto-save</a></dd>
+
+  <dt>Diary</dt>
+  <dd>A dated journal entry or conversation log mined from a transcript. Its timestamp (ISO <code>YYYY-MM-DD</code>)
+    is taken from the filename, frontmatter, content, or mtime and stored as <code>content_date</code>, enabling
+    temporal grouping. &rarr; <a href="palace-model.html">The Palace Model</a></dd>
+
+  <dt>Disambiguation Context</dt>
+  <dd>For ambiguous words that double as common English (<em>ever, grace, may, Rose</em>),
+    <code>EntityRegistry._disambiguate()</code> weighs surrounding context against person-context patterns
+    (<em>said, with, 's</em>) and concept-context patterns (<em>have you, if you, would</em>) to adjust the
+    classification. &rarr; <a href="entities.html">Entity System</a></dd>
+
+  <dt>Drawer</dt>
+  <dd>A single chunk of verbatim source text (~800 chars), immutable once written and never summarized or
+    paraphrased. Identified by <code>drawer_WING_ROOM_SHA256(source-file+chunk-index)</code>, it is the atomic unit
+    that is queried, ranked, and returned in search results.
+    &rarr; <a href="mining-projects.html">Project Mining</a></dd>
+
+  <dt>Drawer sweep</dt>
+  <dd>Timestamp-coordinated, idempotent <em>message-level</em> ingestion that catches individual messages missed by
+    file-level chunking; a cursor and deterministic IDs let it resume cleanly after a crash.
+    &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+
+  <dt>Drawer-grep enrichment</dt>
+  <dd>When a closet-boosted match spans multiple chunks in one source file, the searcher selects the chunk with the
+    highest keyword overlap and returns it plus its immediate neighbors for context.
+    &rarr; <a href="search.html">Search &amp; Retrieval</a></dd>
+
+  <dt>Dynamics</dt>
+  <dd>The living-connection math applied to hallways and tunnels: Hebbian potentiation (strength grows on co-access),
+    Ebbinghaus decay (fades over time), and the Cepeda spacing effect (stability grows on spaced reinforcement), so
+    connections rank by real salience. &rarr; <a href="palace-model.html">The Palace Model</a></dd>
+</dl>
+
+<h2 id="E">E</h2>
+<dl class="concepts">
+  <dt>Effective distance</dt>
+  <dd>The cosine distance after closet boost is applied: <code>max(0.0, min(2.0, raw_dist - boost))</code>, kept inside
+    the valid cosine range. &rarr; <a href="search.html">Search &amp; Retrieval</a></dd>
+
+  <dt>Embedding / Embedding Function (EF)</dt>
+  <dd>A ChromaDB-compatible callable returning vector embeddings. MemPalace offers two: <code>minilm</code> (384-dim,
+    English-only, faster, ~30 MB) and <code>embeddinggemma</code> (384-dim via Matryoshka truncation, multilingual,
+    ~300 MB default, 0.88 cross-lingual cosine similarity).
+    &rarr; <a href="i18n.html">Internationalization</a></dd>
+
+  <dt>Emotion Codes</dt>
+  <dd>Short abbreviations mapping emotional tone (<code>vul</code>=vulnerability, <code>joy</code>=joy,
+    <code>fear</code>=fear&hellip;) extracted from content keywords or metadata; up to 3 per AAAK line, helping LLMs
+    prioritize emotionally significant moments. &rarr; <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></dd>
+
+  <dt>Entity disambiguation</dt>
+  <dd>Identifying person/project/concept nodes by a lowercase-slugified <code>entity_id</code> so the registry and
+    fact-checker can detect duplicates and confusion, and the knowledge graph enforces deterministic lookups via that
+    slug. &rarr; <a href="entities.html">Entity System</a></dd>
+
+  <dt>Entity Stoplist</dt>
+  <dd>A hardcoded set of 50+ words that look like proper nouns but are usually sentence-starters (<em>The, When,
+    User</em>) or weekday/month names &mdash; filtered during entity extraction so fake entities don't clutter closet
+    pointers. &rarr; <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></dd>
+
+  <dt>EntityRegistry</dt>
+  <dd>The persistent <code>~/.mempalace/entity_registry.json</code> store with three tiers &mdash; onboarding
+    (user-confirmed), learned (high-confidence detections), and wiki (Wikipedia-researched, local-only by default).
+    Tracks aliases, ambiguous flags, and relationship metadata.
+    &rarr; <a href="entities.html">Entity System</a></dd>
+
+  <dt>Exchange pair</dt>
+  <dd>One user turn (prefixed <code>&gt;</code>) plus the AI response that follows &mdash; the default chunking unit in
+    conversation mining, preserving Q+A semantics rather than arbitrary character boundaries.
+    &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+
+  <dt>Extract mode</dt>
+  <dd>A conversation chunking strategy: <code>exchange</code> (default) preserves Q+A structure, while
+    <code>general</code> uses heuristic keyword matching to extract five memory types (decisions, preferences,
+    milestones, problems, emotional). &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+
+  <dt>Extraction-cap guard</dt>
+  <dd>A repair safety check (<code>repair.py::check_extraction_safety</code>) that aborts a rebuild when the extracted
+    drawer count falls short of the SQLite ground-truth count, preventing silent data loss.
+    &rarr; <a href="maintenance.html">Repair, Sync &amp; Maintenance</a></dd>
+</dl>
+
+<h2 id="F">F</h2>
+<dl class="concepts">
+  <dt>Fact-checking</dt>
+  <dd>Offline verification of text against the entity registry (edit distance &le; 2) and the knowledge graph
+    (relationship mismatch, stale facts). Purely local, no API, zero cost.
+    &rarr; <a href="llm-integration.html">LLM Integration</a></dd>
+
+  <dt>FTS5 (Full-Text Search)</dt>
+  <dd>SQLite's full-text index that backs BM25 keyword search and the graceful BM25-only fallback. It can drift after
+    many collection deletes; <code>repair.py::_vacuum_and_rebuild_fts5</code> atomically rebuilds it without touching
+    row data. &rarr; <a href="maintenance.html">Repair, Sync &amp; Maintenance</a></dd>
+</dl>
+
+<h2 id="G">G</h2>
+<dl class="concepts">
+  <dt>Gitignore-aware sync</dt>
+  <dd><code>sync.py</code> shares the <code>GitignoreMatcher</code> infrastructure with <code>miner.py</code>, so files
+    excluded from mining are also removed from the palace during sync if they later become gitignored.
+    &rarr; <a href="maintenance.html">Repair, Sync &amp; Maintenance</a></dd>
+</dl>
+
+<h2 id="H">H</h2>
+<dl class="concepts">
+  <dt>Hall detection</dt>
+  <dd>Content-type categorization (emotional, technical, family&hellip;) from keyword scoring across the first
+    ~3,000 chars. Rooms organize by <em>topic</em>; halls organize by <em>feeling/type</em>.
+    &rarr; <a href="mining-projects.html">Project Mining</a></dd>
+
+  <dt>Hallway</dt>
+  <dd>A within-wing connector materializing entity-pair co-occurrence: if two entities appear together in 2+ drawers
+    in the same wing, a hallway records the pair, count, and rooms. Persisted in <code>hallways.json</code> with a
+    symmetric (sorted-pair) ID so re-computation upserts rather than duplicates.
+    &rarr; <a href="palace-model.html">The Palace Model</a></dd>
+
+  <dt>Held-out evaluation</dt>
+  <dd>A clean train/test split: hybrid_v4 is tuned on 50 dev questions and validated on 450 previously unseen
+    questions (98.4% R@5) to measure honest generalization, not teaching-to-the-test.
+    &rarr; <a href="benchmarks.html">Benchmarks</a></dd>
+
+  <dt>HNSW (Hierarchical Navigable Small World)</dt>
+  <dd>The approximate-nearest-neighbor vector index inside ChromaDB that powers semantic retrieval. Its element count
+    can drift from the SQLite row count (capacity drift / divergence), signalling corruption; MemPalace probes for
+    this and falls back to BM25 rather than risk a segfault.
+    &rarr; <a href="backends.html">Storage Backends</a></dd>
+
+  <dt>Hook</dt>
+  <dd>A JSON-over-stdin/stdout integration point (<code>session-start</code>, <code>stop</code>,
+    <code>precompact</code>) that lets Claude Code and Codex harnesses trigger background auto-save without
+    interrupting the chat. &rarr; <a href="hooks.html">Hooks &amp; Auto-save</a></dd>
+
+  <dt>Hybrid ranking / hybrid search</dt>
+  <dd>A two-stage retrieval: semantic top-50 candidates from the vector index, then a convex re-score of
+    <code>0.6 &times; vec_sim + 0.4 &times; bm25_norm</code> plus closet boost and temporal proximity. Lifts raw recall
+    from 96.6% to 98.4% R@5. &rarr; <a href="search.html">Search &amp; Retrieval</a></dd>
+</dl>
+
+<h2 id="I">I</h2>
+<dl class="concepts">
+  <dt>Idempotent ingest / Idempotency</dt>
+  <dd>Re-mining the same file produces deterministic drawer IDs (<code>source_file + chunk_index + SHA-256</code>), so
+    a re-run upserts the same rows instead of creating duplicates; mtime-based detection re-mines only changed files.
+    &rarr; <a href="mining-projects.html">Project Mining</a></dd>
+
+  <dt>Idempotent init</dt>
+  <dd><code>mempalace init</code> yields the same output on re-run by filtering out MemPalace's own artifacts
+    (<code>entities.json</code>, <code>mempalace.yaml</code>) from corpus-origin samples, so detection doesn't drift.
+    &rarr; <a href="cli.html">CLI &amp; Onboarding</a></dd>
+
+  <dt>Idle Auto-Exit</dt>
+  <dd>A daemon watchdog that exits the MCP process after <code>MEMPALACE_MCP_IDLE_HOURS</code> (default 8h) with no
+    requests, releasing ChromaDB file handles &mdash; important on Windows.
+    &rarr; <a href="mcp-server.html">MCP Server &amp; Tools</a></dd>
+
+  <dt>Importance Flags</dt>
+  <dd>Binary metadata tags &mdash; ORIGIN (founding moment), CORE (identity pillar), PIVOT (turning point), SENSITIVE
+    (private) &mdash; extracted from content keywords or zettel metadata to signal foundational or sensitive drawers.
+    &rarr; <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></dd>
+
+  <dt>Incremental-only invariant</dt>
+  <dd>Maintenance appends new data or deletes explicitly-marked corrupt entries, but never overwrites existing correct
+    data &mdash; a crash mid-operation leaves intact rows untouched.
+    &rarr; <a href="maintenance.html">Repair, Sync &amp; Maintenance</a></dd>
+
+  <dt>Incremental state</dt>
+  <dd>A per-(palace, diary-dir) file tracking content hash and entry count, used to skip unchanged diary files and
+    detect in-place edits without re-ingesting whole days.
+    &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+
+  <dt>Input validation sanitizers</dt>
+  <dd>Functions like <code>sanitize_name()</code>, <code>sanitize_content()</code>, and
+    <code>sanitize_kg_value()</code> that enforce safe character sets, length bounds, null-byte rejection,
+    lone-surrogate stripping, and path-traversal prevention at the API boundary.
+    &rarr; <a href="security-privacy.html">Security &amp; Privacy</a></dd>
+
+  <dt>Invalidation (KG)</dt>
+  <dd>Closing a fact by setting its <code>valid_to</code> date. The original triple is updated, not deleted, so the
+    audit trail and time-travel queries are preserved.
+    &rarr; <a href="knowledge-graph.html">Temporal Knowledge Graph</a></dd>
+</dl>
+
+<h2 id="J">J</h2>
+<dl class="concepts">
+  <dt>JSON-decode resilience</dt>
+  <dd>Multi-strategy parsing of LLM responses: raw JSON first, then extraction from markdown backticks, then a scan
+    for braced/bracketed payloads. Only if all strategies fail is the batch skipped with an error recorded.
+    &rarr; <a href="llm-integration.html">LLM Integration</a></dd>
+</dl>
+
+<h2 id="K">K</h2>
+<dl class="concepts">
+  <dt>Knowledge Graph (temporal KG)</dt>
+  <dd>A SQLite-backed temporal entity-relationship graph storing subject&rarr;predicate&rarr;object triples with
+    <code>valid_from</code>/<code>valid_to</code> dates for entity-first, time-aware reasoning.
+    &rarr; <a href="knowledge-graph.html">Temporal Knowledge Graph</a></dd>
+</dl>
+
+<h2 id="L">L</h2>
+<dl class="concepts">
+  <dt>L0&ndash;L3 Wake-up Stack</dt>
+  <dd>Four memory layers injected on demand: L0 (user identity from <code>~/.mempalace/identity.txt</code>), L1
+    (essential story auto-generated from the highest-importance drawers), L2 (on-demand wing/room retrieval), and
+    L3 (deep semantic search). L0+L1 cost ~600&ndash;900 tokens; L2/L3 add context only when needed.
+    &rarr; <a href="architecture.html">System Architecture</a></dd>
+
+  <dt>LLM endpoint validation</dt>
+  <dd>Rejection of non-HTTP(S) schemes (<code>file://</code>, <code>ftp://</code>&hellip;) in
+    <code>LLM_ENDPOINT</code> so a misconfiguration can't exfiltrate local files through a rogue endpoint.
+    &rarr; <a href="security-privacy.html">Security &amp; Privacy</a></dd>
+
+  <dt>LLM rerank</dt>
+  <dd>An optional third retrieval pass: top-K sessions plus the question go to Claude Haiku, which promotes the single
+    most relevant session to rank 1 (leaving the rest unchanged), pushing recall to &ge;99%.
+    &rarr; <a href="benchmarks.html">Benchmarks</a></dd>
+
+  <dt>Local-first principle</dt>
+  <dd>LLM assistance and embedding default to user-hosted inference on localhost (offline, no API). External providers
+    are supported only via explicit BYOK and are never enabled silently.
+    &rarr; <a href="llm-integration.html">LLM Integration</a></dd>
+
+  <dt>Lossy Summarization</dt>
+  <dd>AAAK selects key signals from content rather than compressing it, yet preserves 100% recall because the drawers
+    keep the original verbatim text &mdash; the index is a subset, but nothing is lost.
+    &rarr; <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></dd>
+</dl>
+
+<h2 id="M">M</h2>
+<dl class="concepts">
+  <dt>Matryoshka Representation Learning (MRL)</dt>
+  <dd>A training technique letting an embedding model emit useful vectors at any dimensionality.
+    <code>EmbeddinggemmaONNX</code> truncates its 768-dim output to 384-dim to be a drop-in ChromaDB replacement.
+    &rarr; <a href="i18n.html">Internationalization</a></dd>
+
+  <dt>MCP (Model Context Protocol)</dt>
+  <dd>A JSON-RPC 2.0 request/response interface over stdio that lets Claude Code and Claude Desktop invoke MemPalace's
+    ~29 tools without network round-trips, so an agent can live inside the palace.
+    &rarr; <a href="mcp-server.html">MCP Server &amp; Tools</a></dd>
+
+  <dt>Mega-file split</dt>
+  <dd>Large source files are chunked into many ~800-char drawers rather than embedded whole, so retrieval is
+    fine-grained and a single big file never dominates the index. Closets point back to the originating file.
+    &rarr; <a href="mining-projects.html">Project Mining</a></dd>
+
+  <dt>Method of Loci</dt>
+  <dd>The ancient &ldquo;memory palace&rdquo; mnemonic of placing items in imagined spatial locations. MemPalace maps
+    it onto concrete data structures &mdash; wings, rooms, drawers &mdash; combined with Zettelkasten indexing.
+    &rarr; <a href="palace-model.html">The Palace Model</a></dd>
+
+  <dt>Mining modes</dt>
+  <dd>Three ingestion paths: Projects (code/docs), Convos (chat exports, optional auto-classification), and Extract
+    (binary office documents). Each feeds a specialized miner with its own chunking and metadata strategy.
+    &rarr; <a href="cli.html">CLI &amp; Onboarding</a></dd>
+</dl>
+
+<h2 id="N">N</h2>
+<dl class="concepts">
+  <dt>Never-silent-fallback</dt>
+  <dd>When an LLM is unavailable or fails, the system always falls back to its heuristic/regex baseline and records
+    what happened. No data is discarded silently; the user is informed.
+    &rarr; <a href="llm-integration.html">LLM Integration</a></dd>
+
+  <dt>Non-Latin Word Boundaries</dt>
+  <dd>Locales with combining-mark scripts (Devanagari, Arabic, Thai, Khmer) declare <code>boundary_chars</code> that
+    replace Python's <code>\b</code> with a lookaround boundary preserving the marks, so a name like
+    &#x0905;&#x0928;&#x0940;&#x0924;&#x093E; matches in full instead of truncating.
+    &rarr; <a href="entities.html">Entity System</a></dd>
+
+  <dt>NORMALIZE_VERSION</dt>
+  <dd>A schema-versioning constant (v2) that gates incremental ingest and auto-purges pre-v2 drawers on a schema bump,
+    preventing mixed old/new rows in the same source.
+    &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+
+  <dt>Normalization</dt>
+  <dd>Format auto-detection and conversion of 7+ diverse chat export schemas into a canonical
+    <code>&gt;</code>-prefixed transcript, with noise stripping and tool-result truncation.
+    &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+</dl>
+
+<h2 id="O">O</h2>
+<dl class="concepts">
+  <dt>Origin (corpus origin)</dt>
+  <dd>Whether a corpus is AI-dialogue (Claude/ChatGPT/Slack exports) or human narrative, decided by the two-tier
+    corpus-origin detector. Origin context reclassifies persona-matched candidates and steers downstream entity and
+    mining behavior. &rarr; <a href="entities.html">Entity System</a></dd>
+</dl>
+
+<h2 id="P">P</h2>
+<dl class="concepts">
+  <dt>PalaceRef</dt>
+  <dd>A value object identifying a palace: <code>id</code> (cache key), optional <code>local_path</code> (filesystem),
+    and optional <code>namespace</code> (server-mode routing). Replaces legacy path-string arguments under RFC 001.
+    &rarr; <a href="backends.html">Storage Backends</a></dd>
+
+  <dt>Pass 0</dt>
+  <dd>Corpus-origin detection run during <code>init</code>: Tier 1 regex heuristics (always, no API) plus optional
+    Tier 2 LLM refinement for platform/persona extraction, classifying whether the corpus is AI-dialogue.
+    &rarr; <a href="cli.html">CLI &amp; Onboarding</a></dd>
+
+  <dt>Per-target PID Guard</dt>
+  <dd>Atomic slot-based deduplication in <code>~/.mempalace/hook_state/mine_pids/</code> using
+    <code>O_CREAT|O_EXCL</code> and per-target hash digests to prevent concurrent mines of the same target; stale
+    PIDs are detected by age. &rarr; <a href="hooks.html">Hooks &amp; Auto-save</a></dd>
+
+  <dt>PreCompact (precompact hook)</dt>
+  <dd>A Claude Code event fired right before context compression; it always runs a synchronous mine to capture
+    transcript data before the model loses its detailed context.
+    &rarr; <a href="hooks.html">Hooks &amp; Auto-save</a></dd>
+
+  <dt>Preference extraction</dt>
+  <dd>16 regex patterns that detect how users express preferences (<em>I've been having trouble with X</em>,
+    <em>I prefer Y</em>); synthetic documents bridge the vocabulary gap between question phrasing and session text.
+    &rarr; <a href="benchmarks.html">Benchmarks</a></dd>
+
+  <dt>Privacy by architecture</dt>
+  <dd>The system physically cannot phone home: no telemetry, no analytics. Mining, search, embedding, and LLM calls
+    default to local-only, and endpoint locality is verified by URL parsing; external providers require explicit
+    configuration. &rarr; <a href="security-privacy.html">Security &amp; Privacy</a></dd>
+
+  <dt>Prompt contamination mitigation</dt>
+  <dd>A four-stage extraction pipeline in <code>query_sanitizer.py</code> that recovers user intent from queries
+    polluted by prepended system prompts, restoring retrieval that would otherwise collapse (89.8% &rarr; 1.0% failure
+    without it). &rarr; <a href="security-privacy.html">Security &amp; Privacy</a></dd>
+
+  <dt>Provenance fields</dt>
+  <dd>Optional knowledge-graph fields (<code>source_drawer_id</code>, <code>adapter_name</code>,
+    <code>source_closet</code>, <code>source_file</code>) recording where a fact came from &mdash; the drawer, the
+    adapter, or the file/closet that referenced it.
+    &rarr; <a href="knowledge-graph.html">Temporal Knowledge Graph</a></dd>
+
+  <dt>Provider abstraction</dt>
+  <dd>Three provider classes (<code>OllamaProvider</code>, <code>OpenAICompatProvider</code>,
+    <code>AnthropicProvider</code>) share a common interface (<code>classify</code>, <code>check_available</code>,
+    <code>is_external_service</code>) to normalize JSON-mode requests across vendors.
+    &rarr; <a href="llm-integration.html">LLM Integration</a></dd>
+</dl>
+
+<h2 id="Q">Q</h2>
+<dl class="concepts">
+  <dt>QueryResult / GetResult</dt>
+  <dd>Typed frozen dataclasses that replace Chroma's raw dict returns. They preserve the outer query dimension even
+    when hits are empty, expose a dict-protocol shim for legacy callers, and keep <code>embeddings</code> as
+    <code>None</code> unless explicitly requested. &rarr; <a href="backends.html">Storage Backends</a></dd>
+</dl>
+
+<h2 id="R">R</h2>
+<dl class="concepts">
+  <dt>Recall@k vs QA accuracy</dt>
+  <dd>Recall@k measures whether the correct session is in the top-K results; QA accuracy measures whether an LLM
+    generates a correct answer. They are independent metrics &mdash; MemPalace's headline 96.6% is R@5, not
+    end-to-end accuracy. &rarr; <a href="benchmarks.html">Benchmarks</a></dd>
+
+  <dt>RFC 002 source adapters</dt>
+  <dd>A pluggable ingestion contract (<code>BaseSourceAdapter</code>) for third-party sources (Cursor, GitHub, Slack
+    APIs) with declared transformations, a metadata schema, and a privacy class.
+    &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+
+  <dt>Room</dt>
+  <dd>A time-based or topic-based grouping within a wing (e.g. <em>diary</em>, <em>meetings</em>,
+    <em>design-docs</em>), detected from file paths, filenames, or keywords during mining. Rooms can span multiple
+    wings via tunnels. &rarr; <a href="palace-model.html">The Palace Model</a></dd>
+
+  <dt>Room detection</dt>
+  <dd>Content-aware routing that assigns each file to a room by folder path (highest priority), filename, or keyword
+    scoring in the first ~2,000 chars, falling back to <em>general</em> if nothing matches.
+    &rarr; <a href="mining-projects.html">Project Mining</a></dd>
+</dl>
+
+<h2 id="S">S</h2>
+<dl class="concepts">
+  <dt>Script-Aware Boundary</dt>
+  <dd>A regex lookaround &mdash; <code>(?&lt;=[chars])(?=[^chars])</code> &mdash; that treats declared character ranges
+    (e.g. Devanagari U+0900&ndash;U+097F) as word-internal, preserving combining marks and multi-codepoint names.
+    &rarr; <a href="i18n.html">Internationalization</a></dd>
+
+  <dt>Silent Mode</dt>
+  <dd>The default (v3.3.0+) hook behavior: it saves directly via the Python API without returning
+    <code>decision:block</code>, so the user sees only a <code>systemMessage</code> notification and the chat window
+    is never interrupted. &rarr; <a href="hooks.html">Hooks &amp; Auto-save</a></dd>
+
+  <dt>Stdio Protection</dt>
+  <dd>Redirecting stdout to stderr at the Python <em>and</em> file-descriptor (<code>os.dup2</code>) level before heavy
+    imports, so transitive dependencies (chromadb, onnxruntime) can't print banners that corrupt JSON-RPC payloads.
+    &rarr; <a href="mcp-server.html">MCP Server &amp; Tools</a></dd>
+
+  <dt>Stop Hook</dt>
+  <dd>A Claude Code event fired after each assistant response; it counts human messages in the transcript and triggers
+    auto-save once a threshold (<code>SAVE_INTERVAL=15</code>) is reached.
+    &rarr; <a href="hooks.html">Hooks &amp; Auto-save</a></dd>
+
+  <dt>Sweep</dt>
+  <dd>A timestamp-coordinated, idempotent message-level pass that catches messages missed by file-level chunking,
+    using a cursor and deterministic <code>sweep_SESSION_UUID</code> IDs to resume cleanly after a crash.
+    &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+
+  <dt>Symlink defense</dt>
+  <dd>Defense-in-depth file I/O hardening: <code>O_NOFOLLOW</code> on POSIX and a pre-check on Windows refuse to follow
+    pre-placed symlinks during export, closing the TOCTOU window before redirected writes can hit system directories.
+    &rarr; <a href="security-privacy.html">Security &amp; Privacy</a></dd>
+</dl>
+
+<h2 id="T">T</h2>
+<dl class="concepts">
+  <dt>Tier 6a content dating</dt>
+  <dd>Automatic date extraction from filename, YAML frontmatter, content body, or mtime &mdash; in that priority order
+    &mdash; populating <code>content_date</code> so closet pointers can carry date:line locators.
+    &rarr; <a href="mining-projects.html">Project Mining</a></dd>
+
+  <dt>Timeline</dt>
+  <dd>A chronologically sorted view of facts for an entity or across the whole KG, ordered by <code>valid_from</code>
+    (NULL last), capped at 100 rows &mdash; useful for narrative reconstruction.
+    &rarr; <a href="knowledge-graph.html">Temporal Knowledge Graph</a></dd>
+
+  <dt>Triple (RDF-style)</dt>
+  <dd>A fact expressed as subject&rarr;predicate&rarr;object (e.g. <em>Alice &rarr; works_at &rarr; Acme Corp</em>), the
+    core KG unit; predicates are normalized to lowercase with underscores.
+    &rarr; <a href="knowledge-graph.html">Temporal Knowledge Graph</a></dd>
+
+  <dt>Tunnel</dt>
+  <dd>An explicit cross-wing link between two rooms (or synthetic <code>topic:</code>/<code>entity:</code> rooms),
+    stored in <code>tunnels.json</code>. User-created tunnels are explicit; topic and entity tunnels auto-generate
+    when shared topics/entities appear across wings.
+    &rarr; <a href="palace-model.html">The Palace Model</a></dd>
+
+  <dt>Two-pass assistant retrieval</dt>
+  <dd>For questions about what the assistant said: pass 1 finds top-5 sessions using user turns only; pass 2 re-indexes
+    those sessions with full text (user + assistant) to avoid diluting the global index.
+    &rarr; <a href="benchmarks.html">Benchmarks</a></dd>
+
+  <dt>Two-Signal-Category Rule</dt>
+  <dd>A person must show signals from two different categories (dialogue, action, pronoun, direct-address) to be
+    confidently classified; single-category hits are downgraded to <em>uncertain</em>, so a syntactic pattern like
+    &ldquo;Click, click, click&hellip;&rdquo; isn't mistaken for a person named <em>Click</em>.
+    &rarr; <a href="entities.html">Entity System</a></dd>
+</dl>
+
+<h2 id="U">U</h2>
+<dl class="concepts">
+  <dt>UTF-8 encoding hardening</dt>
+  <dd>Windows stdio reconfiguration to UTF-8 with per-stream error policies (strict on server, replace on CLI) and
+    <code>surrogateescape</code> on stdin, so malformed bytes survive without a <code>UnicodeDecodeError</code>.
+    &rarr; <a href="security-privacy.html">Security &amp; Privacy</a></dd>
+</dl>
+
+<h2 id="V">V</h2>
+<dl class="concepts">
+  <dt>Validity window</dt>
+  <dd>Optional <code>valid_from</code>/<code>valid_to</code> timestamps defining when a KG fact is true (ISO-8601 dates
+    or canonical UTC datetimes). NULL means unbounded; both ends are inclusive &mdash; the basis of the temporal
+    knowledge graph. &rarr; <a href="knowledge-graph.html">Temporal Knowledge Graph</a></dd>
+
+  <dt>Verbatim</dt>
+  <dd>The non-negotiable storage rule: drawer content is stored exactly as the user said it &mdash; never summarized,
+    paraphrased, or lossily compressed &mdash; down to whitespace and formatting. Summaries live only in closets,
+    which point back to the verbatim text. &rarr; <a href="architecture.html">System Architecture</a></dd>
+
+  <dt>Virtual line numbering</dt>
+  <dd>Line numbers added at read time (not stored on disk) when a drawer is retrieved, letting Tier 6a closet pointers
+    jump to a specific line range without rewriting the stored text.
+    &rarr; <a href="mining-projects.html">Project Mining</a></dd>
+</dl>
+
+<h2 id="W">W</h2>
+<dl class="concepts">
+  <dt>Wake-up context</dt>
+  <dd>L0 (identity from <code>~/.mempalace/identity.txt</code>) plus L1 (top importance-scored drawers) injected at
+    agent startup &mdash; ~600&ndash;900 tokens of critical facts without burning the full context window.
+    &rarr; <a href="cli.html">CLI &amp; Onboarding</a></dd>
+
+  <dt>Wing</dt>
+  <dd>A named broad category (person, project, department) derived from a directory name and normalized to lowercase
+    with underscores. Drawers tagged with a wing can be filtered, scoped, or tracked as a unit; it is the top level
+    of the palace tree. &rarr; <a href="palace-model.html">The Palace Model</a></dd>
+
+  <dt>Wing Derivation</dt>
+  <dd>How hooks infer a project's wing name from a JSONL transcript: cwd metadata, then an encoded
+    <code>.claude/projects/</code> path, then a legacy <code>-Projects-</code> segment, defaulting to
+    <code>wing_sessions</code>. &rarr; <a href="hooks.html">Hooks &amp; Auto-save</a></dd>
+
+  <dt>Wing resolution</dt>
+  <dd>Heuristic routing that auto-defaults conversation files from <code>.claude/projects</code>, <code>.codex</code>,
+    or <code>.gemini</code> to <code>wing_api</code>, with dirname-based slugification as fallback for other sources.
+    &rarr; <a href="mining-conversations.html">Conversation Mining</a></dd>
+
+  <dt>Write-Ahead Log (WAL)</dt>
+  <dd>A JSONL audit trail at <code>~/.mempalace/wal/write_log.jsonl</code> recording all drawer/KG mutations (with
+    content redaction) for review and rollback. &rarr; <a href="mcp-server.html">MCP Server &amp; Tools</a></dd>
+</dl>
+
+<h2 id="Z">Z</h2>
+<dl class="concepts">
+  <dt>Zettelkasten Index</dt>
+  <dd>Niklas Luhmann's slip-box method mapped onto MemPalace: small cross-referenced cards (closets) point to larger
+    verbatim source material (drawers). The AAAK format makes a card scannable in one LLM context window, so the
+    system can decide which drawer to open without loading it.
+    &rarr; <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></dd>
+</dl>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">How every term in this glossary connects in the overall pipeline and wake-up stack.</div></a>
+    <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">The core spatial vocabulary: wings, rooms, drawers, closets, hallways, tunnels, diary.</div></a>
+    <a class="related-card" href="index.html"><span class="rc-group">Overview</span><div class="rc-title">Home / Overview</div><div class="rc-desc">Start here for the big picture before diving into individual terms.</div></a>
+    <a class="related-card" href="surprises.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Surprises &amp; Gotchas</div><div class="rc-desc">The non-obvious behaviors behind many of these definitions.</div></a>
+    <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">BM25, HNSW, cosine distance, closet boost, and hybrid ranking in depth.</div></a>
+    <a class="related-card" href="entities.html"><span class="rc-group">Ingestion</span><div class="rc-title">Entity System</div><div class="rc-desc">Disambiguation, the COCA filter, and corpus-origin detection explained.</div></a>
+  </div>
+</div>

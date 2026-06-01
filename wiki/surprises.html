@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Surprises &amp; Gotchas · MemPalace Wiki</title>
+  <meta name="description" content="A curated, cross-cutting collection of the highest-signal findings in MemPalace: non-obvious design choices, clever patterns, and the traps that bite without warning. Every entry is traced to a real line of code and grouped into insights, gotchas, performance, and security. It is where the verbatim-always, local-first, never-corrupt philosophy meets the messy reality of ChromaDB internals, cross-platform shells, Unicode boundaries, and weak local LLMs.">
+  <meta name="mp:slug" content="surprises">
+  <meta name="mp:group" content="Cross-cutting">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="Surprises &amp; Gotchas · MemPalace Wiki">
+  <meta property="og:description" content="A curated, cross-cutting collection of the highest-signal findings in MemPalace: non-obvious design choices, clever patterns, and the traps that bite without warning. Every entry is traced to a real line of code and grouped into insights, gotchas, performance, and security. It is where the verbatim-always, local-first, never-corrupt philosophy meets the messy reality of ChromaDB internals, cross-platform shells, Unicode boundaries, and weak local LLMs.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Surprises & Gotchas", "name": "Surprises & Gotchas", "description": "A curated, cross-cutting collection of the highest-signal findings in MemPalace: non-obvious design choices, clever patterns, and the traps that bite without warning. Every entry is traced to a real line of code and grouped into insights, gotchas, performance, and security. It is where the verbatim-always, local-first, never-corrupt philosophy meets the messy reality of ChromaDB internals, cross-platform shells, Unicode boundaries, and weak local LLMs.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link active" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Cross-cutting</span><span class="sep">/</span><span>Surprises &amp; Gotchas</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Cross-cutting</div>
+  <h1>Surprises &amp; Gotchas</h1>
+  <p class="lead">The clever, the subtle, and the watch-outs.</p>
+</header>
+
+<div class="summary">
+  This page is the highest-signal collection in the wiki: the non-obvious design choices, the &ldquo;why is it written this way&rdquo; moments, and the traps that bite you if you don't know they're there. Every finding is curated from the per-area deep dives and traced to a real line of code. If you only read one page to understand <em>how MemPalace actually thinks</em>, read this one &mdash; it's where the verbatim-always, local-first, never-corrupt philosophy meets the messy reality of ChromaDB internals, cross-platform shells, and weak local LLMs.
+</div>
+
+<div id="toc"></div>
+
+<h2>💡 Insights &amp; clever patterns</h2>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><strong>Raw verbatim text beats LLM-extracted memory by 2&times;.</strong> On LongMemEval, MemPalace's zero-LLM baseline hits 96.6% R@5 while extraction-based systems like Mem0 land at 30&ndash;45%. Extraction discards context: when an LLM extracts &ldquo;user prefers PostgreSQL&rdquo; and throws the conversation away, it loses <em>why</em> and what alternatives were weighed &mdash; and if the extraction fails, the original is gone forever. Storing everything verbatim and letting embeddings find it later is the simpler approach that wins, contradicting the field's consensus that AI extraction is required for memory. <code>benchmarks/BENCHMARKS.md:1</code> &middot; See <a href="benchmarks.html">Benchmarks</a></p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><strong>Closets are a ranking SIGNAL, never a gate.</strong> The searcher always queries the full drawers collection first (the floor), then uses closet hits only to <em>boost</em> ranking &mdash; never to filter. A weak or missing closet pointer can therefore only <em>help</em> search, never hide a drawer that has strong BM25 signal. This is a deliberate rejection of closet-first / index-first RAG designs, which would suffer a &ldquo;weak-closets regression&rdquo; on narrative content whose regex-extracted closets are low-signal. <code>searcher.py:823</code> &middot; See <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><strong>The LLM is a scalpel, not a hammer &mdash; heuristic truth wins.</strong> During corpus-origin detection, the Tier-2 local LLM can extract persona names and platform, but its <code>likely_ai_dialogue</code> verdict is <em>discarded</em> if it disagrees with a confident Tier-1 regex heuristic. This protects against weak local models (e.g. a small Ollama model) flipping a confident answer. The careful non-overwrite merge keeps Tier-1's confidence while folding in Tier-2's platform/persona fields, and concatenates both evidence trails for auditability. <code>cli.py:145</code> &middot; See <a href="llm-integration.html">LLM Integration</a></p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><strong>BM25 IDF is computed over the candidate set, not the corpus &mdash; and that's correct.</strong> Reranking applies BM25 to the small candidate set returned by vector search, computing IDF locally from those candidates. A term that's rare across the whole palace but common in this candidate set gets inflated IDF &mdash; which is exactly right for <em>discriminating within these particular results</em>. Computing IDF over the full corpus would be the &ldquo;textbook&rdquo; choice and the wrong one here. <code>searcher.py:75</code> &middot; See <a href="search.html">Search &amp; Retrieval</a></p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><strong>Date-only facts become full-day intervals at query time.</strong> A knowledge-graph triple stored as <code>valid_from='2026-01-01'</code> is normalized to <code>...T00:00:00Z</code>, while <code>valid_to='2026-01-01'</code> becomes <code>...T23:59:59Z</code>. So an <em>as-of</em> query using a precise UTC datetime still matches legacy date-only facts &mdash; a date is treated as a 24-hour window, not a single point. The trick lives in <code>_temporal_start_key</code>/<code>_temporal_end_key</code> and their SQL equivalents. <code>knowledge_graph.py:56</code> &middot; See <a href="knowledge-graph.html">Temporal Knowledge Graph</a></p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><strong>The fact-checker uses two regex patterns, not NLP &mdash; on purpose.</strong> Contradiction detection recognizes only two surface forms (&ldquo;X is Y's Z&rdquo; and &ldquo;X's Z is Y&rdquo;, both resolving to the triple <code>(X, Z, Y)</code>). No parsing, no model. This is ultra-conservative by design: unrecognized relationship forms are silently <em>missed</em> (false-negatives) rather than misinterpreted (false-positives). A memory system would rather stay quiet than confidently flag a fake contradiction. <code>fact_checker.py:47</code> &middot; See <a href="llm-integration.html">LLM Integration</a></p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><strong>Repair turns silent failures into queryable state.</strong> When extracted drawers have <code>None</code> or empty <code>{}</code> metadata (from sparse historical writes), repair doesn't drop them &mdash; it coerces the metadata to <code>{"_repaired_empty_meta": True}</code> so ChromaDB 1.5.x upsert validation passes. The sentinel is later discoverable via <code>where={"_repaired_empty_meta": True}</code>, so what would have been a vanished record becomes an auditable, filterable one. <code>repair.py:150</code> &middot; See <a href="maintenance.html">Repair, Sync &amp; Maintenance</a></p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><strong>Multi-word entity candidates bypass the COCA stop-word filter.</strong> Single-word candidates run through the COCA content-word filter to suppress generic terms like &ldquo;Code&rdquo;, &ldquo;Phase&rdquo;, &ldquo;Note&rdquo;. But multi-word candidates skip it deliberately &mdash; otherwise &ldquo;Claude Code&rdquo; would lose its &ldquo;Code&rdquo; half. A conscious recall-over-precision trade for compound names. <code>entity_detector.py:217</code> &middot; See <a href="entities.html">Entity System</a></p>
+</div>
+
+<h2>⚠️ Gotchas</h2>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><strong>Re-entrant locking prevents self-deadlock in the mine pipeline.</strong> The palace lock is tracked in a per-thread <code>threading.local()</code> set keyed by <code>(pid, keys)</code>. The mine pipeline calls <code>get_collection</code> and then <code>ChromaCollection.upsert</code>, which tries to acquire the <em>same</em> lock from the same thread. Without the re-entrancy guard, the inner upsert would block on a second <code>flock</code> (Linux fcntl locks are per file descriptor) and deadlock a single thread against itself. The PID check also clears stale state after a fork so children re-acquire correctly. <code>palace.py:509</code> &middot; See <a href="architecture.html">System Architecture</a></p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><strong>macOS bash 3.2 can't use <code>mapfile</code> &mdash; so the hook uses <code>sed</code>.</strong> macOS ships bash 3.2.57, frozen in 2006 at Apple's GPLv3 cutoff; <code>mapfile</code>/<code>readarray</code> only arrived in bash 4.0 (2009). The save hook parses Python output with <code>sed -n 'Np'</code> instead. If it had used <code>mapfile</code>, every hook value would silently fall back to its default on stock macOS, producing <em>zero saves</em> with no error (issue #1440). <code>hooks/mempal_save_hook.sh:119</code> &middot; See <a href="hooks.html">Hooks &amp; Auto-save</a></p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><strong>Windows can't probe a process with <code>os.kill(pid, 0)</code>.</strong> On POSIX, signal 0 is a liveness check; on Windows, <code>os.kill</code> maps to <code>TerminateProcess</code> &mdash; so &ldquo;checking&rdquo; a PID would <em>kill</em> it. The code uses <code>ctypes</code> to call <code>GetExitCodeProcess</code> instead, returning False (dead) if the handle is invalid. A cross-platform landmine buried in a one-line utility. <code>hooks_cli.py:342</code> &middot; See <a href="hooks.html">Hooks &amp; Auto-save</a></p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><strong>Python's <code>\b</code> silently truncates names with combining marks.</strong> <code>\b</code> is a boundary between <code>\w</code> and non-<code>\w</code>, but Unicode Marks (categories Mc/Mn) are <em>not</em> <code>\w</code> &mdash; so a Devanagari name like <code>&#x0905;&#x0928;&#x0940;&#x0924;&#x093e;</code> gets clipped to <code>&#x0905;&#x0928;&#x0940;&#x0924;</code> at a word boundary. Hindi, Arabic, Hebrew, Thai, Tamil, Khmer and more are all affected. The fix &mdash; script-aware lookaround boundaries built from each locale's declared <code>boundary_chars</code> &mdash; is elegant but utterly non-obvious. <code>i18n/__init__.py:119</code> &middot; See <a href="i18n.html">Internationalization</a></p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><strong>Switching embedding models silently breaks an existing palace.</strong> <code>EmbeddinggemmaONNX.name()</code> returns <code>embeddinggemma_300m</code>, and ChromaDB persists that name on the collection. Swap the model without rebuilding and ChromaDB rejects the collection on name mismatch &mdash; intentional, but surprising. The fix is to run <code>mempalace repair rebuild-index</code>. Worse, legacy palaces created before <code>hnsw:space</code> was mandatory silently default to L2/Euclidean; the cosine formula <code>max(0, 1 - distance)</code> then floors at 0 because L2 distances exceed 1.0, surfacing only as nonsensical relevance scores. <code>embedding.py:159</code> &middot; See <a href="i18n.html">Internationalization</a></p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><strong>KG predicates are always lowercased and space&rarr;underscore normalized.</strong> Adding a triple maps &ldquo;Child Of&rdquo;, &ldquo;child_of&rdquo; and &ldquo;CHILD_OF&rdquo; all to the same predicate. This simplifies predicate discovery but will surprise callers expecting case preservation. Relatedly, the schema declares <code>FOREIGN KEY (subject) REFERENCES entities(id)</code> but the KG <em>auto-creates</em> missing entities on write &mdash; the foreign key is a soft, documentary constraint, so you can add triples for entities that don't yet exist. <code>knowledge_graph.py:282</code> &middot; See <a href="knowledge-graph.html">Temporal Knowledge Graph</a></p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><strong>RTF files secretly bypass MarkItDown.</strong> MarkItDown 0.1.5 doesn't actually convert RTF &mdash; it returns the raw <code>\rtf1\ansi</code> control codes unchanged. The format miner detects <code>.rtf</code> and routes it to <code>striprtf</code> instead (verified live on a real RTF set, 2026-05-19). The per-format dispatch is invisible to callers: both paths emit Markdown that flows into the normal chunker, so a silent garbage-ingestion bug is averted by one suffix check. <code>format_miner.py:387</code> &middot; See <a href="mining-projects.html">Project Mining</a></p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><strong><code>init</code> isn't idempotent by default &mdash; it's <em>made</em> idempotent by filtering.</strong> Re-running <code>init</code> would otherwise pick up the <code>entities.json</code> and <code>mempalace.yaml</code> it wrote on the first run, changing corpus-origin density and producing a <em>different</em> classification. An artifact-skip filter excludes its own outputs to keep results stable &mdash; a subtle but critical detail for CI and multi-user teams. Note also that corpus-origin evidence is frozen once prefixed: <code>--redetect-origin</code> re-runs only Tier-1 heuristics, so evidence can't be upgraded post-init. <code>cli.py:74</code> &middot; See <a href="cli.html">CLI &amp; Onboarding</a></p>
+</div>
+
+<h2>⚡ Performance</h2>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p><strong>ChromaDB silently truncates results at 10K rows.</strong> <code>col.get()</code> caps out at 10,000 rows <em>without raising</em>, so <code>_fetch_all_metadata</code> paginates in 1,000-row batches to read everything. The warm metadata cache only applies when <code>where=None</code> &mdash; filtered queries always re-paginate fresh to avoid serving a stale subset. Relatedly, closet regeneration on 10k+ drawer palaces pages in batches of 5,000 to dodge SQLite's <code>SQLITE_MAX_VARIABLE_NUMBER</code> (32,766) ceiling that otherwise crashes ChromaDB. <code>mcp_server.py:615</code> &middot; See <a href="mcp-server.html">MCP Server &amp; Tools</a></p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p><strong>Absolute cosine similarity keeps ranking stable under candidate changes.</strong> Similarity is <code>max(0, 1 - distance)</code> &mdash; an <em>absolute</em> transform, not relative-to-max. If scores were <code>(max_dist - dist) / max_dist</code>, adding one very-close result would raise <code>max_dist</code> and reshuffle every other candidate's score. Absolute scoring guarantees that adding or removing a candidate never reorders the others, which is essential for predictable retrieval. <code>searcher.py:160</code> &middot; See <a href="search.html">Search &amp; Retrieval</a></p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p><strong>The HNSW divergence floor scales with the sync threshold.</strong> The corruption-detection floor is <code>max(2000, 2 &times; sync_threshold)</code> because ChromaDB batches flushes at <code>sync_threshold</code> intervals (raised to 50K to curb <code>link_lists.bin</code> bloat). A fixed 2000-record floor would flag <em>every</em> actively-written palace as diverged once its unwritten tail passed 1K records. Scaling with the threshold lets the probe tell normal flush-lag apart from real corruption (the 176K divergence in #1222). <code>backends/chroma.py:567</code> &middot; See <a href="backends.html">Storage Backends</a></p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p><strong>Emotion detection is keyword-based &mdash; zero tokens, instant, deterministic.</strong> Plain-text emotion tagging scans for 30+ lowercase keywords (love&rarr;love, feared&rarr;fear, happy&rarr;joy). No ML, no API call, capped at 3 deduped codes per line. It's a fast triage signal that costs nothing and is fully reproducible &mdash; the opposite of routing every line through a model. <code>dialect.py:430</code> &middot; See <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a></p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p><strong>The Stop hook runs async, PreCompact runs sync &mdash; a deliberate split.</strong> The Stop hook spawns mining in a detached background subprocess and exits immediately to stay under a ~500ms latency budget. The PreCompact hook uses synchronous <code>subprocess.run</code>, blocking until the mine completes &mdash; because compaction is about to <em>destroy</em> the transcript, so the data must be saved first. Latency optimization vs. data-safety, picked per hook. <code>hooks_cli.py:472</code> &middot; See <a href="hooks.html">Hooks &amp; Auto-save</a></p>
+</div>
+
+<h2>🔒 Security</h2>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security</div>
+  <p><strong>MCP stdio is protected at the file-descriptor level, not just in Python.</strong> The MCP server redirects stdout&rarr;stderr at <em>both</em> the Python level (<code>sys.stdout = sys.stderr</code>) and the FD level (<code>os.dup2(2, 1)</code>) <em>before</em> heavy imports. Transitive C libraries (ChromaDB&rarr;onnxruntime, posthog telemetry) print banners directly to fd 1, bypassing <code>sys.stdout</code> entirely &mdash; so a Python-only redirect would still corrupt Claude Desktop's JSON-RPC stream. The real stdout FD is saved and restored before the protocol loop. <code>mcp_server.py:26</code> &middot; See <a href="mcp-server.html">MCP Server &amp; Tools</a></p>
+</div>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security</div>
+  <p><strong>The pickle health check never deserializes &mdash; it sniff-tests bytes.</strong> <code>_segment_appears_healthy</code> validates ChromaDB's <code>index_metadata.pickle</code> by checking only that it starts with <code>0x80</code> (pickle PROTO marker) and ends with <code>0x2e</code> (STOP), detecting truncation or zero-fill without ever unpickling. This avoids arbitrary code execution from a malicious or corrupted pickle &mdash; a security-conscious choice for a routine integrity probe. <code>backends/chroma.py:161</code> &middot; See <a href="backends.html">Storage Backends</a></p>
+</div>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security</div>
+  <p><strong>Non-HTTP LLM endpoints are rejected at parse time to prevent exfiltration.</strong> <code>LLMConfig</code> validates the endpoint scheme strictly: anything not <code>http</code> or <code>https</code> raises a <code>ValueError</code> on init. This rejects a misconfigured <code>file://</code> <code>LLM_ENDPOINT</code> that could otherwise read and exfiltrate local files. Privacy by architecture, enforced at construction rather than at call time. <code>closet_llm.py:109</code> &middot; See <a href="security-privacy.html">Security &amp; Privacy</a></p>
+</div>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security</div>
+  <p><strong>The query sanitizer turns a silent recall cliff into a graceful degradation.</strong> When AI agents prepend a 2000+ char system prompt to a 10&ndash;50 char question, the embedding model represents the whole string as one vector dominated by the prompt &mdash; recall collapses from ~90% to ~1% with no error (issue #333). The four-stage sanitizer (passthrough &rarr; question extraction &rarr; tail sentence &rarr; tail truncation) recovers to ~70&ndash;89%. Not perfect prevention, but a searchable degradation beats catastrophic silent failure. <code>query_sanitizer.py:9</code> &middot; See <a href="security-privacy.html">Security &amp; Privacy</a></p>
+</div>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">The five non-negotiable principles that produce most of these surprises.</div></a>
+    <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Closets-as-signal, absolute cosine, and candidate-set IDF all live here.</div></a>
+    <a class="related-card" href="backends.html"><span class="rc-group">Retrieval</span><div class="rc-title">Storage Backends</div><div class="rc-desc">HNSW corruption canaries, pickle sniff-tests, and the divergence floor.</div></a>
+    <a class="related-card" href="hooks.html"><span class="rc-group">Interfaces</span><div class="rc-title">Hooks &amp; Auto-save</div><div class="rc-desc">Cross-platform shell and process-detection landmines.</div></a>
+    <a class="related-card" href="security-privacy.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Security &amp; Privacy</div><div class="rc-desc">Stdio protection, endpoint validation, and query sanitization.</div></a>
+    <a class="related-card" href="benchmarks.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Benchmarks</div><div class="rc-desc">The evidence that verbatim-text beats LLM extraction by 2&times;.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

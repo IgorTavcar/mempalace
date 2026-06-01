@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CLI &amp; Onboarding · MemPalace Wiki</title>
+  <meta name="description" content="MemPalace&#x27;s CLI (cli.py) dispatches 14 primary commands — init (setup + corpus detection), mine (three ingestion modes), search, wake-up (L0+L1 context injection), status, repair, and maintenance tooling — while onboarding.py guides first-time users through mode selection (work/personal/combo), entity registration, and embedding-model choice, seeding the entity registry and critical-facts bootstrap before mining begins.">
+  <meta name="mp:slug" content="cli">
+  <meta name="mp:group" content="Interfaces">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="CLI &amp; Onboarding · MemPalace Wiki">
+  <meta property="og:description" content="MemPalace&#x27;s CLI (cli.py) dispatches 14 primary commands — init (setup + corpus detection), mine (three ingestion modes), search, wake-up (L0+L1 context injection), status, repair, and maintenance tooling — while onboarding.py guides first-time users through mode selection (work/personal/combo), entity registration, and embedding-model choice, seeding the entity registry and critical-facts bootstrap before mining begins.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "CLI & Onboarding", "name": "CLI & Onboarding", "description": "MemPalace's CLI (cli.py) dispatches 14 primary commands \u2014 init (setup + corpus detection), mine (three ingestion modes), search, wake-up (L0+L1 context injection), status, repair, and maintenance tooling \u2014 while onboarding.py guides first-time users through mode selection (work/personal/combo), entity registration, and embedding-model choice, seeding the entity registry and critical-facts bootstrap before mining begins.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link active" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Interfaces</span><span class="sep">/</span><span>CLI &amp; Onboarding</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Interfaces</div>
+  <h1>CLI &amp; Onboarding</h1>
+  <p class="lead">The human entry point: init, mine, search, wake-up, run, status.</p>
+</header>
+
+<div class="summary">
+  MemPalace's CLI (<code>cli.py</code>) dispatches 14 primary commands — <code>init</code> (setup + corpus detection),
+  <code>mine</code> (three ingestion modes), <code>search</code>, <code>wake-up</code> (L0+L1 context injection),
+  <code>status</code>, <code>repair</code>, and maintenance tooling. <code>onboarding.py</code> guides first-time users
+  through mode selection (work/personal/combo), entity registration, and embedding-model choice, seeding the entity
+  registry and a critical-facts bootstrap before mining begins. The whole flow is offline-first: every LLM step is
+  best-effort and never blocks setup.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<h3>Init: four-pass onboarding</h3>
+<p>
+  <code>cmd_init</code> (<code>cli.py:230</code>) orchestrates a four-pass setup. <strong>Pass 0</strong>
+  (<code>_run_pass_zero</code>, <code>cli.py:106</code>) detects corpus origin — AI-dialogue vs. code/docs — via
+  heuristics plus optional LLM, storing the result in <code>&lt;palace&gt;/.mempalace/origin.json</code> so downstream
+  <a href="entities.html">entity detection</a> knows whether <em>"Echo"</em> is a person name or an agent alias.
+  <strong>Pass 1</strong> (<code>discover_entities</code>) scans manifests, git authors, and prose for entity
+  candidates, running optional <a href="llm-integration.html">LLM refinement</a> when enabled. <strong>Pass 2</strong>
+  (<code>detect_rooms_local</code>) infers <a href="palace-model.html">room structure</a> from the folder hierarchy.
+  <strong>Pass 3</strong> (<code>_ensure_mempalace_files_gitignored</code>, <code>cli.py:202</code>) protects
+  per-project files from accidental git commits (issue #185).
+</p>
+<p>
+  The command supports <code>--yes</code> (entity auto-accept), <code>--auto-mine</code> (skip the post-init prompt),
+  <code>--lang</code> (entity language override), and three LLM controls (<code>--no-llm</code>,
+  <code>--llm-provider</code>, <code>--llm-api-key</code>) with consent gates for external APIs (issue #26).
+</p>
+
+<h3>Corpus-origin two-tier detection</h3>
+<p>
+  <code>_run_pass_zero</code> gathers Tier-1 samples by reading whole files up to per-file/total caps (100&nbsp;KB per
+  file, 5&nbsp;MB ceiling, max 30 files) but skips mempalace's own artifacts so re-runs stay idempotent. Tier 1 calls
+  <code>detect_origin_heuristic</code> for cheap regex matching (well-known AI brand terms plus turn markers). Tier 2,
+  if an LLM is available, calls <code>detect_origin_llm</code> on trimmed samples (2&nbsp;KB per sample, max 20 samples)
+  but <strong>does not</strong> override the heuristic's <code>likely_ai_dialogue</code>/<code>confidence</code> fields —
+  it only merges in the LLM's <code>persona_names</code>, <code>user_name</code>, and <code>platform</code>. Evidence
+  trails are prefixed (<code>Tier-1 heuristic:</code> vs. <code>Tier-2 LLM:</code>) so <code>origin.json</code> audits
+  which signal came from where. File-write failures are non-fatal; the in-memory result still feeds downstream
+  classification. See <a href="entities.html" hidden>corpus origin</a> via <a href="llm-integration.html">LLM integration</a>.
+</p>
+
+<h3>Mine command dispatcher</h3>
+<p>
+  <code>cmd_mine</code> (<code>cli.py:489</code>) routes to three specialized miners based on the <code>--mode</code> flag:
+</p>
+<ul>
+  <li><strong>projects</strong> (default) → <code>miner.mine()</code> for <a href="mining-projects.html">code and documentation</a>.</li>
+  <li><strong>convos</strong> → <code>convo_miner.mine_convos()</code> for <a href="mining-conversations.html">Claude/ChatGPT/Slack transcripts</a>, optionally auto-classifying into decisions/milestones/problems with <code>--extract general</code>.</li>
+  <li><strong>extract</strong> → <code>format_miner.mine_formats()</code> for PDF/DOCX/XLSX/PPTX (requires <code>mempalace[extract]</code>).</li>
+</ul>
+<p>
+  All modes respect <code>--wing</code>, <code>--include-ignored</code>, <code>--max-chunks-per-file</code> (a Windows ONNX
+  <code>bad_alloc</code> workaround), and <code>--dry-run</code>. Each miner catches <code>MineAlreadyRunning</code> and
+  <code>MineValidationError</code> and surfaces them with friendly messages; SQLite integrity errors trigger
+  <a href="maintenance.html">repair-recovery</a> instructions.
+</p>
+
+<h3>Wake-up context injection</h3>
+<p>
+  <code>cmd_wakeup</code> (<code>cli.py:712</code>) instantiates a <code>MemoryStack</code> from <code>layers.py</code> and
+  calls <code>stack.wake_up(wing=args.wing)</code>. That concatenates Layer 0 (identity from
+  <code>~/.mempalace/identity.txt</code>, ~100 tokens) with Layer 1 (top 15 importance-scored drawers from ChromaDB,
+  ~500–800 tokens), totaling roughly 600–900 tokens. Layer 1 groups drawers by room for readability and truncates long
+  snippets. When <code>--wing</code> is passed, L1 filters to that wing only, enabling project-specific wake-up. The
+  output is human-readable markdown suitable for direct injection into a system prompt or first assistant message.
+</p>
+
+<h3>Onboarding: interactive setup &amp; entity seeding</h3>
+<p>
+  <code>run_onboarding</code> (<code>onboarding.py:390</code>) prompts for six steps: (1) mode selection
+  (work/personal/combo), (2) embedding-model choice (<code>embeddinggemma</code> multilingual default vs.
+  <code>minilm</code> English-only; choice persists to <code>config.json</code> via <code>set_embedding_model</code>),
+  (3–4) manual people &amp; projects entry with relationship/role tagging, (5) optional file-based auto-detection of
+  additional names, and (6) warnings about ambiguous names that collide with English words. It also generates
+  <a href="aaak-dialect.html">AAAK</a> bootstrap artifacts (<code>_generate_aaak_bootstrap</code>,
+  <code>onboarding.py:291</code>) — <code>aaak_entities.md</code> (3-letter entity codes) and
+  <code>critical_facts.md</code> — that teach the AI about the user's world from session one.
+  <code>quick_setup</code> (<code>onboarding.py:490</code>) provides programmatic, non-interactive setup for
+  tests and benchmarks.
+</p>
+
+<h3>Instructions CLI &amp; skill routing</h3>
+<p>
+  <code>instructions_cli.py</code> exposes five markdown instruction files (init, search, mine, help, status) via
+  <code>run_instructions</code> (<code>instructions_cli.py:16</code>), which reads the <code>.md</code> from the
+  <code>instructions/</code> directory and prints it to stdout. These instructions are authored for AI-agent consumption
+  and are invoked by the skill harness when users run <code>/mempalace:init</code>, <code>/mempalace:search</code>, and
+  friends. The <code>help.md</code> file lists 19 <a href="mcp-server.html">MCP tools</a>, CLI commands, auto-save
+  <a href="hooks.html">hooks</a>, and architecture in tabular form for quick reference.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Pass 0</dt>
+  <dd>Corpus-origin detection run during init to classify whether a corpus is AI-dialogue (Claude, ChatGPT, Slack
+    exports). Two tiers: Tier 1 regex heuristics (always runs, no API) plus optional Tier 2 LLM refinement for
+    platform/persona extraction.</dd>
+
+  <dt>Wake-up context</dt>
+  <dd>L0 (identity from <code>~/.mempalace/identity.txt</code>) plus L1 (top 15 importance-scored drawers) injected into
+    agent startup; ~600–900 tokens of critical facts without burning the full context window.</dd>
+
+  <dt>Embedding-model choice</dt>
+  <dd>Onboarding asks the user to pick <code>embeddinggemma</code> (multilingual, 300&nbsp;MB, default) or
+    <code>minilm</code> (English-only, 30&nbsp;MB); the choice persists in <code>config.json</code> so future runs skip
+    the prompt.</dd>
+
+  <dt>Three mining modes</dt>
+  <dd>Projects (code/docs), Convos (chat exports with optional auto-classification), and Extract (binary office
+    documents); each feeds a specialized miner with different chunking and metadata strategies.</dd>
+
+  <dt>AAAK Dialect</dt>
+  <dd>Compressed notation (entity codes, emotion markers, pipe-separated fields) for efficient memory storage that stays
+    readable to humans and LLMs; generated on init as <code>aaak_entities.md</code>.</dd>
+
+  <dt>Palace structure</dt>
+  <dd>Wings (top-level: projects or people), Rooms (topics/domains), Closets (summaries), Drawers (verbatim memories);
+    Halls connect rooms within wings, Tunnels connect rooms across wings.</dd>
+
+  <dt>Hooks</dt>
+  <dd>JSON-based stdin/stdout system (session-start, stop, precompact) that auto-saves every 15 human messages or before
+    context compaction; integrates with Claude Code and Codex harnesses.</dd>
+
+  <dt>Idempotent init</dt>
+  <dd><code>mempalace init</code> produces the same output on re-run by filtering out mempalace's own artifacts
+    (<code>entities.json</code>, <code>mempalace.yaml</code>) from corpus-origin samples so detection doesn't drift.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  <strong>Tier 2 merge-fields logic.</strong> When the corpus-origin LLM tier runs, it does <em>not</em> override the
+  heuristic's <code>likely_ai_dialogue</code> and <code>confidence</code>. Instead it conditionally merges
+  <code>primary_platform</code>, <code>user_name</code>, and <code>agent_persona_names</code> if present, letting weak
+  local models contribute without poisoning confident regex answers.
+</p>
+
+<div class="code-caption">cli.py:145 · Tier 2 LLM merge preserves heuristic truth</div>
+<pre><code class="language-python"># Heuristic owns: likely_ai_dialogue, confidence (do NOT touch).
+# LLM contributes: primary_platform, user_name, agent_persona_names
+if llm_result.primary_platform:
+    result.primary_platform = llm_result.primary_platform
+if llm_result.user_name:
+    result.user_name = llm_result.user_name
+if llm_result.agent_persona_names:
+    result.agent_persona_names = list(llm_result.agent_persona_names)</code></pre>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight: heuristic truth wins over a weak LLM</div>
+  <p>
+    Tier 2 can extract persona names and platform, but its <code>likely_ai_dialogue</code> answer is <strong>discarded</strong>
+    if it differs from a confident Tier 1 heuristic (<code>cli.py:145</code>). Per the PR&nbsp;#1211 review, this protects
+    against weak local models (e.g. Ollama <code>gemma4:e4b</code>) flipping confident regex answers. The LLM is a scalpel,
+    not a hammer.
+  </p>
+</div>
+
+<p>
+  <strong>Idempotent init via artifact filtering.</strong> <code>_gather_origin_samples</code> skips mempalace's own
+  per-project files from corpus-origin sampling, so re-running init produces the same classification it did on the first
+  run, preventing density drift.
+</p>
+
+<div class="code-caption">cli.py:79 · skip mempalace artifacts during sampling</div>
+<pre><code class="language-python">for filepath in files:
+    if filepath.name in _MEMPALACE_PROJECT_FILES:
+        continue  # Skip mempalace's own artifacts so re-runs stay idempotent
+    if total_chars &gt;= _PASS_ZERO_TOTAL_CAP:
+        break
+    try:
+        with open(filepath, encoding="utf-8", errors="replace") as f:
+            content = f.read(_PASS_ZERO_PER_FILE_CAP)
+    except OSError:
+        continue</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha: init is idempotent only because of the filter</div>
+  <p>
+    Without the artifact-skip logic (<code>cli.py:74–81</code>), re-running init would pick up the
+    <code>entities.json</code> and <code>mempalace.yaml</code> it wrote on the first run, changing corpus-origin density
+    and producing a different classification. The filter is a non-obvious but critical detail for multi-user teams and CI
+    systems.
+  </p>
+</div>
+
+<p>
+  <strong>Pass 0 memory bounds.</strong> Samples are capped at 30 files, 100&nbsp;KB per file, and 5&nbsp;MB total to fit
+  in memory. Tier 2 LLM samples are further trimmed to 2&nbsp;KB per sample and 20 samples max to fit finite context
+  windows, preventing OOM or API-quota abuse. <strong>Mine post-init prompt</strong>
+  (<code>_maybe_run_mine_after_init</code>, <code>cli.py:409</code>) reuses the pre-scan result to show a file-count and
+  size estimate before asking "Mine now?", so the corpus tree is walked only once. <strong>LLM errors on init</strong>
+  are caught and logged (<code>cli.py:169</code>) but never block init; a consent gate (issue #26) uses
+  <code>api_key_source</code> to detect stray environment-variable APIs and blocks unless <code>--llm-api-key</code> was
+  explicit or <code>--accept-external-llm</code> was passed.
+</p>
+
+<div class="code-caption">layers.py:172 · Layer 1 hard truncation keeps wake-up in budget</div>
+<pre><code class="language-python">if total_len + len(entry_line) &gt; self.MAX_CHARS:
+    lines.append("  ... (more in L3 search)")
+    return "\n".join(lines)
+
+lines.append(entry_line)
+total_len += len(entry_line)</code></pre>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance: wake-up never blocks and never bloats</div>
+  <p>
+    Layer 1 enforces <code>MAX_DRAWERS=15</code> and <code>MAX_CHARS=3200</code> (~800 tokens), breaking early when the
+    total exceeds the ceiling so wake-up stays in budget even with 10k drawers. <code>stack.wake_up()</code> also
+    degrades gracefully when the palace is missing, empty, or ChromaDB reads fail (<code>layers.py:96–97, 122</code>) —
+    the CLI command never crashes in a degraded state.
+  </p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight: multilingual is the default, English-only is opt-down</div>
+  <p>
+    <code>_ask_embedding_model</code> (<code>onboarding.py:88</code>) defaults to <code>embeddinggemma</code>
+    (300&nbsp;MB multilingual) because cross-lingual cosine similarity under English-only MiniLM collapses to ~0.35
+    (essentially random). Non-English content silently breaks under MiniLM, so multilingual is the safe default even
+    though it costs 10× more disk. See <a href="i18n.html">internationalization</a>.
+  </p>
+</div>
+
+<details class="collapsible">
+  <summary>Edge case: corpus-origin evidence is immutable once prefixed</summary>
+  <p>
+    When <code>_run_pass_zero</code> detects that evidence lines are already prefixed (<code>Tier-1 heuristic:</code>),
+    it skips re-prefixing (<code>cli.py:158–167</code>). This lets <code>origin.json</code> be read repeatedly without
+    duplicating prefixes, but it also means evidence trails are frozen once written. Re-running
+    <code>--redetect-origin</code> on mine (<code>cli.py:498</code>) only runs Tier 1 heuristics — no LLM — so evidence
+    cannot be upgraded post-init.
+  </p>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>cmd_init</td><td>function</td><td><code>cli.py:230</code></td><td>Entry point for <code>mempalace init</code>; orchestrates the four-pass setup (corpus detection, entity discovery, room detection, gitignore protection, optional post-init mine).</td></tr>
+    <tr><td>_run_pass_zero</td><td>function</td><td><code>cli.py:106</code></td><td>Corpus-origin detection (Tier 1 heuristic + optional Tier 2 LLM); writes <code>origin.json</code> with platform/persona detection for downstream entity classification.</td></tr>
+    <tr><td>_maybe_run_mine_after_init</td><td>function</td><td><code>cli.py:409</code></td><td>Post-init mine prompt and execution; shows file count/size estimate and reuses the pre-scan result to avoid a redundant tree walk.</td></tr>
+    <tr><td>cmd_mine</td><td>function</td><td><code>cli.py:489</code></td><td>Dispatcher for three mining modes (projects, convos, extract) with <code>--wing</code>, <code>--dry-run</code>, <code>--include-ignored</code>, <code>--max-chunks-per-file</code>; catches <code>MineAlreadyRunning</code> and <code>MineValidationError</code>.</td></tr>
+    <tr><td>cmd_wakeup</td><td>function</td><td><code>cli.py:712</code></td><td>CLI entry for wake-up context (L0+L1); instantiates <code>MemoryStack</code> and calls <code>stack.wake_up(wing=args.wing)</code> to inject ~600–900 tokens at startup.</td></tr>
+    <tr><td>run_onboarding</td><td>function</td><td><code>onboarding.py:390</code></td><td>Interactive first-run setup; prompts for mode, embedding model, people, projects, and wings; generates AAAK bootstrap and critical-facts files.</td></tr>
+    <tr><td>MemoryStack</td><td>class</td><td><code>layers.py:361</code></td><td>Unified interface to the 4-layer memory stack; <code>wake_up()</code> concatenates L0 + L1, <code>recall(wing)</code> retrieves L2 on demand, <code>search(query)</code> performs L3 semantic search.</td></tr>
+    <tr><td>Layer1.generate</td><td>function</td><td><code>layers.py:92</code></td><td>Fetches the top 15 importance-scored drawers from ChromaDB, groups by room, truncates to <code>MAX_CHARS=3200</code> (~800 tokens) to fit the wake-up budget.</td></tr>
+    <tr><td>_ask_embedding_model</td><td>function</td><td><code>onboarding.py:88</code></td><td>Prompts for embedding model (multilingual default vs. English-only); choice persists in <code>config.json</code> via <code>set_embedding_model</code>.</td></tr>
+    <tr><td>run_instructions</td><td>function</td><td><code>instructions_cli.py:16</code></td><td>Reads and prints instruction markdown files (init, search, mine, help, status) from <code>instructions/</code>; consumed by the skill harness for agent routing.</td></tr>
+    <tr><td>PALACE_PROTOCOL</td><td>constant</td><td><code>mcp_server.py:783</code></td><td>Protocol string in the MCP status response; instructs agents to call status on wake-up, verify facts before responding, and write a diary after sessions.</td></tr>
+    <tr><td>AAAK_SPEC</td><td>constant</td><td><code>mcp_server.py:792</code></td><td>Dialect specification (3-letter codes, emotion markers, pipe-separated fields) in the status response; teaches agents the compressed storage notation.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Tier 2 LLM extracts platform &amp; persona only; the heuristic owns AI-dialogue classification</dt>
+  <dd>A weak local LLM can hallucinate platform/persona, but its answer to "is this AI-dialogue?" conflicts with a
+    confident heuristic. PR&nbsp;#1211 settled on the LLM as a specialist (extracts what it's pre-trained on: Claude vs.
+    ChatGPT) and the heuristic as a conservative gate (regex marks are hard signals). This avoids false negatives that
+    would break downstream entity detection.</dd>
+
+  <dt>Idempotent init via artifact filtering, not checksum/mtime guards</dt>
+  <dd>Simpler and more robust than tracking what was written. By skipping mempalace's own files from corpus-origin
+    sampling (<code>cli.py:74–81</code>), the heuristic sees the same inputs on re-run and produces the same output —
+    across machines, containers, and git clones, with no state files.</dd>
+
+  <dt>Multilingual embedding as the default, not English-only</dt>
+  <dd>Non-English content stored under English-only MiniLM fails silently — cosine similarity collapses to ~0.35.
+    Multilingual <code>embeddinggemma</code> costs 10× disk but guarantees cross-lingual recall; <code>--minilm</code>
+    is the opt-down for slow links or English-only users. Safe default beats fast default.</dd>
+
+  <dt>Wake-up injects L0+L1 as a fixed ~600–900 tokens, never variable</dt>
+  <dd>Predictable context cost so users know exactly how many tokens are burned before the first AI response. L1
+    truncates hard at <code>MAX_CHARS=3200</code> so even a palace with 10k drawers won't exceed budget, leaving 95%+ of
+    the context window free.</dd>
+
+  <dt>Pass 0 is non-fatal; LLM failures fall back to heuristics silently</dt>
+  <dd>Init must work offline and in CI without an external API. The LLM tier is always optional and best-effort
+    (<code>cli.py:142</code>); users see at most a one-line message if the LLM is missing and never see "init blocked
+    waiting for API." This mirrors the no-API-key-required promise of the whole system.</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>When a user runs <code>mempalace init &lt;dir&gt;</code>, the flow is:</p>
+<ol>
+  <li><code>MempalaceConfig()</code> loads <a href="security-privacy.html" hidden>config.json</a> or defaults.</li>
+  <li><code>_gather_origin_samples</code> reads up to 30 files (skipping mempalace artifacts) for corpus-origin detection.</li>
+  <li><code>_run_pass_zero</code> runs Tier 1 heuristic regex, optionally runs Tier 2 LLM (merging fields, not replacing), and writes <code>&lt;palace&gt;/.mempalace/origin.json</code>.</li>
+  <li><code>discover_entities</code> scans for people/projects/topics, optionally LLM-refined, and receives the <code>corpus_origin</code> dict so it knows whether "Echo" is a person or an agent.</li>
+  <li><code>confirm_entities</code> prompts the user to validate, writes <code>entities.json</code> to the project root, and syncs to the global <a href="entities.html">entity registry</a>.</li>
+  <li><code>detect_rooms_local</code> infers rooms from folder structure.</li>
+  <li><code>_ensure_mempalace_files_gitignored</code> adds <code>mempalace.yaml</code> and <code>entities.json</code> to <code>.gitignore</code>.</li>
+  <li><code>_maybe_run_mine_after_init</code> offers to <a href="mining-projects.html">mine</a> immediately, reusing the pre-scan result.</li>
+</ol>
+<p>
+  On <code>wake-up</code>, <code>MemoryStack</code> loads <code>identity.txt</code> (L0), queries ChromaDB for the
+  top-weighted drawers (L1), concatenates them, and prints markdown for prompt injection. On <code>mine &lt;dir&gt;</code>,
+  the dispatcher routes to one of three miners; each produces drawers (text + metadata) upserted into ChromaDB. On
+  <code>search "query"</code>, the <a href="search.html">searcher</a> builds where-filters from wing/room flags, queries
+  ChromaDB semantic similarity, and returns ranked results. Throughout, the CLI respects <code>--palace</code> to
+  override the default palace path (<code>cli.py:242</code>), enabling multi-palace workflows.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="entities.html">
+      <span class="rc-group">Ingestion</span>
+      <div class="rc-title">Entity System</div>
+      <div class="rc-desc"><code>cmd_init</code> calls <code>discover_entities</code> and passes corpus-origin context to resolve ambiguous names; onboarding seeds the registry before mining.</div>
+    </a>
+    <a class="related-card" href="search.html">
+      <span class="rc-group">Retrieval</span>
+      <div class="rc-title">Search &amp; Retrieval</div>
+      <div class="rc-desc"><code>cmd_search</code> calls <code>searcher.search()</code>; <code>instructions/search.md</code> guides agents; Layer 3 wraps the semantic search logic.</div>
+    </a>
+    <a class="related-card" href="mining-projects.html">
+      <span class="rc-group">Ingestion</span>
+      <div class="rc-title">Project Mining</div>
+      <div class="rc-desc"><code>cmd_mine</code> routes to the project miner; the post-init prompt removes friction from the init→mine workflow.</div>
+    </a>
+    <a class="related-card" href="llm-integration.html">
+      <span class="rc-group">Cross-cutting</span>
+      <div class="rc-title">LLM Integration</div>
+      <div class="rc-desc"><code>cmd_init</code> uses <code>get_provider</code> and <code>detect_origin_llm</code> for optional Tier 2 refinement, plus the consent gate for external APIs.</div>
+    </a>
+    <a class="related-card" href="hooks.html">
+      <span class="rc-group">Interfaces</span>
+      <div class="rc-title">Hooks &amp; Auto-save</div>
+      <div class="rc-desc"><code>cmd_hook</code> routes to <code>hooks_cli.run_hook</code> for session-start/stop/precompact auto-save and pre-compaction blocking.</div>
+    </a>
+    <a class="related-card" href="maintenance.html">
+      <span class="rc-group">Cross-cutting</span>
+      <div class="rc-title">Repair, Sync &amp; Maintenance</div>
+      <div class="rc-desc"><code>cmd_repair</code>, <code>cmd_sync</code>, and <code>cmd_migrate</code> provide repair tooling; non-fatal mine errors surface SQLite recovery instructions.</div>
+    </a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

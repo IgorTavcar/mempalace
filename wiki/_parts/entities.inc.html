@@ -1,0 +1,289 @@
+<header class="page-head">
+  <div class="page-kicker">Ingestion</div>
+  <h1>Entity System</h1>
+  <p class="lead">Auto-detecting and disambiguating the people, projects, and systems in your text.</p>
+</header>
+
+<div class="summary">
+  MemPalace's entity system detects and classifies proper nouns — people, projects, topics — from your content using a two-pass, signal-based approach. Pass 1 extracts candidates via i18n-aware regex patterns and a COCA content-word filter; pass 2 scores them on contextual signals (dialogue markers, pronouns, action verbs, versioning) and classifies under a two-signal-category rule. A persistent <code>EntityRegistry</code> seeds from onboarding, learns high-confidence candidates, and optionally researches unknowns via Wikipedia. Corpus-origin detection separates AI-dialogue agent personas from real people before classification, and the resulting entities key <a href="palace-model.html">wings</a> and feed <a href="palace-model.html">hallway</a> computation for entity-centric navigation.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+<p>
+  Detection runs in two passes over text, gated by a corpus-origin check that protects against misreading
+  narrative prose as AI dialogue. Everything downstream — <a href="aaak-dialect.html">closet pointers</a>,
+  <a href="palace-model.html">hallways</a>, and <a href="search.html">search</a> — depends on accurate entity output.
+</p>
+
+<h3>Extraction &amp; candidacy (Pass 1)</h3>
+<p>
+  Extraction begins with language-aware regex patterns loaded from <code>i18n/*lang*.json</code> entity sections.
+  Single-word candidates match character classes that vary per script (ASCII <code>[a-z]</code>, Latin+diacritics,
+  Cyrillic, Devanagari, …); multi-word candidates capture phrases through separate patterns. All matches pass a
+  union of locale-specific stopwords to eliminate articles and particles. The
+  <a href="#concept-coca">COCA content-word filter</a> then removes ~600 common English words (<em>Code</em>,
+  <em>Line</em>, <em>Phase</em>, <em>Note</em>) that appear capitalized but are never entities.
+</p>
+<ul>
+  <li>The <strong>multi-word path bypasses COCA filtering</strong>, preserving compounds like <em>Claude Code</em>.</li>
+  <li>Only names with <strong>frequency &ge; 3</strong> advance to scoring; singletons are treated as noise.</li>
+</ul>
+
+<h3>Signal scoring (Pass 2)</h3>
+<p>
+  Each candidate is scored across six signal types into a <code>person_score</code> and a <code>project_score</code>,
+  each carrying human-readable signal strings for later review:
+</p>
+<ul>
+  <li><strong>Dialogue markers</strong> — colon-prefix speaker tags, weighted 3&times; per match.</li>
+  <li><strong>Person verbs</strong> — actions like <em>said</em>, <em>asked</em>, weighted 2&times;.</li>
+  <li><strong>Pronouns</strong> within a 3-line window, weighted 2&times;.</li>
+  <li><strong>Direct address</strong>, weighted 4&times;.</li>
+  <li><strong>Versioned / hyphenated forms</strong> (project signal), weighted 3&times;.</li>
+  <li><strong>Code-file references</strong> (project signal), weighted 3&times;.</li>
+</ul>
+<p>
+  A second-pass heuristic guards the dialogue signal: bare colon-prefix patterns must occur 2+ times before counting,
+  since real speakers repeat but metadata lines like <code>Created: 2026-04-21</code> do not.
+</p>
+
+<h3>Classification with the multi-signal requirement</h3>
+<p>
+  Classification requires orthogonal evidence. A person candidate must exhibit signals from at least
+  <strong>two different categories</strong> (dialogue, action, pronoun, direct-address) with
+  <code>person_score &ge; 5</code>, <em>or</em> show a strong pronoun-only signal
+  (<code>pronoun_hits &ge; 5</code> and <code>pronoun_hits / frequency &ge; 0.2</code>). Projects are classified when
+  <code>project_score</code> dominates; mixed signals default to <em>uncertain</em> for user review. Confidence is capped
+  at 0.99 and calibrated as <code>person_confidence = 0.5 + person_ratio * 0.5</code>.
+</p>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha: syntactic artifacts masquerading as people</div>
+  <p>
+    A word like <em>Click</em> appearing 15 times (&ldquo;Click, click, click, they filled…&rdquo;) can match the
+    person-verb pattern repeatedly, amassing a high <code>person_score</code> from a <em>single</em> signal category.
+    The two-signal-category rule (<code>entity_detector.py:404</code>) blocks this unless <em>Click</em> also shows
+    dialogue markers, pronouns, or direct address. Without it, action-verb frequency alone would produce false positives.
+  </p>
+</div>
+
+<h3>Corpus-origin detection &amp; persona reclassification</h3>
+<p>
+  Before detection feeds the taxonomy, corpus-origin detection determines the platform and any agent-persona names.
+  Tier 1 (heuristic, always on) counts unambiguous AI brand terms (<em>Claude Code</em>, <em>ChatGPT</em>, <em>MCP</em>,
+  <em>LLM</em>) and ambiguous terms (<em>Claude</em>, <em>Opus</em>, <em>Haiku</em>, <em>Gemini</em>) under a
+  co-occurrence rule. Tier 2 (optional <a href="llm-integration.html">LLM</a>) uses model knowledge to extract the
+  persona names a user has assigned to their agent instances. When <code>corpus_origin</code> is passed to
+  <code>detect_entities</code>, candidates matching <code>agent_persona_names</code> are moved out of
+  people/uncertain into an <code>agent_personas</code> bucket and retagged <code>type="agent_persona"</code>,
+  preventing downstream drawer-allocation errors such as family/relationship inference on an AI.
+</p>
+
+<h3>EntityRegistry: three-tier persistence</h3>
+<p>
+  The registry at <code>~/.mempalace/entity_registry.json</code> stores entities by source priority:
+  (1) <strong>onboarding</strong> (confidence 1.0, user-explicit), (2) <strong>learned</strong> (inferred from sessions,
+  auto-added at high confidence), (3) <strong>wiki</strong> (researched via Wikipedia, optional network call). Lookup
+  returns type, source, confidence, and canonical name for aliases. Ambiguous words like <em>ever</em> and <em>grace</em>
+  carry an ambiguous flag; when context is supplied, <code>_disambiguate()</code> scores person-context patterns
+  (<em>Said</em>, <em>with</em>, possessive <code>'s</code>) against concept-context patterns (<em>have you</em>,
+  <em>would ever</em>) and returns the higher-scored type. See <a href="security-privacy.html">Security &amp; Privacy</a>
+  for the network gating on Wikipedia research.
+</p>
+
+<h3>Integration: closets &amp; hallways</h3>
+<p>
+  During mining (<code>palace.py</code>), each drawer's content window is scanned for entity candidates with the same
+  i18n-aware patterns. Proper nouns appearing 2+ times are extracted, COCA-filtered, ranked by frequency (max 5), and
+  stored in <a href="aaak-dialect.html">closet pointer lines</a> as the 2nd pipe-separated field. In
+  <code>hallways.py</code>, entities are extracted again from drawer contents to compute entity-pair co-occurrence graphs
+  within each wing: every pair of entities sharing a drawer increments a counter, rooms are tracked, and high-traffic
+  pairs become hallway nodes labeled like &ldquo;Alice &harr; Bob (co-occur in 12 drawers across 3 rooms)&rdquo;. Entities
+  thus key the entire wing-navigation model.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt id="concept-coca">COCA content-word filter</dt>
+  <dd>Tier 2 linguistics cleanup: a frozenset of ~600 common English words (<em>code</em>, <em>phase</em>, <em>brutal</em>, <em>line</em>, <em>note</em>) that appear capitalized but are not proper nouns. Blocks false-positive detection on sentence-start words. Multi-word candidates intentionally bypass this filter to preserve compounds like <em>Claude Code</em>.</dd>
+
+  <dt>Two-signal-category rule</dt>
+  <dd>A person must exhibit signals from <strong>two different categories</strong> (dialogue, action, pronoun, direct-address) to classify confidently. Single-category hits (e.g. only action verbs) are downgraded to <em>uncertain</em>, preventing patterns like &ldquo;Click, click, click…&rdquo; from being read as the person-entity <em>Click</em>.</dd>
+
+  <dt>Corpus-origin detection</dt>
+  <dd>Two-tier system (Tier 1 heuristic + optional Tier 2 LLM) that decides whether a corpus is AI-dialogue vs narrative. Tier 1 uses brand-term regex (unambiguous: <em>Claude Code</em>; ambiguous: <em>Claude</em>) with co-occurrence rules. Tier 2 extracts platform identity and agent-persona names. Persona-matched candidates are reclassified people&rarr;agent_personas to prevent false family/relationship inference.</dd>
+
+  <dt>Non-Latin word boundaries</dt>
+  <dd>Locales with combining-mark scripts (Devanagari ा ी, Arabic ـَ ـِ, Thai, Khmer) declare <code>boundary_chars</code> in their <a href="i18n.html">i18n</a> entity sections. These expand Python's default <code>\b</code> to a lookaround-based boundary that preserves marks, so names like अनीता match correctly instead of truncating to अनीत.</dd>
+
+  <dt>EntityRegistry</dt>
+  <dd>Persistent <code>~/.mempalace/entity_registry.json</code> storing three tiers: onboarding (user-confirmed), learned (high-confidence session detections), and wiki (Wikipedia-researched, local-only by default for privacy). Supports ambiguous-flag disambiguation, alias tracking, and relationship metadata.</dd>
+
+  <dt>Closet pointer entities</dt>
+  <dd>Proper nouns embedded in <a href="aaak-dialect.html">closet lines</a> as the 2nd pipe-separated field. Detected via i18n-aware patterns over a content window; entities appearing 2+ times are extracted (max 5), deduped, and ranked by frequency. Feeds palace-level searching and hallway computation.</dd>
+
+  <dt>Agent personas</dt>
+  <dd>Names the user has assigned to AI agents they converse with (e.g. Echo, Sparrow, Claude-instance-2). Extracted by Tier 2 (LLM) during corpus-origin detection. When <code>corpus_origin</code> context reaches <code>detect_entities</code>, matching candidates are reclassified from people/uncertain into a separate <code>agent_personas</code> bucket.</dd>
+
+  <dt>Disambiguation context</dt>
+  <dd>For ambiguous words that are also common English (<em>ever</em>, <em>grace</em>, <em>may</em>, <em>Rose</em>), <code>EntityRegistry._disambiguate()</code> checks surrounding context against person-context patterns (<em>said</em>, <em>with</em>, <code>'s</code>) and concept-context patterns (<em>have you</em>, <em>if you</em>, <em>would</em>). Context-derived confidence adjusts the final decision.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  The COCA filter is a lazily-loaded, cached frozenset — costly to build once, then O(1) on every lookup, and degrading
+  gracefully to a no-op filter if its data file is missing.
+</p>
+<div class="code-caption">entity_detector.py:62 · COCA filter lazy-load cache</div>
+<pre><code class="language-python">@functools.lru_cache(maxsize=1)
+def _get_coca_filter() -&gt; frozenset[str]:
+    data_path = Path(__file__).parent / "data" / "coca_content_words.json"
+    try:
+        raw = json.loads(data_path.read_text(encoding="utf-8"))
+        words = raw.get("words", [])
+        return frozenset(w.lower() for w in words if isinstance(w, str))
+    except (OSError, json.JSONDecodeError, AttributeError, TypeError):
+        return frozenset()</code></pre>
+
+<p>
+  Dialogue scoring validates bare colon-prefix patterns so single-line metadata can't impersonate a speaker tag:
+</p>
+<div class="code-caption">entity_detector.py:298 · dialogue marker validation</div>
+<pre><code class="language-python"># The bare `^NAME:\s` colon-prefix pattern matches metadata lines like
+# `Created: 2026-04-21`, so we require &gt;= 2 hits for it to count as dialogue
+# (real speaker markers repeat; single-line metadata doesn't).
+for rx in patterns["dialogue"]:
+    matches = len(rx.findall(text))
+    if matches == 0:
+        continue
+    is_bare_colon = rx.pattern.endswith(r":\s") and not rx.pattern.endswith(r"[:\s]")
+    if is_bare_colon and matches &lt; 2:
+        continue
+    person_score += matches * 3</code></pre>
+
+<p>
+  The corpus-origin co-occurrence rule is the single line that prevents narrative prose from registering as AI dialogue:
+</p>
+<div class="code-caption">corpus_origin.py:209 · ambiguous-term co-occurrence rule</div>
+<pre><code class="language-python"># Ambiguous terms ('Claude' as a French name, 'Gemini' as a zodiac sign,
+# 'Haiku' as a poem form) only count if the corpus also has an unambiguous
+# AI signal. Otherwise we'd false-positive on French novels, astrology
+# forums, poetry corpora, llama-rancher journals, etc.
+has_ai_context = total_unambiguous &gt; 0 or turn_hits &gt; 0
+counted_brand_hits = total_unambiguous + (total_ambiguous if has_ai_context else 0)</code></pre>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security: co-occurrence rules out literal false positives</div>
+  <p>
+    A French novel with a character named <em>Claude</em>, an astrology corpus full of <em>Gemini</em>, or a poetry
+    corpus about <em>haiku</em> could all false-positive as AI-dialogue. The co-occurrence rule
+    (<code>corpus_origin.py:215</code>) solves it: <em>Claude</em> alone scores low; <em>Claude</em> + <em>ChatGPT</em>
+    triggers high. This prevents misclassifying personal narratives as AI-dialogue — whose downstream effect would be
+    marking real family members as AI personas.
+  </p>
+</div>
+
+<details class="collapsible">
+  <summary>More highlights &mdash; persistence, merging &amp; closet extraction</summary>
+  <ul>
+    <li><strong>Atomic registry writes</strong> (<code>entity_registry.py:324</code>) — <code>save()</code> serializes to a <code>.tmp</code> sibling, fsyncs, then <code>os.replace</code> to target (and fsyncs the parent directory on ext4+). The previous registry survives a crash mid-write rather than truncating to empty.</li>
+    <li><strong>Field merging in Tier 2</strong> (<code>cli.py:135</code>) — when the LLM augments the heuristic, <code>likely_ai_dialogue</code> and <code>confidence</code> stay from Tier 1; Tier 2 contributes only <code>primary_platform</code>, <code>user_name</code>, and <code>agent_persona_names</code>. Evidence is prefixed (<code>Tier-1 heuristic:</code>, <code>Tier-2 LLM:</code>) for audit.</li>
+    <li><strong>Closet entity extraction &amp; dedup</strong> (<code>palace.py:266</code>) — <code>_candidate_entity_words()</code> scans a 5000-char window, counts frequencies, applies stoplist + COCA filter, keeps <code>count &ge; 2</code>, sorts by frequency, caps at 5. Dedup is implicit via the frequency dict.</li>
+  </ul>
+</details>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight: recall &gt; precision for compounds</div>
+  <p>
+    Single-word extraction applies the COCA filter to suppress <em>Code</em>, <em>Phase</em>, <em>Note</em> — but
+    multi-word candidates are deliberately <em>not</em> filtered (<code>entity_detector.py:217</code>). This preserves
+    <em>Claude Code</em> (where bare <em>Code</em> would be suppressed) and lets legitimate compound project names escape
+    the filter. A conscious trade: favor recall (don't miss <em>Claude Code</em>) over precision (a false positive on bare
+    <em>Code</em>).
+  </p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight: pronoun-only classification needs a high ratio</div>
+  <p>
+    A diary protagonist mentioned 100 times and referenced with pronouns 20 times classifies as a person via the pronoun
+    signal alone — bypassing the two-signal rule — only if <code>pronoun_hits &ge; 5</code> <em>and</em>
+    <code>pronoun_hits / frequency &ge; 0.2</code> (<code>entity_detector.py:416</code>). That 20% ratio rejects common
+    sentence-start words (<em>Never</em>, <em>Before</em>) that incidentally sit near pronouns, while still catching true
+    diary protagonists.
+  </p>
+</div>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>extract_candidates</td><td>func</td><td><code>entity_detector.py:181</code></td><td>Pass 1 — extracts capitalized candidates via i18n regex, COCA filter, stopwords; returns <code>{name: frequency &ge; 3}</code></td></tr>
+    <tr><td>score_entity</td><td>func</td><td><code>entity_detector.py:282</code></td><td>Pass 2 — scores a candidate across six signal types; returns <code>{person_score, project_score, signals}</code></td></tr>
+    <tr><td>classify_entity</td><td>func</td><td><code>entity_detector.py:368</code></td><td>Applies the two-signal-category rule and confidence calibration; classifies person/project/uncertain</td></tr>
+    <tr><td>detect_entities</td><td>func</td><td><code>entity_detector.py:449</code></td><td>Main entry point — scans files, scores/classifies each, applies optional corpus-origin persona reclassification</td></tr>
+    <tr><td>confirm_entities</td><td>func</td><td><code>entity_detector.py:621</code></td><td>Interactive review — user edits/adds entities; returns confirmed <code>{people, projects, topics}</code></td></tr>
+    <tr><td>_get_coca_filter</td><td>func</td><td><code>entity_detector.py:62</code></td><td>Lazy-loads frozenset of ~600 content words; O(1) cache hit via <code>lru_cache</code></td></tr>
+    <tr><td>_apply_corpus_origin</td><td>func</td><td><code>entity_detector.py:546</code></td><td>Reclassifies candidates matching <code>agent_persona_names</code> into the <code>agent_personas</code> bucket</td></tr>
+    <tr><td>EntityRegistry</td><td>class</td><td><code>entity_registry.py:273</code></td><td>Persistent three-tier registry (onboarding &gt; learned &gt; wiki); disambiguation, Wikipedia research, atomic writes</td></tr>
+    <tr><td>detect_origin_heuristic</td><td>func</td><td><code>corpus_origin.py:166</code></td><td>Tier 1 — grep-based AI-dialogue detection; counts brand terms/turn-markers with co-occurrence rule; no API</td></tr>
+    <tr><td>detect_origin_llm</td><td>func</td><td><code>corpus_origin.py:374</code></td><td>Tier 2 — LLM-assisted; extracts <code>primary_platform</code>, <code>user_name</code>, <code>agent_persona_names</code></td></tr>
+    <tr><td>build_closet_lines</td><td>func</td><td><code>palace.py:241</code></td><td>Mines drawer content — extracts entities, dedupes on <code>count &ge; 2</code>, COCA-filters, embeds in closet lines</td></tr>
+    <tr><td>_candidate_entity_words</td><td>func</td><td><code>palace.py:215</code></td><td>Finds capitalized candidates via i18n-aware patterns; shared by closets and hallways</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Three-tier entity registry (onboarding &gt; learned &gt; wiki)</dt>
+  <dd>Onboarding (confidence 1.0) seeds ground truth the user explicitly confirmed; learned entities (auto-added from sessions) require high confidence (&gt;0.75) to avoid proliferation; wiki is research-only and network-gated, never auto-added. The ordering honors user intent first, high-confidence inference next, optional external research last — matching the local-first, zero-API philosophy.</dd>
+
+  <dt>Corpus-origin detection before entity taxonomy</dt>
+  <dd>Determining platform and agent-persona names <em>before</em> <code>detect_entities</code> runs prevents catastrophic downstream errors — an AI instance named <em>Echo</em> shouldn't populate family/relationship drawers. Tier 1 always runs (offline); optional Tier 2 confirms ambiguous cases. Early detection lets classification skip agent personas entirely.</dd>
+
+  <dt>COCA content-word filter + multi-word bypass</dt>
+  <dd>Balances precision (suppress <em>Code</em> as a false-positive entity) against recall (preserve the <em>Claude Code</em> compound). Real project/person names tend to be multi-word (<em>Alice Chen</em>, <em>Cloud Run</em>) while accidental false positives are single words (<em>Code</em>, <em>Phase</em>), so the bypass aligns the filter with observed reality.</dd>
+
+  <dt>Two-signal-category rule over single-category scores</dt>
+  <dd>A single syntactic pattern can fire repeatedly on noise (Click, Click, Click) and amass a high score. Requiring two orthogonal categories (dialogue + pronoun, or action + direct-address) enforces independent evidence. A low false-positive rate on closed corpora beats high recall on noisy input.</dd>
+
+  <dt>Field merging (not replacement) in Tier 2 LLM</dt>
+  <dd>Tier 1's <code>likely_ai_dialogue</code> and <code>confidence</code> are heuristic ground truth based on known signal densities; a weak LLM (e.g. Ollama gemma2) can be wrong, so it never overrides them. Tier 2 contributes only persona extraction — fields Tier 1 never computes — and evidence is merged with prefixes for audit.</dd>
+
+  <dt>Local-only EntityRegistry research by default</dt>
+  <dd>Wikipedia lookup requires explicit <code>allow_network=True</code>; otherwise <code>research()</code> returns <em>unknown</em> locally. No data leaves the machine unless the caller asks, honoring privacy-by-architecture. See <a href="security-privacy.html">Security &amp; Privacy</a>.</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>
+  Raw text flows through <code>extract_candidates()</code> (i18n regex, COCA filter, frequency &ge; 3) yielding
+  candidates. Each enters <code>score_entity()</code> (dialogue, pronouns, verbs, versioning signals), then
+  <code>classify_entity()</code> (two-signal-category rule &rarr; person / project / uncertain). Detected entities feed
+  <code>confirm_entities()</code> for user review, and confirmed <code>{people, projects, topics}</code> seed
+  <code>EntityRegistry.seed()</code> and <code>mempalace/entities.json</code>.
+</p>
+<p>
+  During mining, corpus-origin detection (Tier 1 heuristic + optional Tier 2 LLM) runs first, producing
+  <code>agent_persona_names</code> that are passed to <code>detect_entities</code> via the <code>corpus_origin</code>
+  kwarg — triggering <code>_apply_corpus_origin()</code> to reclassify matching candidates into the
+  <code>agent_personas</code> bucket. Drawer content then passes through <code>palace.build_closet_lines()</code>, which
+  extracts entities via <code>_candidate_entity_words()</code>, dedupes on frequency &ge; 2, COCA-filters, and embeds
+  them as the 2nd pipe field of <a href="aaak-dialect.html">closet lines</a>. Those entities feed
+  <code>hallways.compute_hallways_for_wing()</code>, which counts entity-pair co-occurrences, ranks by room frequency,
+  and builds entity-centric <a href="palace-model.html">navigation graphs</a>. Meanwhile
+  <code>EntityRegistry.learn_from_text()</code> auto-discovers new high-confidence candidates during sessions, and
+  entities plus optional Wikipedia lookups and confirmations persist to <code>~/.mempalace/entity_registry.json</code>
+  via atomic writes.
+</p>
+
+<div class="related"><h2>See also</h2><div class="related-grid">
+  <a class="related-card" href="mining-projects.html"><span class="rc-group">Ingestion</span><div class="rc-title">Project Mining</div><div class="rc-desc">Project discovery via entity detection feeds mining; entities appear in closet pointers and hallways.</div></a>
+  <a class="related-card" href="i18n.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Internationalization</div><div class="rc-desc">Entity patterns, stopwords, and script-aware boundaries live in i18n entity sections.</div></a>
+  <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Entities in the 2nd pipe field of closet lines are indexed, enabling entity-centric search.</div></a>
+  <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">Entities key wings and rooms; closet pointers embed them; hallways are entity-pair structures.</div></a>
+  <a class="related-card" href="llm-integration.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">LLM Integration</div><div class="rc-desc">Corpus-origin Tier 2 uses an optional LLM for platform detection and agent-persona extraction.</div></a>
+  <a class="related-card" href="security-privacy.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Security &amp; Privacy</div><div class="rc-desc">Registry research is local-only by default; Wikipedia lookups require explicit opt-in.</div></a>
+</div></div>

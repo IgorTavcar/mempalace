@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AAAK Dialect &amp; Closets · MemPalace Wiki</title>
+  <meta name="description" content="AAAK is a lossy summarization format that extracts entities, topics, key quotes, emotions, and flags from verbatim drawer content into a single compact line (typically 40-150 bytes). Closets are searchable index collections that hold these pointer lines, each pointing back to the original drawer(s) via the → syntax. During retrieval, the searcher scans closets first to identify which drawers are relevant, then returns verbatim content from those drawers—100% recall is preserved because no information is lost, only indexed. The dialect supports non-Latin scripts (Hindi, Cyrillic, etc.) via language-aware Unicode patterns in the i18n system.">
+  <meta name="mp:slug" content="aaak-dialect">
+  <meta name="mp:group" content="Ingestion">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="AAAK Dialect &amp; Closets · MemPalace Wiki">
+  <meta property="og:description" content="AAAK is a lossy summarization format that extracts entities, topics, key quotes, emotions, and flags from verbatim drawer content into a single compact line (typically 40-150 bytes). Closets are searchable index collections that hold these pointer lines, each pointing back to the original drawer(s) via the → syntax. During retrieval, the searcher scans closets first to identify which drawers are relevant, then returns verbatim content from those drawers—100% recall is preserved because no information is lost, only indexed. The dialect supports non-Latin scripts (Hindi, Cyrillic, etc.) via language-aware Unicode patterns in the i18n system.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "AAAK Dialect & Closets", "name": "AAAK Dialect & Closets", "description": "AAAK is a lossy summarization format that extracts entities, topics, key quotes, emotions, and flags from verbatim drawer content into a single compact line (typically 40-150 bytes). Closets are searchable index collections that hold these pointer lines, each pointing back to the original drawer(s) via the \u2192 syntax. During retrieval, the searcher scans closets first to identify which drawers are relevant, then returns verbatim content from those drawers\u2014100% recall is preserved because no information is lost, only indexed. The dialect supports non-Latin scripts (Hindi, Cyrillic, etc.) via language-aware Unicode patterns in the i18n system.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link active" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Ingestion</span><span class="sep">/</span><span>AAAK Dialect &amp; Closets</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Ingestion</div>
+  <h1>AAAK Dialect &amp; Closets</h1>
+  <p class="lead">A compact symbolic index an LLM can scan in one pass to know which drawer to open.</p>
+</header>
+
+<div class="summary">
+  AAAK is a lossy summarization format that extracts entities, topics, key quotes, emotions, and importance flags
+  from verbatim drawer content into a single compact line (typically 40&ndash;150 bytes). Closets are searchable
+  index collections that hold these pointer lines, each pointing back to the original drawer(s) via the
+  <code>&rarr;</code> syntax. During retrieval, the searcher scans closets to identify relevant drawers, then returns
+  verbatim content from the drawers themselves &mdash; 100% recall is preserved because no information is lost, only
+  indexed. The dialect handles non-Latin scripts (Hindi, Cyrillic, Arabic&hellip;) through language-aware Unicode
+  patterns in the <a href="i18n.html">i18n</a> system.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+<p>
+  In the <a href="palace-model.html">palace model</a>, <strong>drawers</strong> hold verbatim 800-character chunks of
+  your content; <strong>closets</strong> are a thin index on top of them. AAAK is the dialect that turns a drawer into a
+  closet line. Think of it as the <a href="glossary.html">Zettelkasten</a> index card layer: small, cross-referenced
+  cards (closets) point to larger source materials (drawers), and the card is scannable in a single LLM context window.
+</p>
+
+<h3>Encoding: from drawer to closet line</h3>
+<p>
+  When a file is mined (see <a href="mining-projects.html">project mining</a>), drawers are created and indexed. For each
+  drawer, <code>build_closet_lines()</code> (<code>palace.py:241</code>) extracts <em>topics</em> (action verbs and
+  headers via regex), <em>entities</em> (proper nouns appearing 2+ times, using i18n-aware patterns), and
+  <em>quotes</em> (double-quoted strings). Each topic, quote, and summary becomes one atomic line such as
+  <code>built auth system|Ben;Igor|&rarr;drawer_api_auth_a1b2c3</code>. Lines are packed greedily into closets; when
+  adding a line would exceed 1500 chars the closet rolls to a new number (<code>_01</code>, <code>_02</code>&hellip;) and a
+  single line is never split across closets.
+</p>
+<ul>
+  <li>Topics extracted via action-verb regex: <code>built|fixed|wrote|added|pushed|deployed</code>&hellip;</li>
+  <li>Entities: 2+ occurrences in the 5000-char extraction window, sorted by frequency, capped at 5</li>
+  <li>Quotes: double-quoted strings 15&ndash;150 chars, up to 3 per closet</li>
+  <li>Closet size capped at 1500 chars; lines never split across closets</li>
+  <li>Entities filtered against a hardcoded stoplist and the COCA corpus to drop false entities</li>
+</ul>
+
+<h3>Dialect compression: plain text to AAAK</h3>
+<p>
+  <code>Dialect.compress()</code> (<code>dialect.py:561</code>) turns any plain text into AAAK format by detecting
+  emotional tone (keyword matching <code>_EMOTION_SIGNALS</code>), importance flags (<code>_FLAG_SIGNALS</code>), topics
+  (TF-IDF plus a proper-noun boost), and a key sentence (decision-word scoring). Output is 2&ndash;4 lines: an optional
+  header (<code>wing|room|date|title</code>), then a zettel line with entity codes, topics, quote, emotions, and flags.
+  For zettel JSON files, <code>encode_zettel()</code> uses identical logic but reads from structured fields. The
+  <code>Dialect</code> object optionally loads i18n regex patterns via <code>get_regex()</code> for non-Latin scripts.
+</p>
+<ul>
+  <li>Emotion detection: 30+ keyword mappings (<code>love&rarr;love</code>, <code>feared&rarr;fear</code>&hellip;)</li>
+  <li>Flag signals: 40+ keyword patterns (<code>decided&rarr;DECISION</code>, <code>founded&rarr;ORIGIN</code>&hellip;)</li>
+  <li>Topic ranking: TF-IDF with +2 bonus for capitalized / CamelCase / hyphenated words</li>
+  <li>Key sentence scoring: +2 for decision words, +1 for &lt;80 chars, -2 for &gt;150 chars</li>
+</ul>
+
+<h3>Closet-first retrieval: scan index, open drawer</h3>
+<p>
+  During <a href="search.html">search</a>, the searcher (<code>searcher.py:841</code>) queries closets via ChromaDB
+  embedding similarity <em>in parallel</em> with the raw drawer query. For each top closet hit it parses the
+  <code>&rarr;drawer_id_a,drawer_id_b</code> pointer (<code>searcher.py:180</code>) to learn which drawers are relevant,
+  then builds a boost lookup keyed by <code>source_file</code> storing <code>(rank, distance, preview)</code>. Drawers are
+  scored on their own vector distance, and any drawer from a source that matched a closet receives a rank-based boost:
+  position 0 &rarr; +0.40, position 1 &rarr; +0.25, and so on, applied only when closet distance &le; 1.5 (cosine). Boosted
+  hits surface higher; their <code>matched_via</code> field becomes <code>"drawer+closet"</code> and a
+  <code>closet_preview</code> field shows the line that matched.
+</p>
+<ul>
+  <li>Closets queried in parallel with drawers &mdash; no sequential gate</li>
+  <li>Closet boost is ordinal (rank position), not distance-based &mdash; more reliable on narrative</li>
+  <li>Boost capped at <code>CLOSET_DISTANCE_CAP</code> (1.5) to drop weak closet signals</li>
+  <li>Falls back to drawer-only search if closets don't exist or all hits are filtered</li>
+</ul>
+
+<h3>Non-Latin script support via i18n</h3>
+<p>
+  The <a href="i18n.html">i18n module</a> (<code>i18n/__init__.py</code>) provides language-specific entity patterns. For
+  scripts with combining marks (Devanagari, Arabic, Hebrew, Thai), the locale file declares <code>boundary_chars</code>
+  (Hindi: <code>"\wऀ-ॿ"</code>). <code>_script_boundary()</code> (<code>i18n/__init__.py:113</code>) replaces
+  <code>\b</code> with a lookaround that treats those characters as &ldquo;inside word.&rdquo; When closets are built,
+  <code>_candidate_entity_words()</code> (<code>palace.py:215</code>) applies these patterns from
+  <code>get_entity_patterns()</code> so a Hindi name ending in a matra (&#x093E; &#x0940;) matches in full instead of being
+  truncated at the mark. Closet entities for all scripts are extracted identically.
+</p>
+
+<h3>LLM-assisted closet refinement</h3>
+<p>
+  Regex closets are always built during mining with zero external calls. Optionally, after mining,
+  <code>regenerate_closets()</code> (<code>closet_llm.py:206</code>) can replace them with richer ones using a configured
+  endpoint (Ollama, vLLM, llama.cpp, OpenAI, OpenRouter). Each source file is chunked to 30K chars and sent via an
+  OpenAI-compatible <code>/chat/completions</code> call asking for JSON with topics (8&ndash;15), quotes (2&ndash;5), and a
+  summary; the output is parsed into closet lines and written via <code>upsert_closet_lines()</code> after purging the old
+  closets. See <a href="llm-integration.html">LLM integration</a> for endpoint configuration.
+</p>
+<ul>
+  <li>Completely optional; core retrieval uses regex closets with zero LLM calls</li>
+  <li>Supports any OpenAI-compatible endpoint</li>
+  <li>Retries 3&times; with exponential backoff on 429/503; returns <code>None</code> silently on failure</li>
+</ul>
+
+<h3>Layer 1 generation: essential story extraction</h3>
+<p>
+  <code>Dialect.generate_layer1()</code> (<code>dialect.py:806</code>) reads all zettel files and pulls high-weight
+  moments (weight &ge; threshold, default 0.85) plus anything flagged <code>ORIGIN</code>/<code>CORE</code>/<code>GENESIS</code>.
+  These are grouped by date into <code>MOMENTS</code> sections, each entry showing entity + title + quote + weight + flags,
+  alongside identity sections, an emotional arc, and up to 8 key tunnels. The result is a wake-up summary an LLM can scan
+  in one shot (~1.5&ndash;2.5K tokens) to know the essential story before diving into full closets.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>AAAK Dialect</dt>
+  <dd>A structured symbolic summarization format extracting entities (people), topics (key phrases), quotes (5&ndash;55 char snippets), emotional tone (3 codes like <code>vul+joy</code>), and importance flags (<code>ORIGIN</code>, <code>CORE</code>, <code>PIVOT</code>) into pipe-separated lines readable by any LLM without decompression.</dd>
+  <dt>Closets</dt>
+  <dd>ChromaDB index documents (1500 chars max) holding topic pointers back to drawers. Each line is atomic: <code>topic|entities|&rarr;drawer_a,drawer_b</code>. Created during mining, rebuilt on re-mine, queried first during search to identify relevant drawers before fetching verbatim content.</dd>
+  <dt>Zettelkasten Index</dt>
+  <dd>Inspired by Niklas Luhmann's method: small cross-referenced index cards (closets) point to larger verbatim source materials (drawers). The AAAK format makes cards scannable in a single LLM context window, allowing semantic decisions about which drawer to retrieve without loading the drawer itself.</dd>
+  <dt>Lossy Summarization</dt>
+  <dd>AAAK extracts key signals from content (it is not compression) but preserves 100% recall because drawers hold the original verbatim text. The indexed information is a subset, but nothing is lost &mdash; the retrieval path always returns exact words from the source.</dd>
+  <dt>Emotion Codes</dt>
+  <dd>Single-letter abbreviations mapping emotional tone (<code>vul</code>=vulnerability, <code>joy</code>=joy, <code>fear</code>=fear&hellip;) extracted from content keywords or metadata. Up to 3 codes per line; helps LLMs prioritize emotionally significant moments during retrieval.</dd>
+  <dt>Importance Flags</dt>
+  <dd>Binary metadata tags (<code>ORIGIN</code>=founding moment, <code>CORE</code>=identity pillar, <code>PIVOT</code>=turning point, <code>SENSITIVE</code>=private) extracted from content keywords or zettel metadata to signal which drawers hold foundational or sensitive information.</dd>
+  <dt>Entity Stoplist</dt>
+  <dd>Hardcoded set of 50+ common English words that look like proper nouns but are usually sentence-starters (<em>The, When, User</em>) or weekday/month names. Filtered during <a href="entities.html">entity extraction</a> so fake entities don't clutter closet pointers.</dd>
+  <dt>Closet Boost</dt>
+  <dd>Hybrid retrieval optimization: when a searcher matches a closet, it boosts the ranking (up to 0.40) of drawers from that source file. Rank-based (ordinal position) rather than distance-based, since it is more reliable on narrative content where distances cluster.</dd>
+  <dt>i18n-aware Entity Detection</dt>
+  <dd>Localization system supporting combining marks (Devanagari, Arabic harakat, Thai), Cyrillic, and accented Latin. Each language declares <code>boundary_chars</code> to expand Python's <code>\b</code> regex to scripts where word boundaries aren't <code>\w</code> transitions. Closets in any script are extracted identically.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<h3>Lossy vs. lossless: the fundamental design</h3>
+<p>
+  The module docstring (<code>dialect.py:14</code>) is emphatic that AAAK is <em>not</em> lossless compression &mdash; the
+  original text cannot be reconstructed from AAAK output. It is a structured summary layer (closets) that points to the
+  original verbatim content (drawers). Information <em>is</em> selected for the index, but nothing is lost because drawers
+  hold the original words.
+</p>
+<div class="code-caption">dialect.py:1 · the design statement, verbatim</div>
+<pre><code class="language-python">NOTE: AAAK is NOT lossless compression. The original text cannot be reconstructed
+from AAAK output. It is a structured summary layer (closets) that points to the
+original verbatim content (drawers). The 96.6% benchmark score is from raw mode,
+not AAAK mode.</code></pre>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight &mdash; closets are a ranking signal, never a gate</div>
+  <p>
+    The searcher always runs the full drawer query first; closets only boost results. The comment at
+    <code>searcher.py:823</code> spells out the reasoning: closets are &ldquo;a ranking SIGNAL, never a first-pass
+    filter,&rdquo; deliberately avoiding the <em>weak-closets regression</em> where narrative content produces low-signal
+    closets and closet-first routing hides drawers that direct search would find. 100% recall requires never hiding a
+    drawer.
+  </p>
+</div>
+
+<h3>Closet boost: ordinal &gt; distance for narrative</h3>
+<p>
+  <code>CLOSET_RANK_BOOSTS = [0.40, 0.25, 0.15, 0.08, 0.04]</code> (<code>searcher.py:871</code>). The searcher ranks closets
+  by ordinal position rather than absolute distance, because, as the comment explains, &ldquo;closet distances cluster in
+  1.2&ndash;1.5 range regardless of match quality&rdquo; &mdash; narrative closets have poor distance calibration, so the
+  rank position is the more trustworthy signal.
+</p>
+<div class="code-caption">searcher.py:841 · closet-boosted hybrid retrieval</div>
+<pre><code class="language-python">closet_boost_by_source: dict = {}  # source_file -&gt; (rank, closet_dist, preview)
+closet_results = closets_col.query(**ckwargs)
+for rank, (cdoc, cmeta, cdist) in enumerate(zip(...)):
+    source = cmeta.get("source_file", "")
+    if source and source not in closet_boost_by_source:
+        closet_boost_by_source[source] = (rank, cdist, cdoc[:200])
+
+CLOSET_RANK_BOOSTS = [0.40, 0.25, 0.15, 0.08, 0.04]
+for doc, meta, dist in zip(drawers...):
+    source = meta.get("source_file", "")
+    if source in closet_boost_by_source:
+        c_rank, c_dist, c_preview = closet_boost_by_source[source]
+        if c_dist &lt;= 1.5 and c_rank &lt; len(CLOSET_RANK_BOOSTS):
+            boost = CLOSET_RANK_BOOSTS[c_rank]
+            matched_via = "drawer+closet"
+    effective_dist = max(0.0, min(2.0, dist - boost))</code></pre>
+
+<h3>Building closet lines</h3>
+<div class="code-caption">palace.py:241 · build_closet_lines() &mdash; topics, 2+ entities, quotes</div>
+<pre><code class="language-python">def build_closet_lines(source_file, drawer_ids, content, wing, room, drawer_metas=None):
+    drawer_ref = ",".join(drawer_ids[:3])
+    window = content[:CLOSET_EXTRACT_WINDOW]
+    words = _candidate_entity_words(window)
+    word_freq = {}
+    for w in words:
+        if w in _ENTITY_STOPLIST:
+            continue
+        word_freq[w] = word_freq.get(w, 0) + 1
+    entities = sorted([w for w, c in word_freq.items() if c &gt;= 2],
+                     key=lambda w: -word_freq[w])[:5]
+    topics = re.findall(r"(?:built|fixed|wrote|added...)\s+[\w\s]{3,40}", window, re.IGNORECASE)
+    quotes = re.findall(r'"([^"]{15,150})"', window)
+    lines = [f"{topic}|{entity_str}|&rarr;{drawer_ref}" for topic in topics]
+    return lines</code></pre>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance &mdash; emotion detection is keyword-based, no LLM</div>
+  <p>
+    Plain-text emotion detection (<code>_detect_emotions</code>, <code>dialect.py:430</code>) scans for 30+ keywords in
+    lowercase text (<code>love&rarr;love</code>, <code>feared&rarr;fear</code>, <code>happy&rarr;joy</code>). No ML, no API
+    call: the result is instant, deterministic, and costs zero tokens. Only 3 codes are emitted per line and redundant
+    codes are deduped &mdash; a fast triage signal.
+  </p>
+</div>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security &mdash; privacy by architecture in closet_llm</div>
+  <p>
+    <code>LLMConfig.__init__</code> (<code>closet_llm.py:96</code>) validates the endpoint scheme strictly: anything other
+    than <code>http</code>/<code>https</code> raises <code>ValueError</code> at parse time. A misconfigured
+    <code>LLM_ENDPOINT</code> with a <code>file://</code> URL can never exfiltrate local files &mdash; the check runs on
+    init, not at call time. The module also uses stdlib <code>urllib</code> rather than the requests library or a vendor
+    SDK. See <a href="security-privacy.html">security &amp; privacy</a>.
+  </p>
+</div>
+<div class="code-caption">closet_llm.py:96 · reject non-HTTP schemes at init</div>
+<pre><code class="language-python">if self.endpoint:
+    scheme = urllib.parse.urlparse(self.endpoint).scheme.lower()
+    if scheme not in ("http", "https"):
+        raise ValueError(
+            f"LLM_ENDPOINT must use http:// or https:// (got scheme {scheme!r})"
+        )</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha &mdash; regex closets have no stop-word filter</div>
+  <p>
+    <code>build_closet_lines()</code> (<code>palace.py:287</code>) extracts topics via the action-verb regex but does
+    <em>not</em> filter the matched phrases through a stop-word list, so a topic like <code>built the the the</code> can be
+    extracted verbatim. The COCA filter helps with common words (<em>Code, Line</em>) but <code>dialect.py</code>'s
+    <code>_STOP_WORDS</code> are never applied to regex closet extraction. This is an inconsistency: dialect closets use
+    <code>_STOP_WORDS</code>, while <code>closet_llm</code> ones are manually curated. See <a href="surprises.html">surprises</a>.
+  </p>
+</div>
+
+<details class="collapsible">
+  <summary>Edge cases &amp; bounded scanning</summary>
+  <ul>
+    <li><strong>Extraction window.</strong> <code>CLOSET_EXTRACT_WINDOW = 5000</code> (<code>palace.py:150</code>) &mdash; regex closets only scan the first 5000 chars of content, capping CPU cost but leaving long files with incomplete coverage. LLM closets process up to 30K chars, a key advantage.</li>
+    <li><strong>Entity frequency.</strong> Entities must appear 2+ times in the window (<code>palace.py:281</code>); single-mention names (one-time guests) are filtered, keeping pointers focused on recurring people and projects.</li>
+    <li><strong>Concurrency.</strong> <code>mine_lock()</code> (<code>palace.py:418</code>) uses <code>fcntl</code> on Unix and <code>msvcrt</code> on Windows, keyed by <code>SHA256(source_file)[:16] + ".lock"</code>, protecting the purge+upsert closet cycle from interleaving during simultaneous LLM regeneration and regex rebuild.</li>
+    <li><strong>Backward-compatible pointers.</strong> Closets support legacy 3-segment (<code>topic|entities|&rarr;drawer</code>) and Tier 6a 4-segment (<code>topic|entities|YYYY-MM-DD:Lstart-Lend|&rarr;drawer</code>) formats (<code>palace.py:247</code>); legacy is emitted when metadata is missing so old closets work in new code.</li>
+  </ul>
+</details>
+
+<h3>i18n combining-mark boundaries</h3>
+<p>
+  <code>_script_boundary()</code> (<code>i18n/__init__.py:113</code>) replaces Python's <code>\b</code> with a lookaround
+  like <code>(?:(?&lt;=[chars])(?=[^chars])|&hellip;)</code>. For Hindi, <code>chars="\wऀ-ॿ"</code> so Devanagari
+  matras (&#x093E; &#x0940; &#x0941;) count as inside-word. This lets a name like <code>&#x0905;&#x0928;&#x0940;&#x0924;&#x093E;</code>
+  match in full instead of truncating to <code>&#x0905;&#x0928;&#x0940;&#x0924;</code>. The docstring at
+  <code>i18n/__init__.py:116</code> explains why: <code>\w</code> covers Unicode Letter/Number categories but not Marks.
+</p>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>Dialect</td><td>class</td><td><code>dialect.py:300</code></td><td>Main AAAK encoder: <code>compress()</code> for plain text, <code>encode_zettel()</code> for structured data, <code>generate_layer1()</code> for the essential story, <code>decode()</code> for parsing. Supports entity mapping, i18n patterns, emotion and flag detection.</td></tr>
+    <tr><td>build_closet_lines</td><td>function</td><td><code>palace.py:241</code></td><td>Extracts topics, 2+-occurrence entities, and quotes from drawer content; returns atomic closet pointer lines. Handles legacy 3-segment and Tier 6a 4-segment formats.</td></tr>
+    <tr><td>upsert_closet_lines</td><td>function</td><td><code>palace.py:377</code></td><td>Writes closet lines to ChromaDB, packing greedily without splitting lines across closets (1500-char limit). Deterministically numbers closets; always called after <code>purge_file_closets</code> on re-mine.</td></tr>
+    <tr><td>regenerate_closets</td><td>function</td><td><code>closet_llm.py:206</code></td><td>Optional post-mine LLM-assisted refinement. Reads drawers, sends content to any OpenAI-compatible endpoint, replaces regex closets. Locked per source file to avoid races with concurrent mining.</td></tr>
+    <tr><td>_extract_drawer_ids_from_closet</td><td>function</td><td><code>searcher.py:180</code></td><td>Parses <code>&rarr;drawer_a,drawer_b</code> notation out of closet documents via regex. Preserves order, dedupes. Called during closet-first retrieval to identify which drawers to fetch.</td></tr>
+    <tr><td>LLMConfig</td><td>class</td><td><code>closet_llm.py:93</code></td><td>Holds resolved LLM endpoint/key/model. Validates scheme strictly (http/https only) to prevent exfiltration. <code>missing()</code> checks what config is needed.</td></tr>
+    <tr><td>_candidate_entity_words</td><td>function</td><td><code>palace.py:215</code></td><td>Finds entity candidate words using i18n-aware patterns from <code>get_entity_patterns()</code>; handles combining marks via script-aware boundaries with cached regex objects.</td></tr>
+    <tr><td>get_entity_patterns</td><td>function</td><td><code>i18n/__init__.py:197</code></td><td>Returns merged entity-detection patterns for requested languages; applies script-aware boundary expansion. Cached by language tuple &mdash; the i18n entry point for closet extraction.</td></tr>
+    <tr><td>_script_boundary</td><td>function</td><td><code>i18n/__init__.py:113</code></td><td>Converts Python's <code>\b</code> to a script-aware lookaround, treating declared <code>boundary_chars</code> as inside-word. Essential for Devanagari, Arabic, Hebrew, Thai.</td></tr>
+    <tr><td>CLOSET_CHAR_LIMIT</td><td>const</td><td><code>palace.py:149</code></td><td>Hard cap on closet size (1500 chars), leaving a buffer under ChromaDB limits. Adding a line that would exceed it creates a new closet.</td></tr>
+    <tr><td>CLOSET_EXTRACT_WINDOW</td><td>const</td><td><code>palace.py:150</code></td><td>Regex closet extraction scans only the first 5000 chars of content. Caps CPU cost; LLM closets process up to 30K chars.</td></tr>
+    <tr><td>CLOSET_RANK_BOOSTS</td><td>const</td><td><code>searcher.py:871</code></td><td>Ordinal rank-based boost values <code>[0.40, 0.25, 0.15, 0.08, 0.04]</code>. Position 0 gets +0.40 distance reduction; position 4 gets +0.04. Applied only if closet distance &le; 1.5.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Closets as a selective index, not a filtered cache &mdash; always return verbatim from drawers</dt>
+  <dd>The CLAUDE.md principle is &ldquo;Verbatim always.&rdquo; Closets are <em>pointers</em> to verbatim content, not summaries. Selection happens at index time (which topics to extract), but nothing is lost from the drawer &mdash; guaranteeing 100% recall because the original words remain accessible.</dd>
+  <dt>Hybrid ranking: the drawer query always runs; closets provide a boost signal only</dt>
+  <dd>This prevents weak closets (common on narrative content) from hiding drawers that direct semantic search finds (<code>searcher.py:826</code>). Closet distance clustering (1.2&ndash;1.5) is unreliable on narrative, so ordinal rank is a better signal, and hybrid scoring ensures no perfect-recall regressions.</dd>
+  <dt>LLM closet regeneration is optional; regex closets are always available</dt>
+  <dd>The CLAUDE.md principle is &ldquo;Local-first, zero external API by default.&rdquo; Regex closets work offline with zero dependencies and zero tokens. LLM regeneration is an opt-in enhancement for richer indexing; the regex fallback ensures core retrieval never breaks if the LLM is unavailable.</dd>
+  <dt>Non-Latin scripts handled via script-aware boundaries, not post-hoc normalization</dt>
+  <dd>Combining marks (Devanagari, Arabic, Hebrew) are part of the script and must not be stripped. Expanding <code>\b</code> at regex-compile time via <code>_script_boundary</code> is simpler and faster than NFD-normalizing text, and patterns are cached per language tuple to amortize the cost.</dd>
+  <dt>Emotion codes are hardcoded keyword-based, not learned embeddings</dt>
+  <dd>Performance and privacy. Keyword matching is O(1); LLM calls would add latency and tokens. Codes are universal (30+ emotions mapped to 2&ndash;4 char codes), deterministic, and transparent &mdash; sufficient signal for triage without ML.</dd>
+</dl>
+
+<table class="data">
+  <thead><tr><th>Stat</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Closet char limit</td><td>1500 (<code>CLOSET_CHAR_LIMIT</code>)</td></tr>
+    <tr><td>Closet extraction window</td><td>5000 chars (<code>CLOSET_EXTRACT_WINDOW</code>)</td></tr>
+    <tr><td>Emotion codes defined</td><td>30+ mappings in <code>EMOTION_CODES</code></td></tr>
+    <tr><td>Importance flags</td><td>6+ types (ORIGIN, CORE, PIVOT, SENSITIVE, GENESIS, DECISION, TECHNICAL)</td></tr>
+  </tbody>
+</table>
+
+<h2>Data flow</h2>
+<p>
+  Plain text (projects, conversations) &rarr; the miner creates drawers (800 chars each, verbatim) and calls
+  <code>build_closet_lines()</code> &rarr; topics, entities, and quotes are extracted via i18n-aware regex with COCA and
+  stoplist filtering &rarr; closet pointer lines (<code>topic|entities|&rarr;drawer_a,drawer_b</code>) are packed into
+  ChromaDB closets (max 1500 chars). Optionally, <code>LLMConfig</code> drives <code>regenerate_closets()</code>, whose
+  output replaces the regex closets with LLM-mined topics, quotes, and a summary.
+</p>
+<p>
+  On retrieval, <code>search()</code> queries both drawers (full embedding) and closets (the index) in parallel. Closet
+  hits are parsed for drawer pointers, the ordinal-rank boost is applied to drawers from matching sources, and the final
+  ranking merges vector distance with closet boost. Results carry a <code>matched_via</code> field
+  (<code>drawer</code>, <code>closet</code>, or <code>drawer+closet</code>) and an optional <code>closet_preview</code>;
+  for closet+drawer hits, <code>_expand_with_neighbors()</code> fetches &plusmn;radius sibling chunks for context.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">Closets are the index layer; drawers hold the verbatim content closets point to.</div></a>
+    <a class="related-card" href="mining-projects.html"><span class="rc-group">Ingestion</span><div class="rc-title">Project Mining</div><div class="rc-desc">Mining calls build_closet_lines() during file ingest to create closets alongside drawers.</div></a>
+    <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Retrieval uses closet-first hybrid ranking: closets scan fast, then boost matching drawers.</div></a>
+    <a class="related-card" href="entities.html"><span class="rc-group">Ingestion</span><div class="rc-title">Entity System</div><div class="rc-desc">Closet entity extraction uses i18n-aware patterns to handle non-Latin scripts.</div></a>
+    <a class="related-card" href="i18n.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Internationalization</div><div class="rc-desc">Script-aware boundaries support Devanagari, Cyrillic, Arabic, and more in closet extraction.</div></a>
+    <a class="related-card" href="llm-integration.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">LLM Integration</div><div class="rc-desc">Optional LLM-assisted closet refinement (closet_llm.py) enhances regex closets.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

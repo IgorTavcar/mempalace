@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Palace Model · MemPalace Wiki</title>
+  <meta name="description" content="The Palace Model is MemPalace&#x27;s spatial memory architecture: Wings (people/projects) contain Rooms (days/topics), which hold Drawers (verbatim text ~800 chars). Hallways connect entities within wings; Tunnels link rooms across wings. The index layer (Closets) stores compact topic/entity/quote pointers that lead searchers to drawers. Dating metadata (Tier 6a) and Diaries bring temporal scoping. Dynamics (Hebbian strength + Ebbinghaus decay) make connections fade or strengthen based on use and spacing.">
+  <meta name="mp:slug" content="palace-model">
+  <meta name="mp:group" content="Overview">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="The Palace Model · MemPalace Wiki">
+  <meta property="og:description" content="The Palace Model is MemPalace&#x27;s spatial memory architecture: Wings (people/projects) contain Rooms (days/topics), which hold Drawers (verbatim text ~800 chars). Hallways connect entities within wings; Tunnels link rooms across wings. The index layer (Closets) stores compact topic/entity/quote pointers that lead searchers to drawers. Dating metadata (Tier 6a) and Diaries bring temporal scoping. Dynamics (Hebbian strength + Ebbinghaus decay) make connections fade or strengthen based on use and spacing.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "The Palace Model", "name": "The Palace Model", "description": "The Palace Model is MemPalace's spatial memory architecture: Wings (people/projects) contain Rooms (days/topics), which hold Drawers (verbatim text ~800 chars). Hallways connect entities within wings; Tunnels link rooms across wings. The index layer (Closets) stores compact topic/entity/quote pointers that lead searchers to drawers. Dating metadata (Tier 6a) and Diaries bring temporal scoping. Dynamics (Hebbian strength + Ebbinghaus decay) make connections fade or strengthen based on use and spacing.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link active" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Overview</span><span class="sep">/</span><span>The Palace Model</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Overview</div>
+  <h1>The Palace Model</h1>
+  <p class="lead">Method-of-loci + Zettelkasten mapped onto concrete data structures.</p>
+</header>
+
+<div class="summary">
+  The Palace Model is MemPalace's spatial memory architecture. <strong>Wings</strong> (people/projects) contain
+  <strong>Rooms</strong> (days/topics), which hold <strong>Drawers</strong> &mdash; immutable ~800-char chunks of
+  verbatim source text. A compact index layer of <strong>Closets</strong> stores topic/entity/quote pointers that
+  lead searchers to drawers. <strong>Hallways</strong> connect entities within a wing; <strong>Tunnels</strong> link
+  rooms across wings. A living-connection <strong>Dynamics</strong> layer (Hebbian strength + Ebbinghaus decay)
+  makes those connections fade or strengthen based on actual use, and Tier 6a dating gives every memory a temporal
+  scope.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<p>
+  A palace is a tree. The miner walks a directory, normalizes the folder name into a <em>wing</em>, detects a
+  <em>room</em> from the file path/keywords, chunks the content into <em>drawers</em>, and upserts them. In parallel
+  it extracts <em>closet</em> pointers for fast search, computes within-wing <em>hallways</em> from entity
+  co-occurrence, and links wings with cross-wing <em>tunnels</em>. The whole structure is built to be
+  re-mined safely: IDs are deterministic, dedup is symmetric, and accumulated connection salience survives a rebuild.
+  See <a href="mining-projects.html">project mining</a> and <a href="mining-conversations.html">conversation mining</a>
+  for the ingestion side, and <a href="search.html">search</a> for the retrieval side.
+</p>
+
+<h3>Spatial organization &mdash; wings, rooms, drawers</h3>
+<p>
+  Each drawer holds ~800 chars of original text and is identified by a deterministic SHA256 hash of
+  <code>source_file + chunk_index</code>, wrapped as <code>drawer_WING_ROOM_hexsuffix</code>. Metadata tags every
+  drawer with its wing, room, source file, chunk index, <code>filed_at</code> (ingestion time), <code>hall</code>
+  (detected via keyword regex), <code>entities</code> (capitalized words appearing &ge;2 times), and optionally
+  <code>content_date</code>, <code>line_start</code>, and <code>line_end</code> (Tier 6a) for precise source location.
+</p>
+
+<h3>Closets &mdash; the searchable index</h3>
+<p>
+  Closets are compact pointers extracted during mining. The builder reads the first 5,000 chars of a drawer and emits
+  atomic pointer lines: topics (pattern-matched from action verbs like <em>built, fixed, wrote</em> and section
+  headers), double-quoted spans, and capitalized entity pairs that co-occur 2+ times (deduplicated, ranked by
+  frequency, top 5 per pointer). Lines are then packed greedily into closet documents up to 1,500 chars without ever
+  splitting a line. Closets connect to the <a href="aaak-dialect.html">AAAK dialect</a>, the symbolic format that lets
+  LLMs scan the index efficiently.
+</p>
+
+<h3>Hallways &mdash; within-wing entity connections</h3>
+<p>
+  When a wing is mined, the system scans its drawers and computes hallways from entity co-occurrence. For each pair of
+  distinct entities appearing together in 2+ drawers, a hallway record (id = hash of wing + sorted entity pair) tracks
+  the pair, co-occurrence count, and the rooms where they were seen together. Hallways are persisted in
+  <code>hallways.json</code> with a living-connection layer. Because IDs are symmetric (sorted pair), a re-computed
+  hallway upserts the existing record rather than creating duplicates.
+</p>
+
+<h3>Tunnels &mdash; cross-wing links</h3>
+<p>
+  Tunnels are symmetric connections between two wing/room endpoints, in three flavors:
+</p>
+<ul>
+  <li><strong>Explicit</strong> &mdash; user-created via MCP/CLI, linking specific rooms (e.g. <em>auth relates to users</em>).</li>
+  <li><strong>Topic</strong> &mdash; auto-generated when two wings share 1+ confirmed topics; uses synthetic room ids like <code>topic:Angular</code>.</li>
+  <li><strong>Entity</strong> &mdash; auto-generated from hallway data when the same entity appears in both wings; uses <code>entity:Ben</code>.</li>
+</ul>
+<p>
+  All tunnels live in <code>tunnels.json</code>, deduplicated by canonical ID (hash of sorted endpoints), and carry
+  living-connection dynamics. See the <a href="knowledge-graph.html">temporal knowledge graph</a> for the
+  complementary semantic/temporal edge store.
+</p>
+
+<h3>Dating and temporal scope (Tier 6a)</h3>
+<p>
+  Each drawer stores three temporal fields: <code>filed_at</code> (ingestion timestamp), <code>content_date</code>
+  (extracted from filename, frontmatter, or mtime as ISO <code>YYYY-MM-DD</code>), and optionally
+  <code>line_start</code>/<code>line_end</code> (1-indexed source line numbers). Closet pointers can splice in a Tier 6a
+  date+line segment (<code>YYYY-MM-DD:Lstart-Lend</code>) so a search jumps straight to the right span. When
+  <code>content_date</code> is present it is preferred over <code>filed_at</code> for the dating hierarchy. Diaries
+  (conversation transcripts) extract dates from ISO patterns in filenames, enabling temporal grouping of related talks.
+</p>
+
+<h3>Dynamics &mdash; living connections with decay</h3>
+<p>
+  Both hallways and tunnels carry four dynamics fields: <code>strength</code> (Hebbian weight, 0.05&ndash;5.0),
+  <code>stability</code> (decay resistance), <code>last_activated</code>, and <code>access_count</code>. Hebbian
+  potentiation grows strength by 0.05 per access (capped at 5.0). Ebbinghaus decay fades it over time
+  (<code>new = old &middot; exp(-days_since / stability)</code>), floored at 0.05 so connections never reach zero. The
+  Cepeda spacing effect means <code>stability</code> only grows when reinforcement is spaced more than an hour
+  apart &mdash; rapid bursts don't build durability.
+</p>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Two-layer index by design</div>
+  <p>
+    Closets are not one-pointer-per-record &mdash; pointer lines are batched greedily into numbered closet documents
+    (<code>closet_base_01</code>, <code>closet_base_02</code>, &hellip;) up to the char limit. The same source file
+    produces the same closet numbering deterministically. This mirrors the Zettelkasten split: small index cards
+    (closets) that point to larger content (drawers), so search hits the tiny index first and only fetches the drawers
+    it needs.
+  </p>
+</div>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Wing</dt>
+  <dd>A named broad category (person, project, department) derived from a directory name. Normalized to lowercase with underscores replacing hyphens and spaces. Drawers tagged with a wing can be filtered, scoped, or tracked as a unit.</dd>
+  <dt>Room</dt>
+  <dd>A time- or topic-based grouping within a wing (e.g. <code>diary</code>, <code>meetings</code>, <code>design-docs</code>). Detected from file paths, filenames, or keywords during mining. Rooms span multiple wings via Tunnels.</dd>
+  <dt>Drawer</dt>
+  <dd>A chunk of verbatim source text (~800 chars), immutable once written. Identified by <code>drawer_WING_ROOM_SHA256(source-file + chunk-index)</code>. Stores original content, entities, halls, dates, and line numbers.</dd>
+  <dt>Closet</dt>
+  <dd>A searchable index record (in the <code>mempalace_closets</code> collection) containing compact topic/entity/quote pointer lines that reference one or more drawers. Built during mining by extract&rarr;pointer&rarr;pack logic; packed greedily up to 1,500 chars per closet.</dd>
+  <dt>Hallway</dt>
+  <dd>A within-wing connector materializing entity-pair co-occurrence. If entities Aya and Lumi appear together in 2+ drawers of the same wing, a hallway records the pair, count, and rooms where they co-occurred. Persisted in <code>hallways.json</code>.</dd>
+  <dt>Tunnel</dt>
+  <dd>A cross-wing link between two rooms (or synthetic <code>topic:</code>/<code>entity:</code> rooms). Explicit tunnels are user-created; topic and entity tunnels auto-generate when shared topics or entities are detected across wings. Persisted in <code>tunnels.json</code>.</dd>
+  <dt>Diary</dt>
+  <dd>A dated journal entry or conversation log mined from a transcript file. The timestamp (ISO <code>YYYY-MM-DD</code>) is extracted from the filename, frontmatter, content, or mtime and stored as <code>content_date</code> in drawer metadata, enabling temporal grouping.</dd>
+  <dt>Dynamics</dt>
+  <dd>Living-connection math: Hebbian potentiation (strength grows on co-access), Ebbinghaus decay (fades over time), and the Cepeda spacing effect (stability grows on spaced reinforcement). Applied identically to hallways and tunnels to rank by salience.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<h3>Drawer ID scheme</h3>
+<p>
+  Drawer IDs are a deterministic SHA256 of the source file path plus chunk index, truncated to 24 hex chars. A re-mined
+  file at the same path with the same chunks produces identical IDs, enabling safe upsert
+  (<code>miner.py:1247</code>).
+</p>
+<div class="code-caption">miner.py:1247 · deterministic, idempotent drawer ID</div>
+<pre><code class="language-python">drawer_id = f"drawer_{wing}_{room}_{hashlib.sha256((source_file + str(chunk_index)).encode()).hexdigest()[:24]}"</code></pre>
+
+<h3>Closet pointer line format</h3>
+<p>
+  Pointers come in two formats: legacy 3-segment (<code>topic|entities|&rarr;drawer_ids</code>) and Tier 6a 4-segment
+  with an optional date+line span. The builder emits the 4-segment form when line numbers and a date are available and
+  falls back to 3-segment otherwise, so old and new pointers coexist in one collection (<code>palace.py:304</code>).
+</p>
+<div class="code-caption">palace.py:304 · backward-compatible pointer emission</div>
+<pre><code class="language-python">def _pointer(prefix: str) -&gt; str:
+    if date_line_seg is not None:
+        return f"{prefix}|{entity_str}|{date_line_seg}|→{drawer_ref}"
+    return f"{prefix}|{entity_str}|→{drawer_ref}"</code></pre>
+
+<h3>Greedy closet packing</h3>
+<p>
+  Closets accumulate pointer lines up to <code>CLOSET_CHAR_LIMIT</code> (1,500 chars), flushing to a numbered closet
+  when the next line wouldn't fit. Lines are never split; an oversized line opens a new closet. This greedy packing is
+  a compact alternative to exact bin-packing (<code>palace.py:149</code>, <code>palace.py:377</code>).
+</p>
+
+<h3>Hebbian potentiation with spacing</h3>
+<p>
+  On a co-access event strength grows by the increment (capped at <code>MAX_STRENGTH</code>), but stability only grows
+  when the reinforcement is spaced at least an hour from the last activation (<code>dynamics.py:143</code>).
+</p>
+<div class="code-caption">dynamics.py:143 · Hebbian growth + Cepeda spacing gate</div>
+<pre><code class="language-python">if hours_since &gt;= SPACED_INTERVAL_HOURS:
+    current_stability = float(connection.get("stability", DEFAULT_STABILITY))
+    connection["stability"] = current_stability + STABILITY_INCREMENT
+current_strength = float(connection.get("strength", DEFAULT_STRENGTH))
+connection["strength"] = min(MAX_STRENGTH, current_strength + float(increment))</code></pre>
+
+<h3>Ebbinghaus decay</h3>
+<div class="code-caption">dynamics.py:193 · exponential decay floored at STRENGTH_FLOOR</div>
+<pre><code class="language-python">days_since = (now - last_dt).total_seconds() / 86400.0
+stability = float(connection.get("stability", DEFAULT_STABILITY))
+if stability &lt;= 0:
+    stability = DEFAULT_STABILITY
+current_strength = float(connection.get("strength", DEFAULT_STRENGTH))
+decay_factor = math.exp(-days_since / stability)
+new_strength = current_strength * decay_factor
+connection["strength"] = max(STRENGTH_FLOOR, new_strength)</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Dynamics must survive a re-mine</div>
+  <p>
+    When a hallway or tunnel is recomputed on a fresh mine, the code explicitly copies the prior record's
+    <code>strength</code>, <code>stability</code>, <code>last_activated</code>, and <code>access_count</code> before
+    initializing any missing fields (<code>hallways.py:256</code>). Without this, every mine would reset connection
+    weights to defaults and wipe accumulated salience &mdash; a subtle but critical detail for the living-connection
+    layer.
+  </p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Synthetic room prefixes namespace auto-tunnels</div>
+  <p>
+    Auto-generated topic and entity tunnels don't link literal rooms; they use synthetic identifiers like
+    <code>topic:Angular</code> and <code>entity:Ben</code> (<code>palace_graph.py:723</code>). This keeps a wing's
+    literal <code>Angular</code> folder room distinct from an <code>Angular</code> topic tunnel, and the prefix is
+    visible to LLMs scanning the tunnel list, making the distinction machine-readable.
+  </p>
+</div>
+
+<details class="collapsible">
+  <summary>Edge cases &amp; details</summary>
+  <ul>
+    <li><strong>Immutable content, mutable metadata.</strong> Once a drawer's content is written it never changes. Re-mining a file deletes the old drawers for that <code>source_file</code> and writes new ones; metadata (entities, hall, content_date) can be updated on upsert, but the verbatim content block is frozen (<code>palace.py:365</code>). This matches the "incremental only" principle: never destroy data to rebuild.</li>
+    <li><strong>Graph cache TTL.</strong> <code>palace_graph.py</code> keeps a module-level cache of the computed graph with a 60-second TTL and write-invalidation, so <code>build_graph()</code> serves repeated reads from cache and is invalidated via <code>invalidate_graph_cache()</code> (<code>palace_graph.py:60</code>).</li>
+    <li><strong>Wing normalization at the boundary.</strong> <code>normalize_wing_name()</code> lowercases and replaces hyphens/spaces with underscores at both write and read time, so <code>mempalace-public</code> and <code>mempalace_public</code> resolve to the same wing (<code>config.py:34</code>).</li>
+  </ul>
+</details>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Cached graph reads</div>
+  <p>
+    <code>build_graph()</code> traverses drawer metadata to build room nodes and cross-wing edges, then serves
+    subsequent reads in O(1) from a 60-second cache, invalidating only on writes (<code>palace_graph.py:60</code>,
+    <code>palace_graph.py:90</code>). Repeated traversal and stats calls stay cheap.
+  </p>
+</div>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>add_drawer</td><td>func</td><td><code>miner.py:1238</code></td><td>Add one drawer with deterministic ID derivation and metadata tagging.</td></tr>
+    <tr><td>build_closet_lines</td><td>func</td><td><code>palace.py:241</code></td><td>Extract topics, entities, and quotes from drawer content into atomic pointer lines.</td></tr>
+    <tr><td>upsert_closet_lines</td><td>func</td><td><code>palace.py:377</code></td><td>Pack pointer lines greedily into closets respecting CLOSET_CHAR_LIMIT, write atomically.</td></tr>
+    <tr><td>compute_hallways_for_wing</td><td>func</td><td><code>hallways.py:161</code></td><td>Scan a wing's drawers, count entity-pair co-occurrence (min 2), create hallways with preserved dynamics.</td></tr>
+    <tr><td>create_tunnel</td><td>func</td><td><code>palace_graph.py:488</code></td><td>Create explicit or auto-generated tunnels with symmetric dedup, validate room existence, persist dynamics.</td></tr>
+    <tr><td>build_graph</td><td>func</td><td><code>palace_graph.py:90</code></td><td>Traverse drawers, build in-memory room nodes and cross-wing edges, return cached result within TTL.</td></tr>
+    <tr><td>potentiate</td><td>func</td><td><code>dynamics.py:110</code></td><td>Strengthen a connection on co-access; grow stability only if spaced &gt;1 hour; cap at MAX_STRENGTH.</td></tr>
+    <tr><td>apply_decay</td><td>func</td><td><code>dynamics.py:163</code></td><td>Apply Ebbinghaus exponential decay based on time since last activation and stability.</td></tr>
+    <tr><td>normalize_wing_name</td><td>func</td><td><code>config.py:34</code></td><td>Canonical wing slug: lowercase, hyphens/spaces &rarr; underscores. Used at write and read boundaries.</td></tr>
+    <tr><td>_hallway_id</td><td>func</td><td><code>hallways.py:148</code></td><td>Deterministic hallway ID from wing + sorted entity pair, enabling symmetric dedup.</td></tr>
+    <tr><td>_canonical_tunnel_id</td><td>func</td><td><code>palace_graph.py:441</code></td><td>Symmetric tunnel ID from sorted endpoints, enabling dedup across call order.</td></tr>
+    <tr><td>CLOSET_CHAR_LIMIT</td><td>const</td><td><code>palace.py:149</code></td><td>Max chars per closet document (1,500) before opening a new numbered closet.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Drawers are content chunks; closets are the index.</dt>
+  <dd>Splitting content into ~800-char drawers avoids embedding whole files and allows fine-grained retrieval. Closets point to drawers, so search hits small index documents first and only fetches the drawers it needs &mdash; a two-layer design matching the Zettelkasten principle.</dd>
+  <dt>Wing names are normalized at the boundary.</dt>
+  <dd>Lowercasing and collapsing separators at write and read time makes <code>mempalace-public</code> and <code>mempalace_public</code> resolve to the same wing, reconciling hyphenated directory names with underscored YAML slugs while keeping user input flexible.</dd>
+  <dt>Topic/entity tunnels use synthetic room prefixes.</dt>
+  <dd>Prefixing auto-generated tunnels with <code>topic:</code>/<code>entity:</code> keeps them from colliding with literal folder-derived rooms, keeps the graph clean, and makes real-room traversals easy to distinguish from topical links.</dd>
+  <dt>Hallways and tunnels preserve dynamics across re-mines.</dt>
+  <dd>Accumulated salience (strength, stability, access_count) is the lived history of a connection. Preserving these fields and re-initializing only missing ones keeps a durable memory of which connections matter most.</dd>
+  <dt>Closets are built greedily, not bin-packed; lines never split.</dt>
+  <dd>Greedy packing is simpler to reason about than optimal bin-packing while staying compact. Atomic, self-contained pointer lines reduce partial matches and keep the index format clean.</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>
+  Data flows from source files into drawers during mining: the miner reads a file, chunks it, extracts
+  entities/hall/date metadata, builds drawer records (<code>wing_ROOM_hash</code>), and upserts them to the
+  <code>mempalace_drawers</code> collection. Simultaneously, closet pointers (topics, entities, quotes) are extracted
+  from the first 5,000 chars and packed into closets, upserted to <code>mempalace_closets</code>. Within-wing hallways
+  are computed from drawer entity metadata via co-occurrence counting (pairs appearing 2+ times) and persisted to
+  <code>hallways.json</code>, preserving prior dynamics. Cross-wing tunnels are explicit (user-created via
+  <a href="mcp-server.html">MCP</a>), auto-generated from topic overlaps (<code>compute_topic_tunnels</code>), or
+  inferred from hallway entities (<code>entity_tunnels_for_wing</code>), all stored in <code>tunnels.json</code> with
+  symmetric dedup.
+</p>
+<p>
+  On <a href="search.html">search</a>, queries hit <code>mempalace_closets</code> first to find relevant closet
+  documents, parse them to extract drawer IDs, then fetch those drawers from <code>mempalace_drawers</code> and rank by
+  distance. If no closets match, search falls back to direct drawer search. The <code>palace_graph</code> module builds
+  a cached in-memory graph from drawer metadata (rooms as nodes, wing-spanning rooms as edges/tunnels) for traversal
+  and statistics, invalidating the cache on every write. See the <a href="architecture.html">system architecture</a>
+  for how these collections sit in the broader pipeline and <a href="backends.html">storage backends</a> for where
+  they persist.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">Where the palace model sits in the overall pipeline and collections.</div></a>
+    <a class="related-card" href="aaak-dialect.html"><span class="rc-group">Ingestion</span><div class="rc-title">AAAK Dialect &amp; Closets</div><div class="rc-desc">The pointer-line/closet format and the symbolic compression LLMs scan.</div></a>
+    <a class="related-card" href="knowledge-graph.html"><span class="rc-group">Retrieval</span><div class="rc-title">Temporal Knowledge Graph</div><div class="rc-desc">Entity relationships and dates that complement the spatial structure.</div></a>
+    <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Uses closets as the primary index, falling back to drawer search.</div></a>
+    <a class="related-card" href="mining-projects.html"><span class="rc-group">Ingestion</span><div class="rc-title">Project Mining</div><div class="rc-desc">Creates drawers, rooms, wings, and entities that populate the palace.</div></a>
+    <a class="related-card" href="mining-conversations.html"><span class="rc-group">Ingestion</span><div class="rc-title">Conversation Mining</div><div class="rc-desc">Brings diarized transcripts into the palace with temporal dating.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

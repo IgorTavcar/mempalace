@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Integration · MemPalace Wiki</title>
+  <meta name="description" content="MemPalace layers optional, pluggable LLM assistance over five domains: entity refinement, closet regeneration, corpus-origin detection, room detection, and fact-checking. Every LLM step is opt-in and local-first — Ollama, LM Studio, and llama.cpp on localhost are the default, with OpenAI-compatible and Anthropic providers available only via explicit BYOK. External endpoints always trigger a privacy warning before first use, and when an LLM is unavailable or fails the system falls back to its heuristic/regex baseline and records what happened. No operation ever blocks on an LLM, and no data is silently discarded.">
+  <meta name="mp:slug" content="llm-integration">
+  <meta name="mp:group" content="Cross-cutting">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="LLM Integration · MemPalace Wiki">
+  <meta property="og:description" content="MemPalace layers optional, pluggable LLM assistance over five domains: entity refinement, closet regeneration, corpus-origin detection, room detection, and fact-checking. Every LLM step is opt-in and local-first — Ollama, LM Studio, and llama.cpp on localhost are the default, with OpenAI-compatible and Anthropic providers available only via explicit BYOK. External endpoints always trigger a privacy warning before first use, and when an LLM is unavailable or fails the system falls back to its heuristic/regex baseline and records what happened. No operation ever blocks on an LLM, and no data is silently discarded.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "LLM Integration", "name": "LLM Integration", "description": "MemPalace layers optional, pluggable LLM assistance over five domains: entity refinement, closet regeneration, corpus-origin detection, room detection, and fact-checking. Every LLM step is opt-in and local-first \u2014 Ollama, LM Studio, and llama.cpp on localhost are the default, with OpenAI-compatible and Anthropic providers available only via explicit BYOK. External endpoints always trigger a privacy warning before first use, and when an LLM is unavailable or fails the system falls back to its heuristic/regex baseline and records what happened. No operation ever blocks on an LLM, and no data is silently discarded.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link active" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Cross-cutting</span><span class="sep">/</span><span>LLM Integration</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Cross-cutting</div>
+  <h1>LLM Integration</h1>
+  <p class="lead">Local-first LLM assistance — Ollama and friends by default, BYOK external never silently.</p>
+</header>
+
+<div class="summary">
+  MemPalace layers optional, pluggable LLM assistance over five domains: entity refinement, closet
+  regeneration, corpus-origin detection, room detection, and fact-checking. Every LLM step is opt-in and
+  local-first — Ollama, LM Studio, and llama.cpp on localhost are the default, with OpenAI-compatible and
+  Anthropic providers available only via explicit BYOK. External endpoints always trigger a privacy warning
+  before first use, and when an LLM is unavailable or fails the system falls back to its heuristic/regex
+  baseline and records what happened. No operation ever blocks on an LLM, and no data is silently discarded.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<h3>Provider abstraction and initialization</h3>
+<p>
+  The <code>llm_client.py</code> module defines an <code>LLMProvider</code> base class with three concrete
+  implementations: <code>OllamaProvider</code> (localhost:11434 default), <code>OpenAICompatProvider</code>
+  (any <code>/v1/chat/completions</code>-compatible endpoint — LM Studio, llama.cpp, vLLM, Groq, OpenRouter,
+  Together…), and <code>AnthropicProvider</code> (the official Messages API). All three share
+  <code>check_available()</code> (a fast probe: port open? model loaded? auth ok?) and
+  <code>classify(system, user, json_mode)</code>, which normalizes JSON-mode negotiation away from callers:
+  Ollama uses <code>format: json</code>, OpenAI-compat uses <code>response_format: {type: json_object}</code>,
+  and Anthropic appends a JSON instruction to the system prompt.
+</p>
+<ul>
+  <li>The factory <code>get_provider(name, model, endpoint, api_key, …)</code> instantiates by name and forwards unknown kwargs to provider constructors, so extensibility needs no factory edits.</li>
+  <li><code>check_available()</code> fast-probes without cost — Anthropic deliberately never probes to avoid spending money.</li>
+  <li>API-key provenance (flag vs. env) is tracked to gate consent prompts per issue #26.</li>
+  <li>No external SDK dependencies — all HTTP is stdlib <code>urllib</code>.</li>
+</ul>
+
+<h3>Privacy-by-architecture: endpoint locality detection</h3>
+<p>
+  <code>_endpoint_is_local(url)</code> in <code>llm_client.py:44</code> is the single source of truth for whether
+  an endpoint will send content off the machine. It classifies localhost / <code>127.0.0.1</code> / <code>::1</code>,
+  <code>.local</code> (mDNS/Bonjour) hostnames, RFC1918 private ranges, Tailscale CGNAT (<code>100.64.0.0/10</code>),
+  and IPv6 ULA (<code>fc00::/7</code>) as local. Empty or unparseable URLs default to local — defensively, since no
+  endpoint yet means no external request is possible. The <code>is_external_service</code> property reads this result
+  to decide whether to print a privacy warning before first use. This is cross-cutting with the
+  <a href="security-privacy.html">security &amp; privacy</a> model.
+</p>
+<ul>
+  <li>One heuristic covers home networks, mobile VPNs (Tailscale), and cloud intranets at once.</li>
+  <li>The warning triggers only once per init, guarded by an <code>api_key_source</code> check (explicit flag vs. env-fallback).</li>
+  <li>A localhost service behind a cloud load balancer correctly reads as external — the user must opt in explicitly.</li>
+</ul>
+
+<h3>Entity refinement: optional reclassification with an LLM</h3>
+<p>
+  <code>llm_refine.py</code> takes regex-detected candidates from <a href="entities.html">the entity system</a>
+  (<code>entity_detector.py</code>) and asks an LLM to reclassify each into PERSON / PROJECT / TOPIC / COMMON_WORD /
+  AMBIGUOUS. It is opt-in (default init never imports it), local-first (Ollama), and interactive (progress bar,
+  Ctrl-C cancellation with partial results preserved). Candidates are batched 25 per call to bound token usage; each
+  receives up to three sampled prose lines (truncated to 240 chars) for context. Authoritative entries — git-author
+  people, manifest/git-backed projects — skip refinement entirely since they are already source-backed. Responses are
+  parsed with <code>_extract_json_candidates()</code> (raw JSON → markdown backticks → braced/bracketed scan), batch
+  errors are recorded but never abort the run, and ambiguous entries fall into the uncertain bucket for human review.
+</p>
+
+<h3>Closet regeneration: LLM-powered topic indexing</h3>
+<p>
+  <code>closet_llm.py</code> regenerates closets (keyword/topic/quote indices used for
+  <a href="search.html">retrieval</a>) using any user-configured OpenAI-compatible endpoint. It is optional and
+  standalone — the default <a href="mining-projects.html">mining</a> path always creates regex closets, and
+  <code>closet_llm</code> runs afterward to overlay richer ones (see <a href="aaak-dialect.html">AAAK dialect</a> for
+  the closet format). Configuration is env-var or CLI (<code>LLM_ENDPOINT</code>, <code>LLM_MODEL</code>,
+  <code>LLM_KEY</code>; flags override env). For each source file's drawers, content is batched and sent with a prompt
+  requesting topics (8–15 distinctive terms), 2–5 attributed verbatim quotes, and a summary. JSON parsing retries up to
+  three times with exponential backoff on decode failure or HTTP 429/503. If a batch fails, that source is skipped and
+  the original regex closets remain untouched — no all-or-nothing.
+</p>
+
+<h3>Corpus-origin detection: two-tier AI-dialogue classification</h3>
+<p>
+  <code>corpus_origin.py</code> detects whether ingested content is an AI-dialogue record (needed for downstream
+  persona/agent disambiguation in <a href="mining-conversations.html">conversation mining</a>). Tier 1 is a fast offline
+  heuristic — it greps for unambiguous AI brand terms ('Claude Code', 'GPT-4') and confirms with turn markers. Tier 2 is
+  optional LLM confirmation (typically Haiku), used only when a provider is available; it extracts platform name,
+  user_name, and agent_persona_names. The design principle: don't make the LLM re-discover what 'Claude' is — it already
+  knows from pretraining; only extract corpus-specific names. On any LLM error or malformed JSON, Tier 2 returns a
+  conservative default (<code>likely_ai_dialogue=True</code>, <code>confidence=0.3</code>). Crucially, Tier 1 owns
+  <code>likely_ai_dialogue</code> + confidence and Tier 2 only contributes platform/user/personas — a merge, never a
+  replacement.
+</p>
+
+<h3>Fact-checking: offline entity and knowledge-graph validation</h3>
+<p>
+  <code>fact_checker.py</code> verifies text against the entity registry and the
+  <a href="knowledge-graph.html">temporal knowledge graph</a>, detecting three issue classes:
+  <em>similar_name</em> (a name 1–2 edits from another registered name — a likely typo), <em>relationship_mismatch</em>
+  (text asserts a role the KG records differently for the same pair), and <em>stale_fact</em> (text asserts a fact the KG
+  marks closed via a past <code>valid_to</code>). Claim extraction is conservative — two regex patterns, no NLP — and the
+  whole module is purely offline with zero API cost. When the KG is unavailable (new palace, corrupted DB) the check
+  gracefully skips and returns empty, so corruption never produces false alarms. Both a CLI and a
+  <code>check_text</code> library entry point are supported, and the module is wired into diary-save
+  <a href="hooks.html">hooks</a> and <a href="mcp-server.html">MCP tools</a>.
+</p>
+
+<h3>Room detection: local, zero-API structure inference</h3>
+<p>
+  <code>room_detector_local.py</code> infers room structure (time- or topic-based groupings) from folder names and file
+  patterns without calling any API. <code>detect_rooms_from_folders()</code> walks the project one to two levels deep,
+  matching names against <code>FOLDER_ROOM_MAP</code> (frontend/backend/docs/design/costs/meetings/team/research/…); found
+  rooms are deduplicated and a 'general' fallback is always added. If folders yield only 'general', a filename-keyword
+  fallback suggests rooms appearing ≥2 times. The CLI chains both, shows the proposed structure for approval, and lets the
+  user edit before saving to <code>mempalace.yaml</code> — integrated with <a href="cli.html">init</a>. Windows path
+  handling uses <code>os.path.basename</code> explicitly to preserve drive letters and avoid cross-drive collisions.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Local-first principle</dt>
+  <dd>LLM assistance defaults to user-hosted Ollama/LM Studio/llama.cpp on localhost (offline, no API required). External providers are supported only via explicit BYOK; never enabled silently.</dd>
+  <dt>Provider abstraction</dt>
+  <dd>Three provider classes (<code>OllamaProvider</code>, <code>OpenAICompatProvider</code>, <code>AnthropicProvider</code>) share a common interface (<code>classify</code>, <code>check_available</code>, <code>is_external_service</code>) to normalize JSON-mode requests across vendor differences.</dd>
+  <dt>Never-silent-fallback</dt>
+  <dd>When an LLM is unavailable or fails, the system always falls back to its heuristic/regex baseline and records what happened. No data is discarded silently; the user is informed.</dd>
+  <dt>Privacy-by-architecture</dt>
+  <dd>Endpoint locality is checked by URL parsing (localhost, RFC1918, Tailscale CGNAT, mDNS, IPv6 ULA). External endpoints trigger a warning; local inference does not. <code>file://</code> and non-HTTP schemes are rejected to prevent exfiltration.</dd>
+  <dt>JSON-decode resilience</dt>
+  <dd>LLM responses are parsed with multi-strategy fallback: raw JSON first, then markdown backticks, then a scan for braced/bracketed payloads. Only if every strategy fails is the batch skipped with an error recorded.</dd>
+  <dt>Entity refinement</dt>
+  <dd>Optional reclassification of regex-detected entities into person/project/topic/common-word/ambiguous via LLM, with batch processing to bound token usage and contextual sampling to improve signal.</dd>
+  <dt>Closet regeneration</dt>
+  <dd>Optional regeneration of keyword/topic indices (closets) from drawer content via LLM, overlaying richer topic extraction on top of regex baselines. Regex closets remain untouched if the LLM fails.</dd>
+  <dt>Corpus-origin detection</dt>
+  <dd>Two-tier detection of whether content is AI-dialogue. Tier 1 is a fast regex heuristic; Tier 2 is optional LLM confirmation plus persona extraction that merges results without overwriting heuristic confidence.</dd>
+  <dt>Fact-checking</dt>
+  <dd>Offline verification of text against the entity registry (edit distance ≤ 2) and knowledge graph (relationship mismatch, stale facts). Purely local; no API; zero cost.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  <strong>Endpoint locality handles diverse home-network topologies.</strong> <code>_endpoint_is_local()</code>
+  (<code>llm_client.py:44</code>) covers five distinct categories of private network and is the single source of truth
+  for the external-API privacy warning.
+</p>
+
+<div class="code-caption">llm_client.py:44 · endpoint locality covers five categories of private network</div>
+<pre><code class="language-python">def _endpoint_is_local(url: Optional[str]) -&gt; bool:
+    """Return True if ``url``'s hostname is on the user's machine or
+    private network.
+
+    Local includes:
+      - localhost, 127.0.0.1, ::1
+      - hostnames ending in .local (mDNS/Bonjour)
+      - IPv4 RFC1918: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+      - IPv4 CGNAT (Tailscale): 100.64.0.0/10
+      - IPv6 unique-local addresses (fc00::/7)
+    """
+    if not url:
+        return True
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except (ValueError, AttributeError):
+        return False
+    if host.startswith("100."):
+        parts = host.split(".")
+        if len(parts) &gt;= 2:
+            try:
+                if 64 &lt;= int(parts[1]) &lt;= 127:
+                    return True</code></pre>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Non-HTTP schemes are rejected to prevent exfiltration</div>
+  <p>
+    <code>closet_llm.py:106</code> validates that <code>LLM_ENDPOINT</code> uses <code>http://</code> or
+    <code>https://</code> only. A misconfigured <code>file://</code> endpoint cannot be turned into a primitive that
+    reads local files and exfiltrates them. The code never builds such a URL intentionally, but the validation is
+    explicit and defensive.
+  </p>
+</div>
+
+<p>
+  <strong>JSON parsing is resilient.</strong> <code>_extract_json_candidates()</code> (<code>llm_refine.py:109</code>)
+  tries six independent extraction strategies — raw JSON, markdown backticks (with/without the <code>json</code> tag),
+  and braced/bracketed payloads scanned from the text — because LLMs frequently wrap JSON in explanatory prose despite
+  <code>json_mode=True</code>. A failure on one strategy never aborts the others.
+</p>
+
+<div class="code-caption">llm_refine.py:109 · JSON extraction fallback chain</div>
+<pre><code class="language-python">def _extract_json_candidates(text: str) -&gt; list[str]:
+    """Return plausible JSON payloads extracted from an LLM response."""
+    text = text.strip()
+    if not text:
+        return []
+
+    candidates: list[str] = [text]
+
+    for match in re.finditer(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE):
+        candidate = match.group(1).strip()
+        if candidate and candidate not in candidates:
+            candidates.append(candidate)
+
+    for start, opener in ((i, ch) for i, ch in enumerate(text) if ch in "{["):
+        closer = "}" if opener == "{" else "]"
+        # ... bracket-matching scan ...
+    return candidates</code></pre>
+
+<p>
+  <strong>Closet regeneration retries transient failures.</strong> The request loop in
+  <code>closet_llm.py:159</code> attempts up to three times with exponential backoff on JSON-decode jitter or HTTP
+  429/503, then gives up cleanly by returning <code>None</code> (which causes that one source to be skipped while the
+  rest continue).
+</p>
+
+<div class="code-caption">closet_llm.py:159 · retry-on-decode with exponential backoff</div>
+<pre><code class="language-python">for attempt in range(3):
+    try:
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+            raw = resp.read().decode("utf-8")
+        payload = json.loads(raw)
+        text = payload["choices"][0]["message"]["content"].strip()
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+        parsed = json.loads(text)
+        return parsed, payload.get("usage")
+    except json.JSONDecodeError:
+        if attempt &lt; 2:
+            time.sleep(2**attempt)
+            continue
+        return None, None
+    except urllib.error.HTTPError as e:
+        if e.code in (429, 503) and attempt &lt; 2:
+            time.sleep(2**attempt)
+            continue</code></pre>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Closet pagination dodges a SQLite variable-limit crash</div>
+  <p>
+    Large palaces (10k+ drawers) would crash on a single <code>get(limit=total)</code> call because ChromaDB hits
+    SQLite's <code>SQLITE_MAX_VARIABLE_NUMBER</code> (32766) ceiling. <code>closet_llm.py:236</code> pages in batches of
+    5000, processing each batch and continuing. Without this, <code>regenerate_closets</code> failed silently on large
+    palaces (issues #802, #850, #1073).
+  </p>
+</div>
+
+<p>
+  <strong>Fact-checking skips all-pairs comparison.</strong> The name-confusion check
+  (<code>fact_checker.py:96</code>) first finds which registry names actually appear in the text, then computes edit
+  distance only between those mentioned names and the rest of the registry — O(m × n), not O(n²).
+</p>
+
+<div class="code-caption">fact_checker.py:96 · only check mentioned names against the full registry</div>
+<pre><code class="language-python">def _check_entity_confusion(text: str, entity_names_raw: dict) -&gt; list:
+    """Flag names mentioned in the text that are edit-distance ≤ 2 from
+    a *different* registered name.
+
+    Performance: O(m × n) where m = names in text, not all-pairs O(n²).
+    """
+    all_names = _flatten_names(entity_names_raw)
+    if not all_names:
+        return []
+
+    mentioned: list = []
+    for name in all_names:
+        if re.search(r"\b" + re.escape(name) + r"\b", text, re.IGNORECASE):
+            mentioned.append(name)
+    if not mentioned:
+        return []
+
+    issues: list = []
+    for name_a in mentioned:
+        for name_b in all_names:
+            if name_b == name_a or name_b in mentioned:
+                continue
+            distance = _edit_distance(name_a.lower(), name_b.lower())
+            if 0 &lt; distance &lt;= 2:
+                issues.append({...})</code></pre>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Edit-distance optimization is 10–100× faster on big registries</div>
+  <p>
+    For a 1000-entry registry, matching mentioned names first and only computing distances against unmentioned entries
+    turns an O(n²) all-pairs scan into O(m × n) where m is a handful — a 10–100× speedup with no loss of accuracy.
+  </p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Ollama's <code>num_ctx</code> rides through on <code>**kwargs</code></div>
+  <p>
+    <code>OllamaProvider</code> (<code>llm_client.py:214</code>) accepts <code>num_ctx</code> as a constructor kwarg so
+    callers can tune the context window per model without touching the provider interface. The factory forwards unknown
+    kwargs (<code>**provider_kwargs</code>) to the chosen provider, so <code>get_provider(…, num_ctx=8192)</code> just
+    works while providers ignore kwargs they don't recognize. Elegant, extensible, zero interface churn.
+  </p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Corpus-origin merging is a non-overwrite dance, not a plain merge</div>
+  <p>
+    A weak local Tier-2 model can flip a confident Tier-1 heuristic answer (issue #1211). The fix lives in the CLI
+    (<code>cli.py:142</code>–<code>145</code>), not in <code>corpus_origin.py</code>: Tier 1 keeps its
+    <code>likely_ai_dialogue</code> + confidence, while only Tier 2's platform/user/personas are merged in. Evidence
+    trails are concatenated (not deduplicated) to preserve both signal paths for auditability. This invariant is easy to
+    break if you treat the two results as interchangeable.
+  </p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 The fact-checker uses two regex patterns, not NLP</div>
+  <p>
+    Only two surface forms are recognized — 'X is Y's Z' and 'X's Z is Y', both resolving to the triple (X, Z, Y). This
+    is intentional: the detector is ultra-conservative, flagging only contradictions it is certain about. Unrecognized
+    relationship forms are silently missed (false-negatives), never misinterpreted (false-positives).
+  </p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Stray env credentials don't silently authorize external calls</div>
+  <p>
+    <code>cli.py:56</code> gates the consent prompt on <code>api_key_source</code>. If an API key came from the
+    environment (<code>api_key_source == 'env'</code>) rather than an explicit <code>--llm-api-key</code> flag, init
+    blocks on a confirmation prompt — preventing a credential sitting in your shell from quietly enabling external API
+    calls.
+  </p>
+</div>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>LLMProvider</td><td>class</td><td><code>llm_client.py:121</code></td><td>Base class for all providers. Defines <code>classify()</code>, <code>check_available()</code>, and the <code>is_external_service</code> property; subclasses override with provider-specific HTTP.</td></tr>
+    <tr><td>OllamaProvider</td><td>class</td><td><code>llm_client.py:205</code></td><td>Local-first default (localhost:11434). Supports <code>num_ctx</code> tuning; implements JSON mode as <code>format: json</code>.</td></tr>
+    <tr><td>OpenAICompatProvider</td><td>class</td><td><code>llm_client.py:277</code></td><td>Any OpenAI <code>/v1/chat/completions</code> endpoint (LM Studio, llama.cpp, vLLM, Groq…). JSON mode via <code>response_format: {type: json_object}</code>.</td></tr>
+    <tr><td>AnthropicProvider</td><td>class</td><td><code>llm_client.py:367</code></td><td>Anthropic Messages API. Never probes (to avoid cost); JSON mode by appending an instruction to the system prompt.</td></tr>
+    <tr><td>get_provider</td><td>function</td><td><code>llm_client.py:449</code></td><td>Factory: takes provider name, model, endpoint, api_key, and provider-specific kwargs; returns an instance or raises <code>LLMError</code>.</td></tr>
+    <tr><td>_endpoint_is_local</td><td>function</td><td><code>llm_client.py:44</code></td><td>Single source of truth for endpoint locality. True for localhost, RFC1918, Tailscale CGNAT, mDNS, IPv6 ULA; drives the privacy warning.</td></tr>
+    <tr><td>refine_entities</td><td>function</td><td><code>llm_refine.py:334</code></td><td>Optional LLM refinement of regex-detected entities. Batches, samples context, parses with <code>_extract_json_candidates()</code>, returns a Ctrl-C-safe <code>RefineResult</code>.</td></tr>
+    <tr><td>regenerate_closets</td><td>function</td><td><code>closet_llm.py:206</code></td><td>Optional closet regeneration via any OpenAI-compatible endpoint. Batches by source, parses with retry-on-error, upserts with metadata; regex closets stay as fallback.</td></tr>
+    <tr><td>check_text</td><td>function</td><td><code>fact_checker.py:55</code></td><td>Offline fact-checking against the entity registry (edit distance ≤ 2) and KG. No API; returns a list of issues or empty. Used by diary-save hooks + MCP tools.</td></tr>
+    <tr><td>detect_rooms_local</td><td>function</td><td><code>room_detector_local.py:304</code></td><td>Zero-API room detection entry point. Walks folders, falls back to filename patterns, presents for approval, saves to <code>mempalace.yaml</code>.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Three-provider model instead of one generic wrapper</dt>
+  <dd>Ollama deserves first-class treatment under the local-first principle (CLAUDE.md line 25). OpenAI-compat covers LM Studio/llama.cpp/vLLM but not Anthropic's Messages API, so Anthropic gets its own lean provider for auth and cost-conserving behavior (no probes). The shared <code>LLMProvider</code> base avoids duplication — Anthropic is ~40 lines, Ollama ~70.</dd>
+  <dt>Endpoint locality as a single source of truth</dt>
+  <dd>Privacy is cross-cutting (issue #24). Ollama at localhost should never warn; Anthropic at <code>api.anthropic.com</code> should always warn. Putting the heuristic in <code>_endpoint_is_local()</code> means every caller (cli, closet_llm, mcp_server) sees identical semantics and no provider subclass can weaken the check.</dd>
+  <dt>Opt-in refinement with batching + interruption safety</dt>
+  <dd>Entity refinement is optional (default init never imports <code>llm_refine</code>). Batching keeps token cost bounded (~50–100K even for huge corpora). Ctrl-C mid-run returns a <code>RefineResult</code> with <code>cancelled=True</code> and partial results — respecting user agency and producing a usable output rather than rolling back.</dd>
+  <dt>Tier-1 + Tier-2 merge, not replacement, in corpus-origin</dt>
+  <dd>Weak local models misclassify AI-dialogue. Per PR #1211 review, preserve the heuristic's <code>likely_ai_dialogue</code> + confidence (which proved accurate) and merge only the LLM's persona extraction. Both evidence trails are kept for auditability, preventing a weak model from degrading detection quality.</dd>
+  <dt>Fact-checking as an offline module, not an LLM service</dt>
+  <dd>Contradictions require precise matching (edit distance ≤ 2 for names, exact match for relationships); an LLM can hallucinate or soften thresholds. Using the entity registry + KG (both local and fast) is deterministic and auditable — every flagged issue is grounded in real data.</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>
+  Text flows through up to five optional LLM pipelines, each honoring the never-silent-fallback principle:
+</p>
+<ul>
+  <li><strong>Corpus-origin detection</strong> reads initial samples, runs the Tier-1 heuristic (always) and optional Tier-2 LLM (if a provider is available), then merges to classify AI-dialogue and extract personas.</li>
+  <li><strong>Entity refinement</strong> reads detected candidates (regex + git + manifests), skips authoritative entries, batches the rest with context lines, sends to the LLM for reclassification, parses with multi-strategy JSON extraction, applies decisions back to the detected dict, and records errors/cancellations.</li>
+  <li><strong>Closet regeneration</strong> reads existing drawers, batches by source file, requests topics/quotes/summary, parses JSON with retry-on-error, converts results to closet lines, upserts into the closets collection with metadata, and skips failing sources (leaving regex closets intact).</li>
+  <li><strong>Room detection</strong> reads folder structure and filenames (zero API) and infers rooms.</li>
+  <li><strong>Fact-checking</strong> reads text and validates it against the entity registry + KG (zero API).</li>
+</ul>
+<p>
+  Whenever an LLM fails, the system falls back to its baseline — heuristic, regex, or offline validation — and records
+  what happened transparently. Consumers include the <a href="cli.html">CLI</a>, the
+  <a href="mcp-server.html">MCP server</a>, <a href="mining-projects.html">project mining</a>,
+  <a href="entities.html">entity detection</a>, and the miner.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="entities.html"><span class="rc-group">Ingestion</span><div class="rc-title">Entity System</div><div class="rc-desc">Entity refinement reclassifies the regex-detected entities this module produces.</div></a>
+    <a class="related-card" href="aaak-dialect.html"><span class="rc-group">Ingestion</span><div class="rc-title">AAAK Dialect &amp; Closets</div><div class="rc-desc">Closets (AAAK pointers) are regenerated and indexed by <code>closet_llm</code>; the dialect defines their format.</div></a>
+    <a class="related-card" href="mining-projects.html"><span class="rc-group">Ingestion</span><div class="rc-title">Project Mining</div><div class="rc-desc">Mining creates the initial regex closets and entity detections that LLM passes optionally refine.</div></a>
+    <a class="related-card" href="security-privacy.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Security &amp; Privacy</div><div class="rc-desc">Endpoint-locality detection and the never-silent external-API warning are core to the privacy model.</div></a>
+    <a class="related-card" href="knowledge-graph.html"><span class="rc-group">Retrieval</span><div class="rc-title">Temporal Knowledge Graph</div><div class="rc-desc">The fact-checker validates text against KG relationships and stale facts.</div></a>
+    <a class="related-card" href="cli.html"><span class="rc-group">Interfaces</span><div class="rc-title">CLI &amp; Onboarding</div><div class="rc-desc">The CLI routes provider setup, room detection on init, and corpus-origin merging.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

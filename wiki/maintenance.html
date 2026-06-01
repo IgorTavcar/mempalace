@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Repair, Sync &amp; Maintenance · MemPalace Wiki</title>
+  <meta name="description" content="Seven modules provide incremental-only Palace maintenance: repair.py detects and fixes HNSW index divergence and SQLite corruption with extraction-cap guards; sync.py removes gitignored files using the same matchers as mining; migrate.py rebuilds Palaces across ChromaDB versions; exporter.py streams markdown exports with symlink safety; dedup.py finds near-identical drawers via cosine distance; spellcheck.py auto-corrects user messages while preserving technical terms; sweeper.py catches message-granular content that file-level miners dropped. All critical operations are crash-safe and follow the never-destroy promise.">
+  <meta name="mp:slug" content="maintenance">
+  <meta name="mp:group" content="Cross-cutting">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="Repair, Sync &amp; Maintenance · MemPalace Wiki">
+  <meta property="og:description" content="Seven modules provide incremental-only Palace maintenance: repair.py detects and fixes HNSW index divergence and SQLite corruption with extraction-cap guards; sync.py removes gitignored files using the same matchers as mining; migrate.py rebuilds Palaces across ChromaDB versions; exporter.py streams markdown exports with symlink safety; dedup.py finds near-identical drawers via cosine distance; spellcheck.py auto-corrects user messages while preserving technical terms; sweeper.py catches message-granular content that file-level miners dropped. All critical operations are crash-safe and follow the never-destroy promise.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Repair, Sync & Maintenance", "name": "Repair, Sync & Maintenance", "description": "Seven modules provide incremental-only Palace maintenance: repair.py detects and fixes HNSW index divergence and SQLite corruption with extraction-cap guards; sync.py removes gitignored files using the same matchers as mining; migrate.py rebuilds Palaces across ChromaDB versions; exporter.py streams markdown exports with symlink safety; dedup.py finds near-identical drawers via cosine distance; spellcheck.py auto-corrects user messages while preserving technical terms; sweeper.py catches message-granular content that file-level miners dropped. All critical operations are crash-safe and follow the never-destroy promise.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link active" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Cross-cutting</span><span class="sep">/</span><span>Repair, Sync &amp; Maintenance</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Cross-cutting</div>
+  <h1>Repair, Sync &amp; Maintenance</h1>
+  <p class="lead">Keeping a long-lived palace consistent, deduplicated, and recoverable.</p>
+</header>
+
+<div class="summary">
+  Seven modules provide incremental-only Palace maintenance. <code>repair.py</code> detects and fixes HNSW
+  index divergence and SQLite corruption behind an extraction-cap guard; <code>sync.py</code> prunes gitignored
+  files using the same matchers as <a href="mining-projects.html">mining</a>; <code>migrate.py</code> rebuilds
+  Palaces across ChromaDB versions; <code>exporter.py</code> streams markdown with symlink safety; <code>dedup.py</code>
+  consolidates near-identical drawers by cosine distance; <code>spellcheck.py</code> auto-corrects user messages
+  while preserving technical terms; and <code>sweeper.py</code> catches message-granular content that file-level
+  miners dropped. Every critical operation is crash-safe and honors the <em>never-destroy</em> promise.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+<p>
+  All maintenance operations obey a single <strong>incremental-only invariant</strong>: they append new data or
+  delete explicitly-marked corrupt entries, but never overwrite existing correct rows. A crash mid-operation
+  leaves intact data untouched. Each module reads through the <a href="backends.html">ChromaBackend</a> and,
+  where the API is unsafe, drops to direct <a href="backends.html">SQLite</a> access for recovery.
+</p>
+
+<h3>Repair: index health &amp; divergence recovery</h3>
+<p>
+  <code>repair.py</code> offers four tiers: <strong>status</strong> (read-only health check comparing SQLite row
+  count vs HNSW element count), <strong>scan</strong> (identify unfetchable drawer IDs), <strong>prune</strong>
+  (delete only corrupt IDs), and <strong>rebuild</strong> (extract all via the ChromaDB API, back up only
+  <code>chroma.sqlite3</code>, delete+recreate the collection with correct settings, re-upsert). Three
+  independent corruption signals are watched:
+</p>
+<ul>
+  <li><strong>HNSW capacity mismatch</strong> — a stale <code>max_elements</code> setting reports less capacity
+    than there are SQLite rows, eventually triggering segfaults.</li>
+  <li><strong>Extraction vs SQLite ground-truth divergence</strong> — the extraction-cap guard (issue #1208).</li>
+  <li><strong>Poisoned <code>max_seq_id</code></strong> — a corrupt row holding ~1.23e18, silently suppressing
+    queue writes; un-poisoned non-destructively before rebuild.</li>
+</ul>
+<p>
+  The backup strategy backs up <em>only</em> <code>chroma.sqlite3</code>, not the bloated HNSW files, so recovery
+  stays fast even on terabyte-scale blob corruption. The FTS5 full-text index is atomically rebuilt post-repair
+  via <code>_vacuum_and_rebuild_fts5</code> without touching embeddings, reclaiming freed pages with VACUUM.
+</p>
+
+<h3>Sync: gitignore-aware drawer pruning</h3>
+<p>
+  <code>sync.py</code> removes drawers whose source files are now gitignored, deleted, or moved out of project
+  scope. It reuses the exact <code>GitignoreMatcher</code> infrastructure that <code>miner.py</code> uses on
+  ingest, so files blocked at mining are also pruned at sync. It holds <code>mine_palace_lock</code> for the
+  entire classify+apply window to see a consistent snapshot, and always preserves registry rows
+  (<code>_registry</code> room / <code>_reg_*</code> prefix) to avoid re-chunking unchanged transcripts.
+</p>
+<ul>
+  <li>Project roots are auto-detected from drawer metadata (walk up to <code>.git</code> or <code>.gitignore</code>),
+    then matched deepest-first to avoid over-pruning nested repos.</li>
+  <li>When source-file drawers are deleted, matching <a href="aaak-dialect.html">AAAK closet</a> entries
+    (keyed by <code>source_file</code>) are purged too.</li>
+</ul>
+
+<h3>Migrate: cross-version palace recovery</h3>
+<p>
+  <code>migrate.py</code> rebuilds a Palace when the on-disk ChromaDB version diverges from the installed one.
+  It extracts all drawers directly from <code>chroma.sqlite3</code> (bypassing the API, which may fail on
+  mismatched schemas), detects version via schema-shape inspection, and re-imports into a fresh Palace via
+  <code>add()</code>. A pre-flight write round-trip test (upsert + get + delete) catches the 0.6.x &rarr; 1.5.x
+  silent-drop failure mode where collections are readable but writes silently no-op. Direct extraction uses the
+  same typed-column resolution as repair: <code>string_value &rarr; int_value &rarr; float_value &rarr; bool_value</code>.
+</p>
+
+<h3>Exporter: bounded-memory markdown streaming</h3>
+<p>
+  <code>exporter.py</code> streams drawers in paginated batches of 1000, writing markdown organized by wing/room.
+  Memory stays proportional to batch size, not total Palace size, supporting multi-million-drawer exports in a
+  single pass. The <code>index.md</code> is built from <code>wing_stats</code> accumulated during streaming, and
+  wing/room names are <code>re.sub</code>'d to strip filesystem-unsafe characters and leading dots/spaces.
+</p>
+
+<h3>Dedup: near-identical drawer consolidation</h3>
+<p>
+  <code>dedup.py</code> groups drawers by <code>source_file</code>, finds pairs with cosine distance below a
+  threshold (default 0.15, ~85% similarity), greedily keeps the longest/richest version, and deletes the rest.
+  It uses ChromaDB's built-in <code>query()</code> with distances — no external API calls. The threshold is
+  cosine <em>distance</em> (lower = stricter), tunable to 0.10 for near-identical only or 0.35 for paraphrased
+  content. Omitting <code>wing=</code> catches the same <code>source_file</code> duplicated across wings.
+</p>
+
+<h3>Spellcheck: precision auto-correction with preservation</h3>
+<p>
+  <code>spellcheck.py</code> corrects user messages while preserving technical terms, URLs, CamelCase
+  identifiers, ALL_CAPS, words with digits/hyphens, and known entity names from the
+  <a href="entities.html">EntityRegistry</a>. A system word-list skip (via <code>/usr/share/dict/words</code>)
+  prevents over-aggressive autocorrect, and edit-distance guards keep corrections within 2–3 edits of the
+  original. The autocorrect library is lazily initialized and degrades gracefully to pass-through if missing.
+  Correction is applied only at user-message boundaries (lines starting with <code>&gt;</code>).
+</p>
+
+<h3>Sweeper: message-granular ingest with idempotent dedup</h3>
+<p>
+  <code>sweeper.py</code> ingests Claude Code <code>.jsonl</code> transcripts message-by-message (user +
+  assistant), bypassing the file-level chunking of <a href="mining-conversations.html">the conversation
+  miners</a>. A per-session cursor (max timestamp of prior sweeper-written drawers) skips already-ingested
+  messages; at the cursor boundary it re-upserts via a deterministic ID (<code>sweep_SESSION_UUID</code>) so a
+  crash mid-sweep is recovered on the next run. A pre-flight existence check (<code>get(ids=...)</code>) keeps
+  the added-vs-already-present metrics honest. Each message-drawer is ~1–5 KB with no aggregation caps.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Incremental-only invariant</dt>
+  <dd>Maintenance appends new data or deletes explicitly-marked corrupt entries, but never overwrites existing
+    correct data — a crash mid-operation leaves intact rows untouched.</dd>
+  <dt>Extraction-cap guard (issue #1208)</dt>
+  <dd>Safety check in <code>repair.py::check_extraction_safety</code> that aborts rebuild when the extracted
+    drawer count (via the ChromaDB API) falls short of the SQLite ground-truth count, preventing silent data loss.</dd>
+  <dt>HNSW capacity divergence</dt>
+  <dd>Stale <code>max_elements</code> in HNSW metadata causes it to report less capacity than there are SQLite
+    rows, eventually triggering segfaults — detected via <code>hnsw_capacity_status</code> and fixed by rebuild.</dd>
+  <dt>Poisoned max_seq_id</dt>
+  <dd>A SQLite <code>max_seq_id</code> row corrupted by a shim misfire, holding a ~1.23e18 integer that silently
+    suppresses queue writes; repaired via heuristic (collection MAX) or sidecar restoration.</dd>
+  <dt>Crash-safe upsert pattern</dt>
+  <dd>Deterministic drawer IDs (e.g. <code>sweep_SESSION_UUID</code>) that let a re-upsert idempotently dedupe on
+    reruns, making sweeper and other ingest paths resumable after failure.</dd>
+  <dt>Gitignore-aware sync</dt>
+  <dd><code>sync.py</code> uses the same <code>GitignoreMatcher</code> infrastructure as <code>miner.py</code>,
+    so files excluded from mining are also removed from the Palace during sync if they become gitignored.</dd>
+  <dt>FTS5 virtual table rebuild</dt>
+  <dd>The SQLite full-text-search index can drift after multiple collection deletes;
+    <code>repair.py::_vacuum_and_rebuild_fts5</code> atomically reconstructs it without touching row data.</dd>
+  <dt>Symlink defense-in-depth</dt>
+  <dd><code>exporter.py::_safe_open_for_write</code> uses <code>O_NOFOLLOW</code> on POSIX and pre-checks
+    <code>os.path.islink</code> on Windows to stop pre-placed symlinks from redirecting writes to system directories.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  The <strong>extraction-cap guard</strong> is the linchpin of the never-destroy promise. Before any destructive
+  rebuild it cross-checks the chromadb extraction count against the SQLite ground truth and refuses to proceed if
+  the API returned fewer rows than the database holds.
+</p>
+<div class="code-caption">repair.py:397 · extraction-cap guard (#1208 prevention)</div>
+<pre><code class="language-python">def check_extraction_safety(
+    palace_path: str,
+    extracted: int,
+    confirm_truncation_ok: bool = False,
+    collection_name: Optional[str] = None,
+) -&gt; None:
+    """Cross-check that extracted matches the SQLite ground truth."""
+    sqlite_count = sqlite_drawer_count(palace_path, collection_name)
+    cap_signal = extracted == CHROMADB_DEFAULT_GET_LIMIT
+    if sqlite_count is not None and sqlite_count &gt; extracted:
+        loss = sqlite_count - extracted
+        pct = 100 * loss / sqlite_count
+        message = (
+            f"\n  ABORT: chroma.sqlite3 reports {sqlite_count:,} drawers but only {extracted:,}\n"
+            "  came back through the chromadb collection layer..."
+        )
+        raise TruncationDetected(message, sqlite_count, extracted)</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ The 67,580 vs 10,000 catastrophe</div>
+  <p>
+    Issue #1208 showed a Palace with 67,580 drawers on disk but only 10,000 returned through the ChromaDB API
+    (exactly <code>CHROMADB_DEFAULT_GET_LIMIT</code>). A naive rebuild would have silently destroyed 57,580 rows.
+    The guard aborts and forces explicit operator acknowledgement (<code>--confirm-truncation-ok</code>) after
+    independent verification — it never auto-overrides. There is even a <em>weak</em> signal: extracting exactly
+    10,000 rows when SQLite can't be cross-checked is suspicious enough to refuse.
+  </p>
+</div>
+
+<p>
+  Rebuilds use a <strong>two-phase live swap</strong>: stage into a temp collection first, then delete and
+  recreate the live one, tracking a <code>live_replaced</code> flag so the recovery path knows whether to restore
+  the backup or leave the Palace intact. If temp upserts fail before deletion, the original is untouched.
+</p>
+<div class="code-caption">repair.py:189 · two-phase rebuild with live-swap safety</div>
+<pre><code class="language-python">def _rebuild_collection_via_temp(
+    backend, palace_path, all_ids, all_docs, all_metas, batch_size,
+    collection_name=None, progress=print,
+):
+    temp_name = f"{collection_name}__repair_tmp"
+    live_replaced = False
+    try:
+        temp_col = backend.create_collection(palace_path, temp_name)
+        # ... stage into temp ...
+        backend.delete_collection(palace_path, collection_name)
+        live_replaced = True
+        new_col = backend.create_collection(palace_path, collection_name)
+        # ... refile from temp ...
+        return rebuilt
+    except Exception as exc:
+        raise RebuildCollectionError(str(exc), live_replaced=live_replaced) from exc</code></pre>
+
+<p>
+  The <strong>sweeper</strong> earns idempotence with deterministic IDs plus a pre-flight existence query so its
+  added-vs-already-present metric stays honest even though upsert is itself idempotent.
+</p>
+<div class="code-caption">sweeper.py:229 · deterministic ID + honest metrics</div>
+<pre><code class="language-python">def _flush():
+    nonlocal drawers_added, drawers_already_present
+    if not batch_ids:
+        return
+    try:
+        existing = collection.get(ids=list(batch_ids), include=[])
+        present = set(existing.get("ids") or [])
+    except Exception as exc:
+        logger.warning("sweeper: existence pre-check failed (%s); ...", exc)
+        present = set()
+    new_count = sum(1 for rid in batch_ids if rid not in present)
+    already_count = len(batch_ids) - new_count
+    collection.upsert(ids=batch_ids, documents=batch_docs, metadatas=batch_metas)
+    drawers_added += new_count
+    drawers_already_present += already_count</code></pre>
+
+<p>
+  The <strong>exporter's symlink defense</strong> closes the TOCTOU window between an <code>islink</code> check
+  and the open by using <code>O_NOFOLLOW</code> where available, falling back to a pre-check only on platforms
+  that lack it.
+</p>
+<div class="code-caption">exporter.py:44 · O_NOFOLLOW symlink defense</div>
+<pre><code class="language-python">def _safe_open_for_write(path: str, mode: str, encoding: str = "utf-8"):
+    o_nofollow = getattr(os, "O_NOFOLLOW", 0)
+    if o_nofollow:
+        flags = os.O_WRONLY | os.O_CREAT | o_nofollow
+        flags |= os.O_APPEND if "a" in mode else os.O_TRUNC
+        try:
+            fd = os.open(path, flags, 0o600)
+        except OSError as e:
+            if e.errno == errno.ELOOP:
+                raise ValueError(f"refusing to write: {path!r} is a symbolic link.") from None
+            raise
+        return os.fdopen(fd, mode, encoding=encoding)
+    if os.path.islink(path):
+        raise ValueError(f"refusing to write: {path!r} is a symbolic link.")
+    return open(path, mode, encoding=encoding)</code></pre>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Sync refuses to run blind</div>
+  <p>
+    In apply mode (<code>dry_run=False</code>), <code>sync.py:224</code> refuses to run without an explicit
+    <code>wing=</code> or <code>project_dirs=</code>, preventing an accidental full-Palace prune in a
+    multi-project Palace. Auto-detection of project roots is only enabled in dry-run mode — safety by design.
+    This aligns with the broader <a href="security-privacy.html">security-by-architecture</a> posture.
+  </p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 A sentinel that turns silent failure into a queryable state</div>
+  <p>
+    When extracted drawers have <code>None</code> or <code>{}</code> metadata (from sparse historical writes),
+    <code>repair.py:150</code> coerces them to <code>{"_repaired_empty_meta": True}</code> to pass chromadb
+    1.5.x upsert validation. The sentinel is later discoverable via
+    <code>where={"_repaired_empty_meta": True}</code> — a silent failure becomes an auditable, queryable marker.
+  </p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 A heuristic that exploits float64 math</div>
+  <p>
+    The poisoned-<code>max_seq_id</code> detector at <code>repair.py:1342</code> uses a threshold of
+    <code>1 &lt;&lt; 53</code> (~9e15), the float64 exact-integer ceiling. Real <code>embeddings_queue</code>
+    seq_ids stay below ~1e10, while the 0.6.x shim's misfire of <code>int.from_bytes</code> on
+    <code>b'\x11\x11'</code> + ASCII digits yields ~1.23e18 — comfortably above the threshold. Clean values can
+    never reach it, so the heuristic has effectively zero false positives.
+  </p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Lexical cursor comparison, no date parsing</div>
+  <p>
+    The sweeper's cursor (<code>sweeper.py:147</code>) returns <code>max(timestamps)</code> and compares with a
+    plain lexical <code>&lt; cursor</code> on ISO-8601 strings. Because ISO-8601 sorts lexically in chronological
+    order, no parsing is needed — which is both fast and immune to timezone misinterpretation. The strict
+    <code>&lt;</code> (not <code>&lt;=</code>) deliberately re-attempts messages at the cursor boundary in case an
+    earlier same-timestamp message wasn't fully ingested.
+  </p>
+</div>
+
+<details class="collapsible">
+  <summary>Dedup &amp; spellcheck edge cases</summary>
+  <p>
+    <strong>Greedy dedup keeps the longest.</strong> <code>dedup.py:87</code> sorts a source group by document
+    length descending and keeps a drawer only if it isn't too similar to one already kept. This is not optimal
+    for lossy dedup (the shortest are often noise), but it is deterministic and recoverable.
+  </p>
+  <p>
+    <strong>Edit-distance guard varies by word length.</strong> <code>spellcheck.py:206</code> allows
+    <code>max_edits</code> of 2 for words ≤7 chars and 3 for longer. This blocks absurd one-edit jumps like
+    <code>a</code> &rarr; <code>the</code> while still permitting sensible fixes like <code>knoe</code> &rarr;
+    <code>know</code>.
+  </p>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>check_extraction_safety</td><td>function</td><td><code>repair.py:397</code></td><td>Guards against silent data loss when extracted count diverges from SQLite ground-truth; raises <code>TruncationDetected</code> with recovery instructions.</td></tr>
+    <tr><td>rebuild_from_sqlite</td><td>function</td><td><code>repair.py:1050</code></td><td>Bypass-API recovery path for #1308 HNSW corruption; extracts via raw SQLite reads, re-embeds, and upserts into a fresh Palace with atomic swap.</td></tr>
+    <tr><td>extract_via_sqlite</td><td>function</td><td><code>repair.py:972</code></td><td>Yields <code>(embedding_id, document, metadata)</code> directly from SQLite, used by <code>rebuild_from_sqlite</code> when the ChromaDB API fails.</td></tr>
+    <tr><td>TruncationDetected</td><td>exception</td><td><code>repair.py:382</code></td><td>Raised by the extraction-cap guard when recovery is needed; carries a human-readable message and counts for the operator decision.</td></tr>
+    <tr><td>RebuildCollectionError</td><td>exception</td><td><code>repair.py:181</code></td><td>Raised when temp rebuild fails; carries the <code>live_replaced</code> flag so the caller knows whether to restore or leave the Palace intact.</td></tr>
+    <tr><td>sync_palace</td><td>function</td><td><code>sync.py:203</code></td><td>Main entry: removes gitignored/missing/out-of-scope drawers using the same <code>GitignoreMatcher</code> infrastructure as mining.</td></tr>
+    <tr><td>migrate</td><td>function</td><td><code>migrate.py:214</code></td><td>Rebuilds the Palace when the ChromaDB version diverges; detects version, extracts, validates a write round-trip, then atomically swaps.</td></tr>
+    <tr><td>export_palace</td><td>function</td><td><code>exporter.py:68</code></td><td>Streams drawers in paginated batches to markdown files, with <code>O_NOFOLLOW</code> symlink defense.</td></tr>
+    <tr><td>_safe_open_for_write</td><td>function</td><td><code>exporter.py:44</code></td><td>Opens a file for writing with <code>O_NOFOLLOW</code> (POSIX) and a pre-check (Windows) to block symlink-based write redirection.</td></tr>
+    <tr><td>dedup_palace</td><td>function</td><td><code>dedup.py:150</code></td><td>Main entry: groups drawers by <code>source_file</code>, applies greedy dedup within a threshold, reports deletions.</td></tr>
+    <tr><td>spellcheck_user_text</td><td>function</td><td><code>spellcheck.py:161</code></td><td>Corrects user messages token-by-token, preserving technical terms, URLs, known names, and capitalized words.</td></tr>
+    <tr><td>sweep</td><td>function</td><td><code>sweeper.py:193</code></td><td>Ingests every message in a <code>.jsonl</code> file not already represented, using deterministic IDs and per-session cursors for idempotent reruns.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Back up only SQLite, not HNSW files, during rebuild</dt>
+  <dd>HNSW binary files can grow to terabytes on corrupted Palaces; backing up only <code>chroma.sqlite3</code>
+    (the source of truth) makes recovery instant. The rebuild path never needs the old HNSW files, only the
+    SQLite rows — squarely aligned with the incremental-only invariant.</dd>
+  <dt>Extraction-cap guard aborts rather than auto-overrides</dt>
+  <dd>Silently destroying 57,580 rows (as #1208 nearly did) is unacceptable, so the guard forces explicit user
+    acknowledgement (<code>--confirm-truncation-ok</code>) after independent verification, honoring the
+    never-destroy promise.</dd>
+  <dt>Sync holds the mine lock for the entire classify+apply window</dt>
+  <dd>A single snapshot across the classification and deletion passes prevents a race where a file is classified
+    "gitignored" and then re-mined before deletion.</dd>
+  <dt>Spellcheck skips capitalized words entirely</dt>
+  <dd>Capitalized words are likely proper nouns or intentional emphasis; touching them risks corrupting names
+    (Riley &rarr; riley) or domain terms (HTML &rarr; html). Leaving them alone is the only safe move.</dd>
+  <dt>Sweeper uses message-granular dedup, not file-level</dt>
+  <dd>File-level miners chunk at fixed byte sizes and don't track message boundaries. The sweeper catches
+    message-level content and dedupes via deterministic ID, allowing re-run safety without re-chunking transcripts.</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>
+  Data moves through each module along a distinct path. <strong>Repair</strong> reads from the ChromaDB API and
+  from SQLite directly (bypassing the API), backs up only SQLite, then reconstructs the collection via temp
+  staging. <strong>Sync</strong> reads drawer metadata to classify by gitignore status, then deletes matching IDs
+  in batches while holding the mine lock. <strong>Migrate</strong> extracts via raw SQLite reads when the API
+  fails, re-imports into a fresh Palace at a temp path, then atomically swaps (with EXDEV copy+delete fallback
+  and rollback guards). <strong>Exporter</strong> streams drawers in paginated batches, grouping by wing/room on
+  the fly, writing markdown with symlink checks. <strong>Dedup</strong> batches drawers by <code>source_file</code>,
+  queries cosine distances, and deletes marked duplicates. <strong>Spellcheck</strong> processes token-by-token,
+  preserving technical terms and known entities. <strong>Sweeper</strong> parses <code>.jsonl</code> transcripts
+  message-by-message, maintains per-session cursors, and upserts with deterministic IDs for idempotent reruns.
+</p>
+
+<div class="related"><h2>See also</h2><div class="related-grid">
+  <a class="related-card" href="backends.html"><span class="rc-group">Retrieval</span><div class="rc-title">Storage Backends</div><div class="rc-desc">Maintenance depends on ChromaBackend for collection lifecycle and direct SQLite access for recovery paths.</div></a>
+  <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">Drawers, wings, rooms, and closets are defined here; repair, sync, and export all operate on these structures.</div></a>
+  <a class="related-card" href="security-privacy.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Security &amp; Privacy</div><div class="rc-desc">Exporter's symlink defense and spellcheck's entity preservation align with security-by-architecture.</div></a>
+  <a class="related-card" href="mining-conversations.html"><span class="rc-group">Ingestion</span><div class="rc-title">Conversation Mining</div><div class="rc-desc">Sweeper complements file-level miners; sync reuses the same gitignore matcher as miner.py.</div></a>
+  <a class="related-card" href="llm-integration.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">LLM Integration</div><div class="rc-desc">Spellcheck integrates optional autocorrect and the entity registry; repair leans on ChromaDB internals.</div></a>
+  <a class="related-card" href="surprises.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Surprises &amp; Gotchas</div><div class="rc-desc">The extraction-cap guard and poisoned max_seq_id heuristic are among the project's sharpest edges.</div></a>
+</div></div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

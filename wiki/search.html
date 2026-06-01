@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Search &amp; Retrieval · MemPalace Wiki</title>
+  <meta name="description" content="MemPalace fuses vector semantic search with keyword-based BM25 scoring and optional closet-boosting to approach perfect retrieval. The system reaches 96.6% R@5 with zero LLM, 98.4% R@5 on held-out data through the full hybrid pipeline, and optional Haiku reranking pushes that to 100%. A weak semantic match can always be rescued by strong keyword overlap or temporal/preference signals, eliminating the pure-vector cold-retrieval problem. Vector candidate selection is the floor that always runs; later steps can only improve ranking, never suppress a result.">
+  <meta name="mp:slug" content="search">
+  <meta name="mp:group" content="Retrieval">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="Search &amp; Retrieval · MemPalace Wiki">
+  <meta property="og:description" content="MemPalace fuses vector semantic search with keyword-based BM25 scoring and optional closet-boosting to approach perfect retrieval. The system reaches 96.6% R@5 with zero LLM, 98.4% R@5 on held-out data through the full hybrid pipeline, and optional Haiku reranking pushes that to 100%. A weak semantic match can always be rescued by strong keyword overlap or temporal/preference signals, eliminating the pure-vector cold-retrieval problem. Vector candidate selection is the floor that always runs; later steps can only improve ranking, never suppress a result.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Search & Retrieval", "name": "Search & Retrieval", "description": "MemPalace fuses vector semantic search with keyword-based BM25 scoring and optional closet-boosting to approach perfect retrieval. The system reaches 96.6% R@5 with zero LLM, 98.4% R@5 on held-out data through the full hybrid pipeline, and optional Haiku reranking pushes that to 100%. A weak semantic match can always be rescued by strong keyword overlap or temporal/preference signals, eliminating the pure-vector cold-retrieval problem. Vector candidate selection is the floor that always runs; later steps can only improve ranking, never suppress a result.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link active" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Retrieval</span><span class="sep">/</span><span>Search &amp; Retrieval</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Retrieval</div>
+  <h1>Search &amp; Retrieval</h1>
+  <p class="lead">Hybrid BM25 + vector retrieval tuned for 100% recall.</p>
+</header>
+
+<div class="summary">
+  MemPalace fuses vector semantic search with keyword-based BM25 scoring and optional closet-boosting to approach perfect retrieval. The system reaches 96.6% R@5 with <em>zero LLM</em>, 98.4% R@5 on held-out data through the full hybrid pipeline, and optional Haiku reranking pushes that to 100%. The core idea: a weak semantic match can always be rescued by strong keyword overlap or temporal/preference signals, eliminating the pure-vector cold-retrieval problem. Vector candidate selection is the floor that always runs; every later step can only improve ranking, never suppress a result.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+<p>
+  Search runs as a layered pipeline. A vector candidate floor always executes first; closet boosting, hybrid BM25 re-ranking, union candidate gathering, and drawer-grep enrichment each refine that floor without ever discarding a directly-matched drawer. The design rule from <code>CLAUDE.md</code> is blunt: <em>100% recall is the design requirement</em>, and hybrid ranking is the mechanism.
+</p>
+
+<h3>Vector candidate selection (the floor)</h3>
+<p>
+  Every search begins with drawer-direct vector retrieval via ChromaDB's HNSW index, over-sampling <code>n_results×3</code> candidates before ranking. The query is embedded with the configured model (<a href="search.html">minilm or embeddinggemma</a>), compared against all drawer embeddings in the requested wing/room, and candidates are collected with their raw cosine distances. This baseline always runs; subsequent ranking steps can only reorder, never suppress.
+</p>
+
+<h3>Closet-based ranking signal (optional boost)</h3>
+<p>
+  If a <a href="aaak-dialect.html">closets</a> collection exists, the system queries it separately with the same query and builds a per-source boost table. The top closet for a source file yields a 0.40 distance reduction, the second 0.25, down to 0.04 for rank 5. Boosts apply only to drawers from that source, and only when the closet distance ≤ 1.5 (a too-weak signal is ignored). The <a href="palace-model.html">palace structure</a> makes closets the index layer that ranks drawer retrieval — they reorder, never gate.
+</p>
+
+<h3>Hybrid BM25 + vector re-ranking</h3>
+<p>
+  After candidate gathering, <code>_hybrid_rank</code> applies Okapi-BM25 to the full candidate-set text. IDF is computed locally over the candidates themselves (corpus-relative, not global), so discriminativeness reflects each term's prevalence within the re-rank pool. Vector similarity is computed as <code>max(0, 1 - distance)</code> into [0, 1]; BM25 is min-max normalized to [0, 1] within the pool so the two signals are commensurable. The final score is <code>0.6 * vec_sim + 0.4 * bm25_norm</code> — weights favor semantic matching but give keyword overlap enough force to rescue semantically-distant exact matches.
+</p>
+
+<h3>Query sanitization and embedding</h3>
+<p>
+  Before embedding, the query is cleaned by <a href="security-privacy.html">query_sanitizer.py</a> to strip system-prompt contamination that occurs when AI agents prepend instructions to their search queries. A 4-step fallback (passthrough if ≤200 chars, question extraction, tail-sentence extraction, tail truncation) recovers the actual intent, lifting recall from 1% to 70–80% in worst-case scenarios. The cleaned query is then embedded.
+</p>
+
+<h3>Candidate strategy: union mode</h3>
+<p>
+  With <code>candidate_strategy='union'</code>, after vector selection the system also queries the SQLite FTS5 fulltext index with the same query, pulling top <code>n_results×3</code> BM25-only candidates. These are merged into the re-rank pool (deduped by source file and chunk index) and re-ranked alongside vector results. Union mode catches keyword-strong but vector-distant documents (terminology guides, technical specs) that pure-semantic search misses, at the cost of one SQLite open + FTS5 MATCH per query.
+</p>
+
+<h3>Drawer-grep enrichment for closet hits</h3>
+<p>
+  When a drawer is matched via closet boost and its source file spans multiple chunks, the system fetches all chunks from that source, finds the one with the highest query-term overlap, and returns it plus ±1 neighbors. This "drawer-grep" pattern solves the case where vector search lands on a list header but the actual matching content lives in the next chunk. Enrichment is transparent: the caller receives combined context without a follow-up fetch.
+</p>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p>MemPalace's zero-LLM baseline (96.6% R@5 on <a href="benchmarks.html">LongMemEval</a>) beats Mem0's LLM-extracted memories by over 2×. Extraction loses context — when Mem0 distills "user prefers PostgreSQL" and discards the conversation, it loses <em>why</em>, the alternatives considered, and what was said before. MemPalace stores everything verbatim and lets search find it. Nobody published this result before because nobody measured raw verbatim retrieval against extraction systems.</p>
+</div>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Okapi-BM25</dt>
+  <dd>Probabilistic keyword matching that scores documents on term frequency and inverse document frequency (IDF), tuned with k1=1.5 and b=0.75 per standard conventions.</dd>
+  <dt>Cosine distance</dt>
+  <dd>Vector similarity metric in the [0, 2] range used by ChromaDB's HNSW index; 0 = identical, 2 = opposite. MemPalace interprets it as absolute distance (not relative-to-max) to keep ranking stable as candidates are added or removed.</dd>
+  <dt>Hybrid ranking</dt>
+  <dd>Convex combination of vector similarity (60%) and normalized BM25 (40%) applied at re-rank time: <code>0.6 * vec_sim + 0.4 * bm25_norm</code>, then sorted.</dd>
+  <dt>Closet boost</dt>
+  <dd>Ranking signal where a matching closet (topic index layer) reduces the effective distance of drawers from its source file by 4–40% depending on closet rank, clamped to [0, 2] to preserve cosine invariants.</dd>
+  <dt>Candidate strategy</dt>
+  <dd>Policy for gathering candidates before hybrid re-rank: <code>'vector'</code> (default) uses top <code>n_results×3</code> from HNSW; <code>'union'</code> also pulls BM25-only candidates from SQLite FTS5 to widen the pool.</dd>
+  <dt>Effective distance</dt>
+  <dd>The distance after closet boost: <code>max(0.0, min(2.0, raw_dist - boost))</code>, keeping the result in valid cosine range [0, 2].</dd>
+  <dt>Drawer-grep enrichment</dt>
+  <dd>When a closet-boosted match spans multiple chunks in a source file, the system selects the chunk with the highest keyword-term overlap and returns it plus immediate neighbors for context.</dd>
+  <dt>BM25-only fallback</dt>
+  <dd>SQLite FTS5-based search used when the HNSW vector index is corrupted or unloadable, enabling graceful degradation to keyword search without segfaulting the server.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  <strong>BM25 corpus-relative IDF.</strong> IDF is computed over the candidate set itself, not a fixed corpus, so each query's re-rank pool carries its own term-discriminativeness scores. This is crucial for small pools where term prevalence differs from the overall palace.
+</p>
+<div class="code-caption">mempalace/searcher.py:102 · corpus-relative IDF over candidates</div>
+<pre><code class="language-python">idf = {term: math.log((n_docs - df[term] + 0.5) / (df[term] + 0.5) + 1) for term in query_terms}</code></pre>
+
+<p>
+  <strong>Convex-combination scoring.</strong> After normalizing BM25 within the pool, the two signals merge with fixed weights — semantic-leaning but keyword-rescuable.
+</p>
+<div class="code-caption">mempalace/searcher.py:162 · vector_weight=0.6, bm25_weight=0.4</div>
+<pre><code class="language-python">scored.append((vector_weight * vec_sim + bm25_weight * norm, r))</code></pre>
+
+<p>
+  <strong>Effective distance clamping.</strong> A strong closet boost (up to 0.40) can exceed the raw distance; without the clamp the subtraction goes negative, yielding similarity &gt; 1.0 and inverting the sort so boosted results paradoxically rank last. The clamp preserves the cosine invariant [0, 2] and makes boosts monotonically improve ranking.
+</p>
+<div class="code-caption">mempalace/searcher.py:903 · keep effective distance in [0, 2]</div>
+<pre><code class="language-python">effective_dist = max(0.0, min(2.0, dist - boost))</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><code>CLOSET_RANK_BOOSTS = [0.40, 0.25, 0.15, 0.08, 0.04]</code> uses the closet's <em>ordinal position</em>, not its absolute distance, to choose boost magnitude (<code>searcher.py:871</code>). Narrative content produces closet distances clustered in the 1.2–1.5 range regardless of match quality, making absolute distance unreliable — rank is more stable. Distances &gt; 1.5 bypass boosts entirely via <code>CLOSET_DISTANCE_CAP</code>.</p>
+</div>
+
+<p>
+  <strong>Query sanitizer 4-step fallback.</strong> Escalating strategies recover the real intent from contaminated queries, with length guards (MIN_QUERY_LENGTH=10) and quote stripping at each step.
+</p>
+<div class="code-caption">mempalace/query_sanitizer.py:106 · step 1, short-query passthrough</div>
+<pre><code class="language-python">if original_length &lt;= SAFE_QUERY_LENGTH:
+    return {
+        "clean_query": raw_query,
+        "was_sanitized": False,
+        "original_length": original_length,
+        "clean_length": original_length,
+        "method": "passthrough",
+    }</code></pre>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security</div>
+  <p>When AI agents prepend system prompts (2000+ chars) to search queries, the embedding model represents the concatenated string as a single vector where the prompt dominates the question — recall silently drops from ~90% to 1% (<code>query_sanitizer.py:9</code>). The sanitizer's 4-step approach recovers to 70–80% worst-case. Not perfect prevention, but it eliminates the catastrophic recall cliff.</p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p>Vector similarity uses <code>max(0, 1 - distance)</code> — absolute distance, not relative-to-max (<code>searcher.py:160</code>). If similarity were <code>(max_dist - dist) / max_dist</code>, adding one very-close candidate would raise <code>max_dist</code> and reshuffle every other score. Absolute scoring guarantees that adding or removing a candidate cannot reorder the others, giving stable, predictable ranking.</p>
+</div>
+
+<details class="collapsible">
+  <summary>Chunk-precise dedup &amp; BM25-only fallback</summary>
+  <p>
+    <strong>Union dedup keys are <code>(source_file_full, chunk_index)</code> pairs</strong> (<code>searcher.py:684–703</code>), not filenames. A single source file may split into 10 drawers; BM25 might surface chunk 3 (high keyword match) while vector found chunk 7 (high semantic match). File-level dedup would silently drop one — chunk-level dedup lets the same source contribute multiple perspectives to the re-rank pool.
+  </p>
+  <p>
+    <strong>BM25-only SQLite fallback</strong> (<code>searcher.py:408–635</code>): when <code>vector_disabled=True</code> (HNSW diverged), search routes to <code>_bm25_only_via_sqlite</code>, reading directly from <code>chroma.sqlite3</code> via ChromaDB's FTS5 trigram index. Tokens &lt; 3 chars are skipped (trigram limitation), and it falls back to recency-window then id-ordered queries if FTS5 fails — search never crashes, even with a severely corrupted vector segment. See <a href="backends.html">storage backends</a> and <a href="maintenance.html">maintenance</a>.
+  </p>
+</details>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p>Chunk-precise dedup is why the same source file can appear multiple times in results from different retrieval paths — BM25 and vector each contribute their best-matching chunk rather than competing for one slot. This is deliberate context preservation, not duplication.</p>
+</div>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>search_memories</td><td>function</td><td><code>mempalace/searcher.py:748</code></td><td>Main programmatic search API used by the MCP server and other callers; returns a dict instead of printing. Handles vector-only, BM25-only fallback, and union-candidate strategies.</td></tr>
+    <tr><td>_hybrid_rank</td><td>function</td><td><code>mempalace/searcher.py:122</code></td><td>Re-ranks candidates by convex combination of vector similarity (60%) and BM25 (40%); handles both vector-aware and vector-unknown candidates and mutates results in place.</td></tr>
+    <tr><td>_bm25_scores</td><td>function</td><td><code>mempalace/searcher.py:63</code></td><td>Computes Okapi-BM25 scores for a query against a document corpus using the Lucene/BM25+ smoothed IDF formula over the candidate set.</td></tr>
+    <tr><td>_merge_bm25_union_candidates</td><td>function</td><td><code>mempalace/searcher.py:637</code></td><td>Appends BM25-only candidates from SQLite into the re-rank pool under <code>candidate_strategy='union'</code>, with chunk-precise dedup.</td></tr>
+    <tr><td>sanitize_query</td><td>function</td><td><code>mempalace/query_sanitizer.py:41</code></td><td>Extracts actual search intent from contaminated queries using the 4-step fallback (passthrough, question extraction, tail sentence, tail truncation).</td></tr>
+    <tr><td>get_embedding_function</td><td>function</td><td><code>mempalace/embedding.py:227</code></td><td>Returns a cached embedding function bound to user-selected device and model (minilm or embeddinggemma); falls back gracefully if the requested accelerator is unavailable.</td></tr>
+    <tr><td>EmbeddinggemmaONNX</td><td>class</td><td><code>mempalace/embedding.py:140</code></td><td>ChromaDB-compatible embedding function using embeddinggemma-300m ONNX quantized; multilingual, lazy-loaded from HuggingFace.</td></tr>
+    <tr><td>dedup_palace</td><td>function</td><td><code>mempalace/dedup.py:150</code></td><td>Main entry point for deduplicating near-identical drawers within source groups via cosine-distance threshold; supports dry-run and selective scoping.</td></tr>
+    <tr><td>check_text</td><td>function</td><td><code>mempalace/fact_checker.py:55</code></td><td>Fact-checking API that detects entity-name confusion (edit distance ≤2), relationship mismatches, and stale facts against the knowledge graph.</td></tr>
+    <tr><td>CLOSET_RANK_BOOSTS</td><td>constant</td><td><code>mempalace/searcher.py:871</code></td><td><code>[0.40, 0.25, 0.15, 0.08, 0.04]</code> — ordinal boost values for closet ranks 0–4, applied as distance reduction to drawers from matching sources.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Hybrid ranking always runs, vector 60% / BM25 40%.</dt>
+  <dd>Pure vector retrieval fails on exact-match queries (directory listings, diffs, mechanical content that embeds as noise); pure BM25 misses semantic paraphrases. The 60/40 split favors embedding similarity but gives keyword overlap enough weight to rescue lexical matches. Grounded in the <code>CLAUDE.md</code> principle "100% recall is the design requirement" — hybrid is the mechanism.</dd>
+  <dt>Closets are a ranking signal, never a filter gate.</dt>
+  <dd>Closets are generated via regex extraction on narrative content, so they can be weak or incomplete. Making them a filter would create a "weak-closets regression" where poor extraction hides good drawer matches. Signal-only mode means directly-found drawers always appear; closets just reorder them — honoring the verbatim-always principle that nothing is thrown away.</dd>
+  <dt>BM25 corpus is the candidate set, not a fixed global corpus.</dt>
+  <dd>Computing IDF over the re-rank pool gives each query term-discriminativeness scores tuned to its context. A term rare in the full palace may be common in the top-30 results; local IDF makes scoring adaptive, works well for small pools, and is cheaper than maintaining global IDF.</dd>
+  <dt>Embedding device is configurable and falls back gracefully.</dt>
+  <dd>MemPalace must run on laptops without GPU. Requesting an unavailable accelerator (CUDA on a CPU-only machine) logs a warning and falls back to CPU rather than hard-failing. <code>CLAUDE.md</code>: "Local-first by default, never silently use an external API." See <a href="search.html">embedding</a>.</dd>
+  <dt>Query sanitization happens before embedding; cleaning is logged, not exposed.</dt>
+  <dd>When contamination is detected the sanitizer logs a warning but returns the clean query without changing the caller's view of what was searched. This prevents silent surprises ("why did my search change?") while still rescuing recall — the original query is preserved, the returned results are accurate.</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>
+  Queries enter via <code>search_memories()</code> or the <a href="cli.html">CLI</a> <code>search()</code> function. If query length suggests contamination (&gt;200 chars), <code>query_sanitizer</code> applies its 4-step extraction. The cleaned query is embedded through <code>get_embedding_function()</code> (minilm or embeddinggemma with device selection). Drawers are retrieved from ChromaDB via vector search (<code>n_results×3</code> over-fetch) while closets are queried in parallel to build a boost lookup table. Each drawer is scored by (1) raw vector distance, (2) closet boost if applicable, and (3) effective distance clamped to [0, 2], yielding an initial ranking. If <code>candidate_strategy='union'</code>, BM25-only candidates are pulled from SQLite FTS5 and merged with chunk-level dedup. <code>_hybrid_rank</code> then applies Okapi-BM25, normalizes to [0, 1], and recomputes final scores as <code>0.6*vec_sim + 0.4*bm25_norm</code>. For closet-boosted hits spanning multiple chunks, drawer-grep enrichment selects the highest-keyword-overlap chunk plus neighbors and returns expanded context. Results are trimmed to <code>n_results</code> and returned with similarity scores, source metadata, and optional closet previews. If HNSW is unavailable, <code>_bm25_only_via_sqlite</code> provides graceful fallback using FTS5 directly. The <a href="mcp-server.html">MCP server</a> and <a href="cli.html">CLI</a> are the primary callers.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="benchmarks.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Benchmarks</div><div class="rc-desc">Documents the 96.6% R@5 baseline, hybrid v4's 98.4% held-out performance, and why hybrid beats pure-vector for recall.</div></a>
+    <a class="related-card" href="search.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Embedding</div><div class="rc-desc">Device-aware model loading (minilm vs embeddinggemma) and hardware-acceleration selection the searcher depends on.</div></a>
+    <a class="related-card" href="knowledge-graph.html"><span class="rc-group">Retrieval</span><div class="rc-title">Temporal Knowledge Graph</div><div class="rc-desc">Entity relationships and validity windows that could augment search ranking in future enhancements.</div></a>
+    <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">Drawer/closet structure the searcher operates on; closets are the index layer that ranks drawer retrieval.</div></a>
+    <a class="related-card" href="aaak-dialect.html"><span class="rc-group">Ingestion</span><div class="rc-title">AAAK Dialect &amp; Closets</div><div class="rc-desc">Generates closet content via entity/topic extraction, which the searcher uses as a ranking signal without depending on its lossiness.</div></a>
+    <a class="related-card" href="backends.html"><span class="rc-group">Retrieval</span><div class="rc-title">Storage Backends</div><div class="rc-desc">ChromaDB HNSW + SQLite FTS5 storage that powers vector candidates and the BM25-only fallback path.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

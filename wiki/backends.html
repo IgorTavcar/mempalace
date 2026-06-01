@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Storage Backends · MemPalace Wiki</title>
+  <meta name="description" content="MemPalace abstracts storage behind a minimal typed interface (BaseCollection, BaseBackend) that enables swapping retrieval implementations without touching mining, search, or repair code. ChromaDB is the reference implementation, but third-party backends register via entry points. The typed result layer (QueryResult, GetResult) replaces Chroma&#x27;s raw dicts; sophisticated HNSW health checks prevent segfaults on diverged indices; and per-palace locking serializes concurrent writes against ChromaDB&#x27;s non-thread-safe HNSW graph.">
+  <meta name="mp:slug" content="backends">
+  <meta name="mp:group" content="Retrieval">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="Storage Backends · MemPalace Wiki">
+  <meta property="og:description" content="MemPalace abstracts storage behind a minimal typed interface (BaseCollection, BaseBackend) that enables swapping retrieval implementations without touching mining, search, or repair code. ChromaDB is the reference implementation, but third-party backends register via entry points. The typed result layer (QueryResult, GetResult) replaces Chroma&#x27;s raw dicts; sophisticated HNSW health checks prevent segfaults on diverged indices; and per-palace locking serializes concurrent writes against ChromaDB&#x27;s non-thread-safe HNSW graph.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Storage Backends", "name": "Storage Backends", "description": "MemPalace abstracts storage behind a minimal typed interface (BaseCollection, BaseBackend) that enables swapping retrieval implementations without touching mining, search, or repair code. ChromaDB is the reference implementation, but third-party backends register via entry points. The typed result layer (QueryResult, GetResult) replaces Chroma's raw dicts; sophisticated HNSW health checks prevent segfaults on diverged indices; and per-palace locking serializes concurrent writes against ChromaDB's non-thread-safe HNSW graph.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link active" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Retrieval</span><span class="sep">/</span><span>Storage Backends</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Retrieval</div>
+  <h1>Storage Backends</h1>
+  <p class="lead">A pluggable storage interface — ChromaDB today, anything tomorrow.</p>
+</header>
+
+<div class="summary">
+  MemPalace abstracts storage behind a minimal typed interface (<code>BaseCollection</code>, <code>BaseBackend</code>) so retrieval implementations can be swapped without touching mining, <a href="search.html">search</a>, or <a href="maintenance.html">repair</a> code. ChromaDB is the reference implementation; third-party backends register via setuptools entry points. A typed result layer (<code>QueryResult</code>, <code>GetResult</code>) replaces Chroma's raw dicts, sophisticated HNSW health checks prevent native segfaults on diverged indices, and per-palace write locking serializes concurrent writes against ChromaDB's non-thread-safe HNSW graph.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<p>
+  The whole storage layer is roughly 2,500 lines split across four modules: the contract in <code>base.py</code> (382 lines), the ChromaDB implementation in <code>chroma.py</code> (1,602 lines), the <code>registry.py</code> resolver (189 lines), and the <code>migrate.py</code> recovery path (362 lines). Callers — miners, searchers, repair tools — only ever touch the abstract contract.
+</p>
+
+<h3>Interface-driven abstraction</h3>
+<p>
+  The backend contract lives in <code>base.py</code>. <code>BaseCollection</code> defines six required, <em>kwargs-only</em> methods — <code>add</code>, <code>upsert</code>, <code>query</code>, <code>get</code>, <code>delete</code>, <code>count</code> — plus three optional hooks (<code>update</code>, <code>close</code>, <code>health</code>). <code>BaseBackend</code> is the per-palace factory: <code>get_collection</code>, <code>close_palace</code>, <code>close</code>, <code>health</code>, and an optional <code>detect</code> hook. This thin contract lets a miner call <code>collection.upsert(documents=..., ids=...)</code> without ever knowing whether data lands in ChromaDB, Postgres, or a custom store. A new backend inherits <code>BaseCollection</code> and <code>BaseBackend</code>, implements the methods, and announces itself via an entry point or an explicit <code>register()</code> call.
+</p>
+
+<h3>Typed results layer</h3>
+<p>
+  Chroma returns raw dicts like <code>{"ids": [[...]], "documents": [[...]]}</code>. MemPalace wraps these in <code>QueryResult</code> and <code>GetResult</code> frozen dataclasses (<code>base.py:129</code>+) that enforce the outer-dimension-preserving spec and support attribute access (<code>result.ids</code>) as the primary API. Fields not requested via <code>include=</code> are populated with empty lists (never <code>None</code>) — except <code>embeddings</code>, which stays <code>None</code> if not requested. This typed boundary means all downstream code in <a href="search.html">search</a> and <a href="maintenance.html">repair</a> receives consistent, predictable shapes.
+</p>
+
+<h3>ChromaDB health &amp; recovery</h3>
+<p>
+  <code>ChromaBackend</code> weaves three cold-start safety passes before any palace opens (<code>chroma.py:1365-1392</code>): <code>_fix_blob_seq_ids</code> patches the 0.6.x→1.5.x migration bug where <code>seq_id</code> remains a BLOB instead of migrating to INTEGER; <code>quarantine_invalid_hnsw_metadata</code> renames aside an unpickleable <code>index_metadata.pickle</code> to prevent a Rust-side SIGSEGV; and <code>quarantine_stale_hnsw</code> renames segments whose mtime has drifted beyond 300s or whose payload ratio exceeds 10×. These run once per palace per process (gated by a <code>_quarantined_paths</code> set), letting ChromaDB open safely on HNSW corrupted by cross-machine replication, partial restores, or mid-write crashes.
+</p>
+
+<h3>HNSW capacity divergence probe</h3>
+<p>
+  ChromaDB flushes its HNSW index asynchronously, so <code>sqlite_count</code> and <code>hnsw_count</code> naturally diverge by up to 2×<code>sync_threshold</code> (<code>chroma.py:522-606</code>). The <code>hnsw_capacity_status</code> function probes both counts via low-level SQLite queries — deliberately avoiding the segment reader that could crash — then flags real divergence (&gt;10% or &gt;2×threshold) as <code>status="diverged"</code>, letting <a href="search.html">search</a> warn and fall back to BM25. This catches the issue #1222 failure mode (<code>max_elements</code> froze at 16K while SQLite held 192K) <em>before</em> a vector op segfaults. The probe itself never raises — a throwing probe would defeat its own purpose.
+</p>
+
+<h3>Registry &amp; entry-point resolution</h3>
+<p>
+  <code>registry.py</code> discovers backends at module load: <code>available_backends()</code> scans <code>importlib.metadata.entry_points("mempalace.backends")</code> and stores classes in a module-level <code>_registry</code> dict. <code>get_backend("chroma")</code> returns a cached singleton instance; <code>resolve_backend_for_palace</code> follows RFC 001 §3.3 priority — explicit flag &gt; config value &gt; env var &gt; detect-from-disk &gt; default <code>"chroma"</code>. Tests and local dev call <code>register("my_backend", MyBackendClass)</code> to override, winning over entry points on a name conflict.
+</p>
+
+<h3>Per-palace write locking</h3>
+<p>
+  <code>ChromaCollection.upsert</code>/<code>add</code>/<code>delete</code> wrap the underlying call in <code>_write_lock</code> (<code>chroma.py:938-951</code>), which acquires <code>mine_palace_lock</code> (in <code>palace.py</code>) when a palace path is set. This serializes <a href="mcp-server.html">MCP tool</a> writes against <a href="cli.html"><code>mempalace mine</code></a> CLI invocations, preventing the race that triggers HNSW corruption (#974/#965): when N copies of <code>mine</code> run concurrently, each drives parallel inserts that corrupt <code>link_lists.bin</code>. The lock is reentrant per thread, so the inner <code>collection.upsert</code> inside an already-locked mine pipeline does not re-acquire and self-deadlock.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>BaseCollection</dt>
+  <dd>Abstract interface every backend must implement: <code>add</code>, <code>upsert</code>, <code>query</code>, <code>get</code>, <code>delete</code>, <code>count</code>, plus optional <code>update</code>/<code>health</code>/<code>close</code>. The per-collection read/write contract consumed by miners, searchers, and repair tools.</dd>
+  <dt>BaseBackend</dt>
+  <dd>Per-palace factory contract owning <code>get_collection</code>, <code>close_palace</code>, <code>health</code>, and an optional <code>detect</code> hook. Lightweight on construction (no I/O); connection is deferred to <code>get_collection</code>. Thread-safe for concurrent multi-palace access.</dd>
+  <dt>PalaceRef</dt>
+  <dd>Value object identifying a palace: <code>id</code> (cache key), optional <code>local_path</code> (filesystem), optional <code>namespace</code> (server-mode routing). Replaces legacy path-string arguments in the RFC 001 migration.</dd>
+  <dt>QueryResult / GetResult</dt>
+  <dd>Typed frozen dataclasses replacing Chroma's raw dict returns. They preserve the outer query dimension even when hits are empty, include an optional dict-protocol shim for legacy callers, and leave the <code>embeddings</code> field <code>None</code> unless explicitly requested.</dd>
+  <dt>HNSW capacity drift</dt>
+  <dd>Divergence between the SQLite embedding count and the HNSW index element count. Signals missing or corrupt vector data; corrected by quarantine checks before open and by divergence probes that trigger fallback to BM25 search.</dd>
+  <dt>Collection metric invariant</dt>
+  <dd>Collections are created with <code>hnsw:space=cosine</code> for consistent cosine-distance similarity scoring. Legacy palaces missing this metadata silently use L2 distance, breaking downstream relevance interpretation.</dd>
+  <dt>Registry entry-point discovery</dt>
+  <dd>Backend implementations announce themselves via setuptools entry points under <code>mempalace.backends</code>, discovered once per process at module load. An explicit <code>register()</code> wins on name conflict.</dd>
+  <dt>ChromaDB version migration</dt>
+  <dd>A direct SQLite extraction path for palaces unreadable by the current chromadb version: it writes to a fresh palace, then performs an atomic swap. Automatic migration on 1.5.x+ makes manual <code>migrate</code> rarely needed except for downgrades.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  <strong>Typed results with a dict-compatibility shim.</strong> <code>_DictCompatMixin</code> (<code>base.py:105</code>) supplies <code>__getitem__</code>, <code>get</code>, and <code>__contains__</code> to <code>QueryResult</code> and <code>GetResult</code> so legacy code expecting the raw dict protocol (<code>result["ids"]</code>, <code>result.get("ids")</code>) keeps working. New code MUST use attribute access; the dict shim is an explicit migration bridge scheduled for removal.
+</p>
+
+<div class="code-caption">base.py:129-145 · QueryResult with outer-dimension preservation</div>
+<pre><code class="language-python">@dataclass(frozen=True)
+class QueryResult(_DictCompatMixin):
+    """Typed return from ``BaseCollection.query``.
+
+    Outer list dimension = number of query vectors / texts.
+    Inner list dimension = hits per query (may be zero).
+    """
+    ids: list[list[str]]
+    documents: list[list[str]]
+    metadatas: list[list[dict]]
+    distances: list[list[float]]
+    embeddings: Optional[list[list[list[float]]]] = None</code></pre>
+
+<p>
+  <strong>HNSW bloat prevention via sync-threshold tuning.</strong> <code>_HNSW_BLOAT_GUARD</code> (<code>chroma.py:127</code>) sets <code>hnsw:batch_size</code> and <code>hnsw:sync_threshold</code> to <code>50_000</code> at collection creation (vs. chromadb's default of 1000). This breaks the resize + persist-dirty feedback loop that bloated <code>link_lists.bin</code> into hundreds of GB of sparse files on large mines — empirically validated on a 39K-drawer rebuild in 2026-04 with no segfault. The guard is applied at the moment of collection creation:
+</p>
+
+<div class="code-caption">chroma.py:1456-1468 · collection creation with HNSW bloat guard</div>
+<pre><code class="language-python">if create:
+    try:
+        collection = client.get_collection(collection_name, **ef_kwargs)
+    except _ChromaNotFoundError:
+        collection = client.create_collection(
+            collection_name,
+            metadata={
+                "hnsw:space": hnsw_space,
+                "hnsw:num_threads": 1,
+                **_HNSW_BLOAT_GUARD,
+            },
+            **ef_kwargs,
+        )</code></pre>
+
+<p>
+  <strong>The write lock is a thin context manager.</strong> When a palace path is configured, every write enters <code>mine_palace_lock</code>; when it is <code>None</code> (a bare <code>ChromaCollection</code> built outside <code>ChromaBackend</code>) it yields immediately.
+</p>
+
+<div class="code-caption">chroma.py:938-951 · write-lock context manager</div>
+<pre><code class="language-python">@contextlib.contextmanager
+def _write_lock(self):
+    """Acquire ``mine_palace_lock`` for the configured palace, if any.
+
+    No-op (yields immediately) when ``self._palace_path`` is None.
+    """
+    if self._palace_path is None:
+        yield
+        return
+    from ..palace import mine_palace_lock
+    with mine_palace_lock(self._palace_path):
+        yield</code></pre>
+
+<p>
+  <strong>Entry-point discovery with explicit override.</strong> <code>_discover_entry_points</code> (<code>registry.py:56</code>) loads declared backends exactly once, skipping any name already registered explicitly, and rejecting entry points that do not resolve to a <code>BaseBackend</code> subclass.
+</p>
+
+<div class="code-caption">registry.py:56-91 · entry-point discovery, explicit registration wins</div>
+<pre><code class="language-python">def _discover_entry_points() -> None:
+    """Load entry-point-declared backends once per process."""
+    global _discovered
+    if _discovered:
+        return
+    with _lock:
+        if _discovered:
+            return
+        eps = metadata.entry_points()
+        group = (
+            eps.select(group=_ENTRY_POINT_GROUP)
+            if hasattr(eps, "select")
+            else eps.get(_ENTRY_POINT_GROUP, [])
+        )
+        for ep in group:
+            if ep.name in _explicit:
+                continue  # explicit registration wins
+            cls = ep.load()
+            if not isinstance(cls, type) or not issubclass(cls, BaseBackend):
+                continue
+            _registry.setdefault(ep.name, cls)
+        _discovered = True</code></pre>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security</div>
+  <p>
+    HNSW metadata is read without ever deserializing untrusted disk state. <code>_segment_appears_healthy</code> (<code>chroma.py:161</code>) only sniffs the pickle's start byte (<code>0x80</code> PROTO marker) and end byte (<code>0x2e</code> STOP) to distinguish a complete write from truncation or zero-fill. When deserialization is genuinely needed, <code>_SafePersistentDataUnpickler</code> (<code>chroma.py:375</code>) is a whitelist-only Unpickler that permits a single class — <code>chromadb.segment.impl.vector.local_persistent_hnsw.PersistentData</code> — and raises <code>UnpicklingError</code> for anything else. The file is user-owned, but the byte-sniff plus whitelist is defense-in-depth against arbitrary code execution.
+  </p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p>
+    The HNSW link/data ratio is a corrupted-index canary (<code>chroma.py:36</code>). When <code>link_lists.bin</code> grows more than 10× larger than <code>data_level0.bin</code>, the graph is structurally unsound and Chroma can segfault in native code even if the mtime looks fresh and <code>index_metadata.pickle</code> is valid. Healthy palaces sit below 1×; issue #1218 saw 300×. The ratio check is intentionally <em>not</em> gated by mtime — a 10× misbalance is unsafe regardless of recency — catching corruption that filesystem timestamps alone would miss.
+  </p>
+</div>
+
+<p>
+  <strong>Migration verifies a real write roundtrip.</strong> <code>collection_write_roundtrip_works</code> (<code>migrate.py:174</code>) upserts a probe record, confirms it appears in <code>get</code>, deletes it, and confirms the deletion. This catches the silent-noop failure mode where some 0.6.x→1.5.x migrations leave a collection readable but write/delete no-op — a <code>count()</code> probe alone would miss it, falsely reporting "no migration needed" when a rebuild is actually required. When a palace is wholly unreadable, <code>extract_drawers_from_sqlite</code> (<code>migrate.py:52</code>) reads embeddings and metadata via raw SQL, bypassing the chromadb API entirely.
+</p>
+
+<details class="collapsible">
+  <summary>Inode + mtime cache invalidation</summary>
+  <p>
+    <code>ChromaBackend._client</code> (<code>chroma.py:1276</code>) detects palace rebuilds (repair / nuke / purge) by comparing <code>(inode, mtime)</code> of <code>chroma.sqlite3</code> against cached freshness state. An inode change triggers a <code>_quarantined_paths</code> discard so cold-start quarantines re-run; an mtime change (or a 0→nonzero transition) forces a client rebuild. FAT/exFAT filesystems that report inode 0 fall back to mtime-only comparison with a 0.01s epsilon to tolerate filesystem granularity.
+  </p>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>BaseCollection</td><td>class</td><td><code>base.py:185</code></td><td>Abstract read/write contract every backend implements (add, upsert, query, get, delete, count).</td></tr>
+    <tr><td>BaseBackend</td><td>class</td><td><code>base.py:308</code></td><td>Abstract per-palace factory; manages lifecycle (get_collection, close_palace, close) and optional health/detect hooks.</td></tr>
+    <tr><td>PalaceRef</td><td>class</td><td><code>base.py:75</code></td><td>Value object identifying a palace; replaces legacy path-string arguments with id/local_path/namespace.</td></tr>
+    <tr><td>QueryResult</td><td>class</td><td><code>base.py:130</code></td><td>Typed return from query; frozen dataclass preserving the outer query dimension even when empty.</td></tr>
+    <tr><td>GetResult</td><td>class</td><td><code>base.py:167</code></td><td>Typed return from get; flat lists of ids/documents/metadatas plus optional embeddings.</td></tr>
+    <tr><td>ChromaBackend</td><td>class</td><td><code>chroma.py:1182</code></td><td>Default storage implementation; wraps ChromaDB with HNSW health checks and inode-based cache invalidation.</td></tr>
+    <tr><td>ChromaCollection</td><td>class</td><td><code>chroma.py:914</code></td><td>Adapter translating Chroma dicts into typed results; wraps writes in mine_palace_lock.</td></tr>
+    <tr><td>hnsw_capacity_status</td><td>function</td><td><code>chroma.py:522</code></td><td>Probes HNSW capacity divergence before opening segments; enables BM25 fallback if unsafe.</td></tr>
+    <tr><td>quarantine_stale_hnsw</td><td>function</td><td><code>chroma.py:221</code></td><td>Renames stale or misbalanced HNSW segments aside before ChromaDB opens; cold-start corruption prevention.</td></tr>
+    <tr><td>get_backend</td><td>function</td><td><code>registry.py:109</code></td><td>Returns a cached singleton of the named backend; triggers entry-point discovery on first call.</td></tr>
+    <tr><td>resolve_backend_for_palace</td><td>function</td><td><code>registry.py:139</code></td><td>RFC 001 §3.3 priority resolver: explicit &gt; config &gt; env &gt; detect &gt; default.</td></tr>
+    <tr><td>extract_drawers_from_sqlite</td><td>function</td><td><code>migrate.py:52</code></td><td>Direct SQLite extraction for migration; bypasses the chromadb API on version-mismatched palaces.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Kwargs-only signatures for all collection methods</dt>
+  <dd>RFC 001 §1 eliminates positional-arg mistakes (e.g. swapping <code>ids</code> and <code>documents</code>) and makes callers self-documenting. Every backend enforces this at the interface layer; chromadb's legacy positional API is adapted only inside the <code>ChromaCollection</code> translate shim.</dd>
+  <dt>Typed results as the canonical return type, with a dict shim for migration</dt>
+  <dd>Attribute access (<code>result.ids</code>) is the primary API; dict access is a temporary bridge for callers predating RFC 001. The frozen dataclass prevents accidental mutation and eases testing, and the outer-dimension rule guarantees predictable shapes downstream.</dd>
+  <dt>Per-palace write locking in ChromaCollection, not the backend</dt>
+  <dd>RFC 001 §2 makes backends thread-safe for concurrent multi-palace access, but each palace's HNSW writer must be serialized. Locating the lock at the collection (where writes happen) keeps the concurrency model local and makes it clear that MCP and <code>mine</code> can coexist; reentrant per-thread locking prevents self-deadlock inside the mine pipeline.</dd>
+  <dt>Entry-point registry with explicit-registration override, no auto-loading</dt>
+  <dd>RFC 001 §3.2: backends are opt-in via <code>entry_points</code> or explicit <code>register()</code> — never auto-discovered from filesystem or environment. Explicit registration wins on conflict, keeping tests deterministic; late loading via <code>importlib.metadata</code> makes third-party backends available without becoming hard dependencies.</dd>
+  <dt>Cold-start quarantine runs once per palace per process</dt>
+  <dd>Safety checks like <code>quarantine_stale_hnsw</code> are idempotent but expensive (mtime + payload-ratio scans on every segment). The <code>_quarantined_paths</code> gate defers them to the first <code>get_collection</code> call, or after an inode change (rebuild), balancing safety against runtime thrash on long-running daemons.</dd>
+</dl>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p>
+    Reentrant locking prevents self-deadlock on the mine pipeline (<code>chroma.py:938</code>). The pipeline calls <code>get_collection</code> → <code>ChromaCollection.upsert</code>, which tries to acquire the <em>same</em> <code>mine_palace_lock</code>. Without a per-thread holder set in <code>palace.py</code>, the inner <code>upsert</code> would block on a second flock (Linux fcntl locks are per file descriptor) and deadlock on a single thread. The fix is subtle: <code>_mark_held</code>/<code>_is_held</code> consult a thread-local set before attempting the flock, so reentrant calls yield immediately.
+  </p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p>
+    Legacy palaces silently fall back to L2 distance when cosine is expected (<code>chroma.py:1169</code>). Collections created before <code>hnsw:space</code> metadata was mandatory use ChromaDB's default (L2/Euclidean). The <a href="search.html">searcher</a>'s cosine formula <code>max(0, 1 - distance)</code> then floors at 0 because L2 distances exceed 1.0. The mismatch is not caught at query time — it only surfaces as nonsensical relevance scores. <code>searcher.py</code> emits a stderr notice recommending <code>repair rebuild-index</code>, but the palace keeps running in degraded mode.
+  </p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p>
+    The divergence threshold scales dynamically with the sync threshold (<code>chroma.py:567</code>). The HNSW divergence floor is <code>max(2000, 2×sync_threshold)</code> because ChromaDB batches flushes at <code>sync_threshold</code> intervals (raised to 50K in PR #1191 to prevent <code>link_lists.bin</code> bloat). A fixed floor of 2000 would flag every actively-written palace as diverged once the unwritten tail exceeded 1K records. Scaling with <code>sync_threshold</code> lets the probe distinguish normal flush-lag from real corruption (issue #1222's 176K divergence).
+  </p>
+</div>
+
+<h2>Data flow</h2>
+<p>
+  Ingestion (<a href="mining-projects.html">project miners</a>, diary, <a href="mining-conversations.html">conversation miners</a>) acquires <code>mine_palace_lock</code>, calls <code>get_collection(palace_path, create=True)</code> on the default <code>ChromaBackend</code> instance, and writes via <code>collection.upsert(documents=..., ids=..., metadatas=..., embeddings=...)</code>. The <code>ChromaCollection</code> adapter translates to Chroma's dict API, sanitizes metadata (coercing <code>None</code> → <code>{_repaired_empty_meta: True}</code>), and wraps the call in the lock context.
+</p>
+<p>
+  On read (<a href="search.html">search</a>, <a href="maintenance.html">repair status</a>), callers invoke <code>collection.query</code> or <code>collection.get</code>; <code>ChromaCollection</code> translates the raw Chroma dicts into typed <code>QueryResult</code>/<code>GetResult</code> shapes. Health checks (<code>hnsw_capacity_status</code>, <code>quarantine_stale_hnsw</code>) probe SQLite and HNSW metadata directly, bypassing the segment reader, to detect divergence and corruption before control passes to ChromaDB's native code. Cleanup flows through <code>close_palace</code> (evicts the cached <code>PersistentClient</code>, releases file locks) or <code>close</code> (full backend teardown for shutdown).
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Queries use the collection interface and consult hnsw_capacity_status to detect divergence before vector ops, falling back to BM25.</div></a>
+    <a class="related-card" href="maintenance.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Repair, Sync &amp; Maintenance</div><div class="rc-desc">Repair, sync, and quarantine tools depend on backend health checks to diagnose and recover corrupted palaces.</div></a>
+    <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">Explains how pluggable storage fits the overall system, enabling future backends without touching mining or search.</div></a>
+    <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">Backends persist the palace model (wings, rooms, drawers) as indexed embeddings and metadata via the collection interface.</div></a>
+    <a class="related-card" href="mining-projects.html"><span class="rc-group">Ingestion</span><div class="rc-title">Project Mining</div><div class="rc-desc">Project miners call get_collection(create=True) and upsert documents/embeddings, protected by per-palace write locks.</div></a>
+    <a class="related-card" href="surprises.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Surprises &amp; Gotchas</div><div class="rc-desc">More cross-cutting heuristics like the HNSW link/data canary and reentrant lock deadlock avoidance.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

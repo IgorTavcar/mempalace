@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security &amp; Privacy · MemPalace Wiki</title>
+  <meta name="description" content="MemPalace is designed with privacy-by-architecture: all data lives locally, no external APIs for core operations, zero phone-home. This architectural guarantee is reinforced by defense-in-depth input validation (sanitize_name/content), prompt contamination prevention (query_sanitizer), MCP stdio protection, symlink-attack rejection in export, shell hook hardening, and strict file permissions (0o600/0o700).">
+  <meta name="mp:slug" content="security-privacy">
+  <meta name="mp:group" content="Cross-cutting">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="Security &amp; Privacy · MemPalace Wiki">
+  <meta property="og:description" content="MemPalace is designed with privacy-by-architecture: all data lives locally, no external APIs for core operations, zero phone-home. This architectural guarantee is reinforced by defense-in-depth input validation (sanitize_name/content), prompt contamination prevention (query_sanitizer), MCP stdio protection, symlink-attack rejection in export, shell hook hardening, and strict file permissions (0o600/0o700).">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Security & Privacy", "name": "Security & Privacy", "description": "MemPalace is designed with privacy-by-architecture: all data lives locally, no external APIs for core operations, zero phone-home. This architectural guarantee is reinforced by defense-in-depth input validation (sanitize_name/content), prompt contamination prevention (query_sanitizer), MCP stdio protection, symlink-attack rejection in export, shell hook hardening, and strict file permissions (0o600/0o700).", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link active" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Cross-cutting</span><span class="sep">/</span><span>Security &amp; Privacy</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Cross-cutting</div>
+  <h1>Security &amp; Privacy</h1>
+  <p class="lead">Privacy by architecture, plus the input-validation and hardening layers.</p>
+</header>
+
+<div class="summary">
+  MemPalace is privacy-by-architecture: all data lives locally, there are no external APIs for core
+  operations, and there is zero phone-home. That structural guarantee is reinforced by defense-in-depth:
+  input-validation sanitizers (<code>sanitize_name</code>, <code>sanitize_content</code>),
+  prompt-contamination mitigation (<code>query_sanitizer</code>), MCP stdio protection,
+  symlink-attack rejection in export, hardened shell hooks, and strict <code>0o600</code>/<code>0o700</code>
+  file permissions. The recurring theme is the same: make the unsafe code path impossible to reach rather
+  than try to detect every attack.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<h3>Architectural privacy guarantee</h3>
+<p>
+  MemPalace is privacy-by-design: all user data — drawers, the
+  <a href="knowledge-graph.html">knowledge graph</a>, embeddings, and indices — lives in
+  <code>~/.mempalace/palace</code> and never leaves the local machine. Core memory operations
+  (<a href="mining-projects.html">mining</a>, <a href="search.html">searching</a>, embedding) run locally
+  by default and require no cloud account or internet connectivity. External providers (Anthropic, OpenAI,
+  Ollama) are supported only via explicit user configuration through env vars or <code>config.json</code>,
+  and are never enabled silently. No telemetry library is imported. This eliminates the entire class of
+  unintended exfiltration bugs — see <a href="architecture.html">System Architecture</a> and
+  <a href="llm-integration.html">LLM Integration</a>.
+</p>
+
+<h3>Input validation at every boundary</h3>
+<p>
+  All data entering the palace is validated through sanitizers in <code>config.py</code> before storage.
+  Wing/room/entity names pass through <code>sanitize_name()</code>, which blocks path traversal
+  (<code>..</code>, <code>/</code>, <code>\</code>), null bytes, and non-ASCII symbol characters, and
+  enforces a 128-char limit. Content is validated with <code>sanitize_content()</code>, which rejects null
+  bytes and enforces a 100&nbsp;KB ceiling. Knowledge-graph values use <code>sanitize_kg_value()</code>,
+  which is more permissive (allowing punctuation and slashes) but still rejects null bytes and over-length
+  strings. All sanitizers call <code>strip_lone_surrogates()</code> to replace UTF-16 surrogates with
+  U+FFFD before encoding, preventing ChromaDB encode crashes (#1235). The
+  <a href="mcp-server.html">MCP server</a> applies these validators to every tool input before any operation.
+</p>
+
+<h3>Prompt contamination prevention</h3>
+<p>
+  Issue #333: when AI agents prepend system prompts (2000+ chars) to search queries, the embedding model
+  represents the concatenated string as one vector where the prompt overwhelms the actual question, and
+  retrieval collapses from <strong>89.8% to 1.0% R@10</strong>. <code>query_sanitizer.py</code> implements
+  a four-stage mitigation:
+</p>
+<ul>
+  <li><strong>Passthrough</strong> — short queries (≤200 chars) are left untouched (no degradation).</li>
+  <li><strong>Question extraction</strong> — for contaminated queries ending in <code>?</code>, extract the question sentence.</li>
+  <li><strong>Tail-sentence extraction</strong> — find the last meaningful segment.</li>
+  <li><strong>Tail truncation</strong> — fallback: keep the last 250 chars.</li>
+</ul>
+<p>
+  With the sanitizer, worst-case recovery is ~70-80% — survivable — versus catastrophic 1.0% without. All
+  four methods are logged, and sanitizer metadata is returned to the caller for transparency. See
+  <a href="search.html">Search &amp; Retrieval</a>.
+</p>
+
+<h3>MCP stdio protection and Windows UTF-8 hardening</h3>
+<p>
+  The MCP server (<code>mcp_server.py:26-43</code>) redirects stdout to stderr <em>before</em> importing
+  heavy dependencies. Transitive imports such as <code>onnxruntime</code> or PostHog telemetry sometimes
+  print banners to C-level stdout, which breaks Claude Desktop's JSON-RPC parser. The redirection happens at
+  both the Python level (<code>sys.stdout = sys.stderr</code>) and the file-descriptor level
+  (<code>os.dup2(2, 1)</code>), then the real stdout is restored in <code>main()</code> before entering the
+  protocol loop. The <code>_stdio.py</code> module provides
+  <code>reconfigure_stdio_utf8_on_windows()</code>, called by entry points (MCP server, CLI, fact_checker)
+  to fix Windows ANSI codepage mojibake. Each stream can use a different <code>errors=</code> policy: the
+  MCP server uses <code>strict</code> on stdout/stderr (bugs are loud), the CLI uses <code>replace</code>
+  (verbatim text may contain surrogates), and stdin uses <code>surrogateescape</code> everywhere so malformed
+  bytes survive as lone surrogates rather than raising <code>UnicodeDecodeError</code>. See
+  <a href="i18n.html">Internationalization</a>.
+</p>
+
+<h3>Symlink attack rejection and safe file I/O</h3>
+<p>
+  The <code>exporter.py</code> module (lines 30-65) implements a two-stage symlink defense:
+  <code>_reject_symlink()</code> pre-checks whether a path is a symlink, and
+  <code>_safe_open_for_write()</code> uses <code>O_NOFOLLOW</code> (POSIX) or pre-check + open (Windows) at
+  write time. On POSIX, <code>open(O_NOFOLLOW | O_CREAT)</code> fails atomically with <code>ELOOP</code> if
+  the path is a symlink, closing the TOCTOU window between <code>islink()</code> and <code>open()</code>;
+  files are opened with mode <code>0o600</code>. The miner skips symlinks during project traversal
+  (<code>filepath.is_symlink()</code> check, stderr warning). This defense-in-depth prevents symlink-based
+  redirection attacks where a pre-placed symlink at the export output could write into <code>/etc</code>,
+  <code>/dev</code>, or other system directories.
+</p>
+
+<h3>File permissions and state-directory hardening</h3>
+<p>
+  Config files (<code>~/.mempalace/config.json</code>, <code>~/.mempalace/people_map.json</code>) are created
+  with <code>0o600</code> (owner read/write only). Directories (<code>~/.mempalace</code>) are created with
+  <code>0o700</code>. The exporter creates <code>output_dir</code> with <code>0o700</code> and all room files
+  with <code>0o600</code>. The save hook (<code>mempal_save_hook.sh</code>) uses <code>umask 077</code> when
+  creating <code>hook_state</code> files — atomically ensuring <code>0o600</code> — then <code>chmod 600</code>
+  as belt-and-suspenders. This prevents other local users on a shared box from reading config, people maps,
+  or hook logs that reveal home paths and project structure. All <code>chmod</code> calls are wrapped in
+  try/except for Windows, which does not support Unix permissions.
+</p>
+
+<h3>Hook script sanitization and validation</h3>
+<p>
+  The <code>mempal_save_hook.sh</code> (lines 108-165) parses JSON input using Python (not shell
+  <code>eval</code>), printing a parse-success sentinel followed by sanitized values. The shell reads via
+  <code>sed 'Np'</code> (not <code>mapfile</code>, for bash 3.2 compat on macOS). If the sentinel is missing,
+  the hook logs the failure and captures stderr to a file (mode <code>0o600</code>) for debugging. Session
+  IDs are sanitized to alphanumerics (issue #1231), and transcript paths are validated by
+  <code>_validate_transcript_path()</code> in <code>hooks_cli.py</code> (suffix check: <code>.json</code>/
+  <code>.jsonl</code> only; <code>..</code> rejection). See <a href="hooks.html">Hooks &amp; Auto-save</a>.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Privacy by architecture</dt>
+  <dd>The system physically cannot send data externally because it never leaves the local machine. No
+    telemetry, no analytics, no phone-home. Core operations (mining, search, embedding, LLM calls) default
+    to local-only; external providers require explicit user configuration.</dd>
+
+  <dt>Input validation sanitizers</dt>
+  <dd>Functions like <code>sanitize_name()</code>, <code>sanitize_content()</code>, and
+    <code>sanitize_kg_value()</code> that enforce safe character sets, length bounds, null-byte rejection,
+    lone-surrogate stripping, and path-traversal prevention at the API boundary.</dd>
+
+  <dt>Prompt contamination mitigation</dt>
+  <dd>A four-stage extraction pipeline in <code>query_sanitizer.py</code> that recovers user intent from
+    queries contaminated by prepended system prompts, preventing retrieval failure (89.8% → 1.0% without,
+    ~70-89% with the sanitizer).</dd>
+
+  <dt>MCP stdio protection</dt>
+  <dd>Redirects stdout to stderr before heavy imports so transitive dependencies (like onnxruntime or
+    telemetry libraries) that print to C-level stdout cannot break JSON-RPC parsing in Claude Desktop.</dd>
+
+  <dt>Symlink rejection</dt>
+  <dd>Defense-in-depth guard that refuses to follow symlinks during export or file I/O; uses
+    <code>O_NOFOLLOW</code> on POSIX systems to atomically reject symlinks at open time, closing the TOCTOU
+    window.</dd>
+
+  <dt>File permission hardening</dt>
+  <dd>Config files, people maps, and exported directories are created with <code>0o600</code> (owner
+    read/write only) or <code>0o700</code> (owner only) permissions, atomically via umask or
+    <code>os.open</code> flags to prevent TOCTOU races.</dd>
+
+  <dt>Hook script sanitization</dt>
+  <dd>The bash save hook parses JSON input safely without <code>eval</code>, validates transcript paths
+    (suffix checks, <code>..</code> rejection), sanitizes session IDs to alphanumerics, and logs parse
+    failures to aid debugging.</dd>
+
+  <dt>UTF-8 encoding hardening</dt>
+  <dd>Windows stdio reconfiguration to UTF-8 with per-stream error policies (strict on server, replace on
+    CLI) and surrogateescape on stdin to survive malformed bytes without <code>UnicodeDecodeError</code>.</dd>
+
+  <dt>LLM endpoint validation</dt>
+  <dd>Rejects non-HTTP(S) schemes (<code>file://</code>, <code>ftp://</code>, etc.) in
+    <code>LLM_ENDPOINT</code> to prevent misconfiguration from exfiltrating local files via a rogue
+    endpoint.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<h3>Lone-surrogate stripping defense (#1235)</h3>
+<p>
+  MCP clients (Claude Desktop, WorkBuddy) sometimes relay lone UTF-16 surrogates (U+D800–U+DFFF) when
+  proxying binary input or corrupted clipboard data. <code>str.encode('utf-8')</code> raises on these,
+  crashing ChromaDB add/upsert with <code>-32000</code>. The <code>_LONE_SURROGATE_RE</code> pattern replaces
+  them with U+FFFD, ensuring all strings are legal UTF-8 before any operation.
+</p>
+<div class="code-caption">config.py:29 · lone-surrogate stripping for UTF-8 legality</div>
+<pre><code class="language-python">def strip_lone_surrogates(text: str) -&gt; str:
+    """Replace lone UTF-16 surrogates with U+FFFD so the string is legal UTF-8 (#1235)."""
+    return _LONE_SURROGATE_RE.sub("�", text)</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ The lone-surrogate bug came from MCP clients, not users</div>
+  <p>
+    <code>_LONE_SURROGATE_RE</code> (<code>config.py:22</code>) exists because Claude Desktop and other MCP
+    clients occasionally relay lone UTF-16 surrogates when copying binary or corrupted data from the
+    clipboard. This is a platform quirk, not user error. Without <code>strip_lone_surrogates()</code>,
+    ChromaDB crashes with <code>-32000</code> on encode, making memory operations silently fail. The fix is
+    one line but essential.
+  </p>
+</div>
+
+<h3>Path traversal prevention in <code>sanitize_name()</code></h3>
+<p>
+  <code>sanitize_name()</code> explicitly blocks <code>..</code>, <code>/</code>, and <code>\</code> in a
+  value, and the <code>_SAFE_NAME_RE</code> regex enforces a whitelist of allowed characters. Together they
+  stop <code>../../etc/passwd</code>-style attacks at the API boundary, before any file operation runs.
+</p>
+<div class="code-caption">config.py:57 · path-traversal and null-byte rejection</div>
+<pre><code class="language-python">    # Block path traversal
+    if ".." in value or "/" in value or "\\" in value:
+        raise ValueError(f"{field_name} contains invalid path characters")
+
+    # Block null bytes
+    if "\x00" in value:
+        raise ValueError(f"{field_name} contains null bytes")</code></pre>
+
+<h3>O_NOFOLLOW atomic symlink guard</h3>
+<p>
+  On POSIX, <code>os.open(O_NOFOLLOW | O_CREAT)</code> fails atomically with <code>errno.ELOOP</code> if the
+  path is already a symlink, eliminating the TOCTOU window. Windows (no <code>O_NOFOLLOW</code>) pre-checks
+  with <code>os.path.islink()</code>, which is narrower but sufficient. File descriptors are opened with
+  <code>0o600</code> for owner-only write access.
+</p>
+<div class="code-caption">exporter.py:52 · O_NOFOLLOW atomic symlink guard for POSIX</div>
+<pre><code class="language-python">    o_nofollow = getattr(os, "O_NOFOLLOW", 0)
+    if o_nofollow:
+        flags = os.O_WRONLY | os.O_CREAT | o_nofollow
+        flags |= os.O_APPEND if "a" in mode else os.O_TRUNC
+        try:
+            fd = os.open(path, flags, 0o600)
+        except OSError as e:
+            if e.errno == errno.ELOOP:
+                raise ValueError(f"refusing to write: {path!r} is a symbolic link.") from None</code></pre>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Symlink rejection closes the TOCTOU window atomically</div>
+  <p>
+    A naive <code>islink()</code>-then-<code>open()</code> sequence leaves a time-of-check-to-time-of-use
+    gap an attacker can exploit. By passing <code>O_NOFOLLOW</code> into <code>os.open()</code> itself, the
+    kernel atomically refuses to open a symlink, so a pre-placed symlink at the export target cannot
+    redirect writes into <code>/etc</code> or <code>/dev</code>. The <code>islink()</code> pre-check remains
+    only as a fallback on platforms without <code>O_NOFOLLOW</code>.
+  </p>
+</div>
+
+<h3>Query sanitizer metadata for transparency</h3>
+<p>
+  <code>sanitize_query()</code> returns a dict with <code>original_length</code>, <code>clean_length</code>,
+  <code>was_sanitized</code>, <code>method</code> (passthrough / question_extraction / tail_sentence /
+  tail_truncation), and the <code>clean_query</code> itself. The MCP server attaches this as
+  <code>query_sanitized</code> metadata in results so users know when contamination was detected and which
+  method recovered intent.
+</p>
+<div class="code-caption">query_sanitizer.py:41 · four-stage mitigation with metadata</div>
+<pre><code class="language-python">def sanitize_query(raw_query: str) -&gt; dict:
+    """Extract the actual search intent from a potentially contaminated query.
+    ...
+    Returns dict with clean_query, was_sanitized, original_length, clean_length, method.
+    """
+    if original_length &lt;= SAFE_QUERY_LENGTH:
+        return {
+            "clean_query": raw_query,
+            "was_sanitized": False,
+            "original_length": original_length,
+            "clean_length": original_length,
+            "method": "passthrough",
+        }</code></pre>
+
+<div class="callout insight">
+  <div class="callout-title">💡 A searchable degradation beats silent failure</div>
+  <p>
+    Issue #333 showed that without sanitization, system-prompt-contaminated queries drop to 1.0% retrieval —
+    complete failure. With the four-stage sanitizer, worst-case (tail-truncation fallback) is ~70-80%, and
+    common cases (question extraction, tail sentence) hit 85-89%. Perfect detection of contamination is
+    impossible without an adversary model, so the system trades certainty for survivable, observable
+    degradation.
+  </p>
+</div>
+
+<h3>Hook JSON parsing without eval</h3>
+<p>
+  Instead of <code>eval</code>'ing generated code, the hook uses <code>json.load(sys.stdin)</code> to parse
+  safely, then <code>re.sub()</code> to sanitize each field (session_id to alphanumerics, transcript_path to
+  safe chars). A parse-success sentinel (<code>__MEMPAL_PARSE_OK__</code>) lets the shell distinguish
+  "parsing succeeded" from "Python crashed", preventing silent failures
+  (<code>mempal_save_hook.sh:150</code>).
+</p>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ macOS bash 3.2 forbids <code>mapfile</code></div>
+  <p>
+    macOS ships bash 3.2.57, frozen in 2006 at the GPLv3 cutoff. The <code>mapfile</code>/<code>readarray</code>
+    builtins only arrived in bash 4.0 (2009). The save hook can't use them; instead it parses Python output
+    with <code>sed -n 'Np'</code> to read individual lines into shell variables. On stock macOS,
+    <code>mapfile</code> would silently fail, defaulting every hook value and producing zero saves (#1440).
+  </p>
+</div>
+
+<details class="collapsible">
+  <summary>More surprises &amp; edge cases</summary>
+  <div class="callout perf">
+    <div class="callout-title">⚡ Stdio redirection must work at the file-descriptor level</div>
+    <p>
+      <code>mcp_server.py</code> redirects stdout to stderr at both the Python level
+      (<code>sys.stdout = sys.stderr</code>) and the file-descriptor level (<code>os.dup2(2, 1)</code>). The
+      fd-level redirect is required because transitive C libraries (onnxruntime, telemetry) print directly to
+      fd 1, bypassing Python's <code>sys.stdout</code>. Skipping the fd-level redirect would still corrupt
+      the JSON-RPC stream.
+    </p>
+  </div>
+  <div class="callout insight">
+    <div class="callout-title">💡 Transcript-path validation is mirrored in shell and Python</div>
+    <p>
+      The shell hook (<code>mempal_save_hook.sh:219-230</code>) and <code>_validate_transcript_path()</code>
+      in <code>hooks_cli.py:124</code> enforce the same checks: <code>.json</code>/<code>.jsonl</code> suffix
+      only, no <code>..</code> traversal segments. This is deliberate defense-in-depth — the shell guards
+      input to the Python mining commands, and Python validates separately, so either layer can catch a
+      breakout attempt.
+    </p>
+  </div>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>sanitize_name()</td><td>function</td><td><code>config.py:44</code></td><td>Validates wing/room/entity names; blocks path traversal, null bytes, non-ASCII symbols; enforces 128-char max.</td></tr>
+    <tr><td>sanitize_content()</td><td>function</td><td><code>config.py:181</code></td><td>Validates drawer/diary content; rejects null bytes, enforces 100&nbsp;KB max; calls strip_lone_surrogates().</td></tr>
+    <tr><td>sanitize_kg_value()</td><td>function</td><td><code>config.py:72</code></td><td>Validates KG entity names; more permissive (allows punctuation) but still rejects null bytes and over-length.</td></tr>
+    <tr><td>strip_lone_surrogates()</td><td>function</td><td><code>config.py:29</code></td><td>Replaces lone UTF-16 surrogates with U+FFFD for legal UTF-8, preventing ChromaDB encode crashes (#1235).</td></tr>
+    <tr><td>sanitize_query()</td><td>function</td><td><code>query_sanitizer.py:41</code></td><td>Mitigates system-prompt contamination; returns clean query + metadata (was_sanitized, method, lengths).</td></tr>
+    <tr><td>_reject_symlink()</td><td>function</td><td><code>exporter.py:30</code></td><td>Pre-check that refuses to follow symlinks at the export target; raises ValueError if path is a symlink.</td></tr>
+    <tr><td>_safe_open_for_write()</td><td>function</td><td><code>exporter.py:44</code></td><td>Opens files with O_NOFOLLOW (POSIX) or pre-check (Windows) to prevent symlink following; files opened 0o600.</td></tr>
+    <tr><td>reconfigure_stdio_utf8_on_windows()</td><td>function</td><td><code>_stdio.py:31</code></td><td>Reconfigures Windows stdio to UTF-8 with per-stream error policies; fixes ANSI codepage mojibake.</td></tr>
+    <tr><td>_validate_transcript_path()</td><td>function</td><td><code>hooks_cli.py:124</code></td><td>Validates transcript paths: suffix check (.json/.jsonl), .. rejection; returns resolved Path or None.</td></tr>
+    <tr><td>_sanitize_session_id()</td><td>function</td><td><code>hooks_cli.py:118</code></td><td>Sanitizes session IDs to alphanumerics + dash/underscore, preventing path traversal via hook input.</td></tr>
+    <tr><td>MempalaceConfig.init()</td><td>method</td><td><code>config.py:610</code></td><td>Creates ~/.mempalace with 0o700 and config.json with 0o600; restrictive permissions from the start.</td></tr>
+    <tr><td>LLMConfig</td><td>class</td><td><code>closet_llm.py:93</code></td><td>Resolves LLM endpoint config; validates scheme to http/https only, rejecting file:// and other protocols.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Privacy by architecture — data never leaves the machine by design</dt>
+  <dd>The CLAUDE.md principle is "Local-first, zero external API by default." The whole system is built to run
+    offline; mining, search, embedding, and (optionally) LLM calls default to local execution, and no
+    telemetry library is imported. Exfiltration cannot happen because the code path does not exist. External
+    providers are opt-in only, requiring explicit env-var configuration.</dd>
+
+  <dt>Sanitize at input boundaries, not at storage</dt>
+  <dd>All sanitizers live in <code>config.py</code> and run at the API boundary (MCP tool inputs, CLI args,
+    hook scripts). Invalid data is rejected before it can be stored or used, which means the miner, searcher,
+    and <a href="backends.html">storage backends</a> can trust their inputs.</dd>
+
+  <dt>Query sanitizer uses heuristic recovery, not cryptographic certainty</dt>
+  <dd>Perfect detection of system-prompt contamination is impossible without an adversary model. The system
+    uses pragmatic heuristics — short queries are likely clean, questions (<code>?</code>) are likely real
+    intent, tail sentences are likely the query — with tail truncation as the worst-case fallback. This
+    trades perfect detection for survivable degradation (70-89% vs 1.0%).</dd>
+
+  <dt>Symlink rejection uses O_NOFOLLOW on POSIX, pre-check on Windows</dt>
+  <dd>POSIX <code>O_NOFOLLOW</code> closes the TOCTOU window atomically at open time; Windows lacks it, so
+    pre-checks are necessary. The exporter uses both (pre-check always, plus <code>O_NOFOLLOW</code> when
+    available), keeping the logic consistent across platforms.</dd>
+
+  <dt>Hook scripts use Python inline for parsing, not bash eval</dt>
+  <dd>Shell escaping is error-prone, so the save hook parses JSON with <code>json.load()</code> and sanitizes
+    fields with regex, avoiding <code>eval</code> entirely. The shell reads sanitized values back using
+    <code>sed</code> (bounded, deterministic), limiting the blast radius of any parsing bug to the Python
+    inline script rather than the whole hook.</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>
+  User-supplied data enters through three channels: (1) MCP tools
+  (<code>mempalace_add_drawer</code>, <code>mempalace_search</code>, …), (2) CLI commands (mine, search,
+  export), and (3) auto-save hooks (<code>mempal_save_hook.sh</code>). All input passes through sanitizers in
+  <code>config.py</code> before use: names through <code>sanitize_name()</code>, drawer content through
+  <code>sanitize_content()</code>, temporal values through <code>sanitize_iso_temporal()</code>. Search
+  queries are additionally processed by <code>query_sanitizer</code> to recover intent from
+  prompt-contaminated input.
+</p>
+<p>
+  Sanitized data is written to the palace (ChromaDB drawers, the SQLite knowledge graph, AAAK indices) with
+  strict file permissions (<code>0o600</code>/<code>0o700</code>, atomically via umask or
+  <code>O_NOFOLLOW</code>). All disk writes are local-only; no network calls occur for core operations.
+  Exported data is streamed to markdown files with symlink-attack prevention. Hook scripts run in the
+  background, mining transcripts and project files, and their JSON input is parsed safely via Python (not
+  <code>eval</code>) and logged to <code>~/.mempalace/hook_state/</code> with strict permissions. At no point
+  does user data leave the local machine unless the user explicitly configures an external LLM endpoint —
+  which is validated to use <code>http</code>/<code>https</code> only.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="architecture.html">
+      <span class="rc-group">Overview</span>
+      <div class="rc-title">System Architecture</div>
+      <div class="rc-desc">Privacy-by-architecture is a core design principle; these security layers reinforce the local-only guarantee.</div>
+    </a>
+    <a class="related-card" href="hooks.html">
+      <span class="rc-group">Interfaces</span>
+      <div class="rc-title">Hooks &amp; Auto-save</div>
+      <div class="rc-desc">The save hook implements hardened JSON parsing and path validation to safely ingest auto-save triggers.</div>
+    </a>
+    <a class="related-card" href="mcp-server.html">
+      <span class="rc-group">Interfaces</span>
+      <div class="rc-title">MCP Server &amp; Tools</div>
+      <div class="rc-desc">Applies input sanitizers at tool boundaries and the query sanitizer for search-contamination mitigation.</div>
+    </a>
+    <a class="related-card" href="backends.html">
+      <span class="rc-group">Retrieval</span>
+      <div class="rc-title">Storage Backends</div>
+      <div class="rc-desc">ChromaDB and SQLite receive sanitized, validated input before any write operation.</div>
+    </a>
+    <a class="related-card" href="llm-integration.html">
+      <span class="rc-group">Cross-cutting</span>
+      <div class="rc-title">LLM Integration</div>
+      <div class="rc-desc">Endpoint config validates URL scheme (http/https only) to prevent file:// exfiltration.</div>
+    </a>
+    <a class="related-card" href="maintenance.html">
+      <span class="rc-group">Cross-cutting</span>
+      <div class="rc-title">Repair, Sync &amp; Maintenance</div>
+      <div class="rc-desc">Repair and migration operations respect the same input validation and file-permission constraints.</div>
+    </a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

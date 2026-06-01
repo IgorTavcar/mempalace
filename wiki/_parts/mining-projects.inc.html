@@ -1,0 +1,202 @@
+<header class="page-head">
+  <div class="page-kicker">Ingestion</div>
+  <h1>Project Mining</h1>
+  <p class="lead">Turning a project directory of files into verbatim, searchable drawers.</p>
+</header>
+
+<div class="summary">
+  Project mining scans a directory tree, detects file formats by extension and content, chunks text into <a href="palace-model.html">drawers</a>, applies virtual line numbering for locators, and stores them idempotently in the palace. The process is incremental: re-mining the same project never duplicates drawers — it upserts to the same storage rows, keyed by deterministic SHA-256 IDs. Gitignore rules, size limits, and chunk-cap safeguards prevent runaway ingest, while adjacent format extraction and mega-file splitting are siblings to the core miner, sharing chunking, entity detection, and room-routing logic.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+<p>
+  Mining is a six-stage pipeline that runs per file and converges idempotently on re-runs. The entry point is <code>process_file</code> (<code>miner.py:1268</code>), orchestrated across a directory by <code>scan_project</code>. Each stage is read-time or reversible — drawers are stored verbatim, and every transformation (chunking, line numbering, closet generation) can be recomputed without touching the stored text.
+</p>
+
+<h3>Directory walk and file discovery</h3>
+<p>
+  <code>scan_project(project_dir)</code> walks the filesystem recursively, respecting <code>.gitignore</code> rules and skipping known cache directories (<code>SKIP_DIRS</code>: <code>.git</code>, <code>__pycache__</code>, <code>.venv</code>, <code>node_modules</code>, etc.). Symlinks are detected and logged to stderr without being followed. Files are filtered by extension (<code>READABLE_EXTENSIONS</code>: <code>.py</code>, <code>.md</code>, <code>.json</code>, <code>.go</code>, <code>.rs</code>, …), and files over <code>MAX_FILE_SIZE</code> (500&nbsp;MB) are silently dropped. The result is a deterministic, sorted list of paths ready for processing.
+</p>
+
+<h3>Per-file content routing and chunking</h3>
+<p>
+  <code>process_file()</code> reads each file's bytes (utf-8 with <code>errors='replace'</code>), then routes it to a room via <code>detect_room()</code> (<code>miner.py:425</code>). Room detection is a four-tier priority: folder path matches room name/keywords &gt; filename matches &gt; keyword scoring in the first 2000 chars &gt; fallback to <code>general</code>. Content is then chunked via <code>chunk_text()</code> using configurable <code>CHUNK_SIZE</code> (default 800), <code>CHUNK_OVERLAP</code> (128), and <code>MIN_CHUNK_SIZE</code> (50). Chunks break at paragraph or line boundaries when possible. Each chunk receives 1-indexed line numbers computed via <code>str.count()</code> to avoid O(n²) slicing on large files.
+</p>
+
+<h3>Incremental and idempotent drawer storage</h3>
+<p>
+  Before writing, <code>process_file</code> checks <code>file_already_mined(collection, source_file, check_mtime=True)</code> (<code>palace.py:714</code>). This returns <code>False</code> — triggering a re-mine — when (1) no drawers exist for this file, (2) <code>normalize_version</code> is stale, or (3) the file mtime differs from the stored <code>source_mtime</code>. A re-mine first purges stale drawers (a <code>delete</code> where <code>source_file</code> matches), then upserts fresh ones in batched 1000-chunk transactions. Drawer IDs are deterministic (SHA-256 of <code>source_file</code> + <code>chunk_index</code>), so re-running idempotently upserts to the same rows without duplicating — and parallel re-mines converge on correct state without race conditions.
+</p>
+
+<h3>Metadata enrichment: dates, entities, halls, line ranges</h3>
+<p>
+  For each chunk, <code>_build_drawer_metadata()</code> extracts a <code>content_date</code> via a five-tier hierarchy: filename (ISO or natural language) &rarr; YAML frontmatter <code>date</code>/<code>created</code>/<code>published</code> &rarr; content-body scan (ISO, slash dates, dateutil) &rarr; mtime. Entities come from <code>_extract_entities_for_metadata()</code> (<code>miner.py:845</code>): known entities from <code>~/.mempalace/known_entities.json</code> matched case-insensitively, plus capitalized words appearing 2+ times in the first 5000 chars, filtered through a COCA stoplist. A hall is detected via keyword scoring (emotional, technical, family, general). All of this is packed into a single metadata dict per drawer — one drawer equals one embedding in ChromaDB. See the <a href="entities.html">entity system</a> for how the registry is populated.
+</p>
+
+<h3>Closet pointer generation (Tier 6a)</h3>
+<p>
+  After all chunks are upserted, <code>build_closet_lines()</code> (<code>palace.py:241</code>) creates a compact, searchable index. It extracts topics (action verbs plus context, markdown headers), entities (nouns with 2+ occurrences), and quotes from the first ~<code>CLOSET_EXTRACT_WINDOW</code> chars. Each line is a pointer of the form <code>topic|entities|[date:Lstart-Lend]|&rarr;drawer_ids</code>. The <code>date:Lstart-Lend</code> segment (Tier 6a) is emitted only when drawer metadata carry both a line range and a <code>content_date</code>, letting retrieval jump to a line range without opening the whole drawer. Legacy 3-segment pointers are emitted when metadata is absent, preserving backward compatibility. The <a href="aaak-dialect.html">AAAK dialect</a> documents this pointer grammar in full.
+</p>
+
+<h3>Post-mine graph construction</h3>
+<p>
+  Once all files in a wing are processed, <code>_compute_topic_tunnels_for_wing()</code> links this wing to any other wing sharing a confirmed topic (from the user's <code>known_entities.json</code> registry). <code>compute_hallways_for_wing()</code> links entities (people, projects) co-occurring in drawers across the wing's rooms, and <code>_compute_entity_tunnels_for_wing()</code> materializes cross-wing tunnels from those hallway records. All three steps are fault-tolerant — exceptions are logged and never fail the mine — because they are derived analytics layered on top of completed drawer writes. The resulting structure feeds the <a href="knowledge-graph.html">temporal knowledge graph</a>.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Drawer</dt>
+  <dd>A single chunk of verbatim text from a source file, stored with metadata (wing, room, line range, date, entities). The atomic unit of search in the palace.</dd>
+  <dt>Closet</dt>
+  <dd>A searchable index of pointers linking a source file to its drawers. Each pointer carries extracted topics/entities, Tier 6a <code>date:line</code> locators, and drawer IDs. Closets are scanned first; drawers are materialized on a search hit.</dd>
+  <dt>Virtual line numbering</dt>
+  <dd>Line numbers added at read time (not stored on disk) when a drawer is retrieved. Enables Tier 6a closet pointers to jump to specific line ranges within a drawer without rewriting the stored text.</dd>
+  <dt>Idempotency</dt>
+  <dd>Re-mining a file produces deterministic drawer IDs, so writes upsert to the same rows. The miner uses <code>source_file</code> + <code>chunk_index</code> + SHA-256 to keep IDs stable across re-runs; mtime-based detection re-mines only if the file changed.</dd>
+  <dt>Room detection</dt>
+  <dd>Content-aware routing that assigns each file to a room by folder path (highest priority), filename, or keyword scoring in the first ~2000 chars. Falls back to <code>general</code> if no match.</dd>
+  <dt>Tier 6a content dating</dt>
+  <dd>Automatic date extraction from filename, YAML frontmatter, content body, or mtime — in that priority order. Populates <code>content_date</code> in drawer metadata for Tier 6a closet pointers.</dd>
+  <dt>Entity extraction for metadata</dt>
+  <dd>Tagging drawers with known-entity names (from <code>~/.mempalace/known_entities.json</code>) plus capitalized words appearing 2+ times in the first 5000 chars, filtered through a COCA common-words list to drop noise.</dd>
+  <dt>Hall detection</dt>
+  <dd>Content-type categorization (emotional, technical, family, etc.) based on keyword scoring across the first 3000 chars. Rooms organize by <em>topic</em>; halls organize by <em>feeling/type</em>.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  <strong>Deterministic drawer IDs for idempotency.</strong> The drawer ID is a SHA-256 of <code>source_file</code> + <code>chunk_index</code>, stable across runs, so re-mining upserts to the same ChromaDB rows without duplicates. No version field or timestamp lives in the ID itself.
+</p>
+<div class="code-caption">miner.py:1380 · deterministic drawer ID from source_file + chunk_index</div>
+<pre><code class="language-python">drawer_id = f"drawer_{wing}_{room}_{hashlib.sha256((source_file + str(chunk['chunk_index'])).encode()).hexdigest()[:24]}"</code></pre>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight — IDs are file+chunk, not timestamps</div>
+  <p>Because IDs derive from <code>source_file</code> + <code>chunk_index</code>, re-runs idempotently upsert without version fields or UUID tracking. A file moved to a new path produces a different drawer ID (intentional — it is a different source). The trade-off: renaming or relocating a source leaves the old drawers orphaned until explicitly purged. That is acceptable because drawers carry <code>source_file</code> metadata for retrieval.</p>
+</div>
+
+<p>
+  <strong>Mtime-based dirty tracking without per-file state.</strong> <code>source_mtime</code> is stored in drawer metadata (<code>miner.py:1224</code>) and compared against <code>os.path.getmtime(source_file)</code> with a tolerance below 0.001 seconds, so filesystems with sub-millisecond precision still detect a genuine no-change re-run.
+</p>
+<div class="code-caption">palace.py:772-777 · file_already_mined idempotency check with mtime tolerance</div>
+<pre><code class="language-python">if check_mtime:
+    stored_mtime = stored_meta.get("source_mtime")
+    if stored_mtime is None:
+        return False
+    current_mtime = os.path.getmtime(source_file)
+    return abs(float(stored_mtime) - current_mtime) &lt; 0.001</code></pre>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance — the 0.001s mtime tolerance</div>
+  <p>Without this tolerance, slow filesystems or CI environments could trigger a redundant re-mine on every run even when the file was never modified. The tolerance accounts for filesystem timestamp precision (ext4 is nanosecond, NTFS is 100ns) and is a defense-in-depth measure against unnecessary embedding re-compute.</p>
+</div>
+
+<p>
+  <strong>O(n) line counting for Tier 6a locators.</strong> Line ranges are computed with <code>str.count('\n', 0, position)</code> rather than splitting into a line list, avoiding O(n²) substring allocation on a 500&nbsp;MB file with 50K chunks. The result is approximate (±1 at boundaries is acceptable), matching the closet-pointer-as-approximate-locator philosophy.
+</p>
+<div class="code-caption">miner.py:552-553 · O(n) line counting without materializing a line list</div>
+<pre><code class="language-python">line_start = content.count("\n", 0, start) + 1
+line_end = content.count("\n", 0, end) + 1</code></pre>
+
+<p>
+  <strong>Bounded memory via batched upserts.</strong> Chunks are accumulated and upserted in batches of <code>DRAWER_UPSERT_BATCH_SIZE</code> (1000) at <code>miner.py:1375</code>. Even a 50K-chunk file becomes 50 separate embedding forward-passes rather than one giant batch, preventing the embedding model from running out of memory and avoiding timeouts on Chroma/SQLite requests.
+</p>
+
+<p>
+  <strong>Per-file chunk cap with environmental override.</strong> <code>MAX_CHUNKS_PER_FILE</code> (50K) is resolved via <code>_resolve_max_chunks_per_file()</code> (<code>miner.py:119</code>) with precedence CLI override &gt; <code>MEMPALACE_MAX_CHUNKS_PER_FILE</code> env var &gt; module default. A cap of 0 disables the limit; negative values emit a warning and fall back to the default, preventing a typo-induced OOM on pathological files.
+</p>
+
+<p>
+  <strong>Gitignore matching with negation and directory-only rules.</strong> <code>GitignoreMatcher._match_from_root()</code> recursively matches patterns against path parts, supporting <code>**</code> wildcards, anchored rules (<code>/</code> prefix), and negation (<code>!</code> prefix). The last matching rule wins, reflecting gitignore semantics, and matching is cumulative across ancestor <code>.gitignore</code> files via an <code>active_matchers</code> list (<code>miner.py:1471</code>).
+</p>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight — re-check after the lock</div>
+  <p>Right before insertion, <code>process_file</code> re-runs the idempotency check under lock — another agent may have just finished mining the same file — so it returns early rather than redundantly writing.</p>
+</div>
+<div class="code-caption">miner.py:1340 · incremental upsert: re-check after lock, before insert</div>
+<pre><code class="language-python"># Re-check after acquiring lock — another agent may have just finished
+if file_already_mined(collection, source_file, check_mtime=True):
+    return 0, room, None</code></pre>
+
+<details class="collapsible">
+  <summary>Chunk boundary heuristics &amp; the "rough 50% rule"</summary>
+  <div class="callout perf">
+    <div class="callout-title">⚡ Performance — paragraph breaks over line breaks</div>
+    <p><code>chunk_text()</code> (<code>miner.py:472</code>) looks for paragraph boundaries (<code>\n\n</code>) within the target range first, then line boundaries (<code>\n</code>), before breaking arbitrarily — keeping semantic units together. The "rough 50% rule" (break only if the newline is more than <code>chunk_size//2</code> away) prevents pathological breaks on files with rare newlines.</p>
+  </div>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>process_file</td><td>func</td><td><code>miner.py:1268</code></td><td>Main entry point for ingesting a single file. Reads, chunks, detects room, builds metadata, upserts drawers and closets. Returns <code>(drawer_count, room_name, skip_reason)</code>.</td></tr>
+    <tr><td>chunk_text</td><td>func</td><td><code>miner.py:472</code></td><td>Splits content into drawer-sized chunks with configurable size/overlap, preferring paragraph/line boundaries. Computes <code>line_start</code>/<code>line_end</code> via <code>str.count</code> for Tier 6a locators.</td></tr>
+    <tr><td>detect_room</td><td>func</td><td><code>miner.py:425</code></td><td>Routes a file to a room via four-tier priority: folder path &gt; filename &gt; keyword scoring &gt; fallback <code>general</code>.</td></tr>
+    <tr><td>file_already_mined</td><td>func</td><td><code>palace.py:714</code></td><td>Idempotency check. Returns <code>False</code> (re-mine) when no drawers exist, <code>normalize_version</code> is stale, or mtime differs. Enables safe re-runs without duplicates.</td></tr>
+    <tr><td>build_closet_lines</td><td>func</td><td><code>palace.py:241</code></td><td>Generates compact pointer lines from file content. Extracts topics, entities, quotes. Emits legacy 3-segment or Tier 6a 4-segment format based on metadata availability.</td></tr>
+    <tr><td>_extract_content_date</td><td>func</td><td><code>miner.py:1157</code></td><td>Five-tier date extraction: filename &rarr; frontmatter &rarr; content body &rarr; mtime &rarr; None. Returns ISO <code>YYYY-MM-DD</code> or None.</td></tr>
+    <tr><td>_extract_entities_for_metadata</td><td>func</td><td><code>miner.py:845</code></td><td>Extracts entity tags from the known-entity registry plus capitalized words appearing 2+ times in the first 5000 chars. Returns a semicolon-separated string for metadata.</td></tr>
+    <tr><td>detect_hall</td><td>func</td><td><code>miner.py:821</code></td><td>Routes content to a hall (emotional, technical, family, general) via keyword scoring in the first 3000 chars.</td></tr>
+    <tr><td>GitignoreMatcher</td><td>class</td><td><code>miner.py:166</code></td><td>Parses and matches <code>.gitignore</code> patterns. Handles negation, anchoring, directory-only rules, and <code>**</code> wildcards.</td></tr>
+    <tr><td>mine_formats</td><td>func</td><td><code>format_miner.py:690</code></td><td>Third miner for binary office documents. Walks a directory, extracts text via MarkItDown/striprtf, chunks, routes to rooms, upserts drawers with <code>extract_mode='format'</code> scoping.</td></tr>
+    <tr><td>extract_text</td><td>func</td><td><code>format_miner.py:313</code></td><td>Converts one file (PDF/DOCX/RTF/etc.) to text. Returns <code>(text, ExtractionStatus)</code>; handles 13 fringe cases (encryption, cloud files, missing deps, …).</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Incremental-only append, never destructive rebuilds</dt>
+  <dd><code>CLAUDE.md</code> mandates append-only ingest after the initial build: never destroy existing data to rebuild, and a crash mid-operation must leave the palace untouched. Deterministic drawer IDs and mtime-based dirty detection make safe re-runs possible — a crash mid-batch leaves completed batches intact, and a re-run resumes from the next uncompleted file. See <a href="architecture.html">architecture</a> for how this principle propagates.</dd>
+  <dt>Virtual line numbering at read time, not stored on disk</dt>
+  <dd>Storing <code>[N]</code> prefixes in the drawer would couple presentation to storage, invalidate existing closet pointers on re-mine, and break idempotence. Read-time numbering (via <code>render_with_line_numbers</code>) keeps the drawer verbatim, lets Tier 6a <code>date:Lstart-Lend</code> pointers work, and stays backward-compatible — callers that ignore line numbers get the same string back with <code>[N]</code> prefixes added.</dd>
+  <dt>Closet pointers as compressed, searchable approximations</dt>
+  <dd>Closets are scanned (via FTS5) before drawers are opened. Each pointer extracts topics, entities, and quotes from the first ~5000 chars; the Tier 6a extension adds a <code>date:Lstart-Lend</code> segment so retrieval can jump to a line range. Pointers are intentionally approximate ("±2 off-by-one at boundaries is fine"); exact positional indexing is deferred to Tier 7. The <a href="search.html">search</a> layer relies on this.</dd>
+  <dt>Room detection via path/filename/content, in that order</dt>
+  <dd>The priority (folder &gt; filename &gt; content) reflects user intent: a file in <code>docs/frontend/</code> is routed to a <code>frontend</code> room even if its content never mentions it. Content-keyword scoring is the fallback, not the primary signal, preventing false positives from occasional mentions.</dd>
+  <dt>Format miner as a separate module, not integrated into miner.py</dt>
+  <dd>The codebase follows a miner-per-content-type pattern (scan &rarr; transform &rarr; chunk &rarr; store), and <code>format_miner.py</code> is a third instance of that shape. Separate modules give a smaller review surface, cleaner test isolation, and no risk of regressing the stable project/convo miners.</dd>
+</dl>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight — the format miner is fully separate</div>
+  <p>Binary extraction (PDF, DOCX, RTF) could have been bundled into <code>miner.py</code>, but it lives in <code>format_miner.py</code> — a third parallel miner. The trade-off is some code duplication; the payoff is a smaller review surface and failure isolation, so a format-miner bug cannot affect project or <a href="mining-conversations.html">conversation</a> mining.</p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha — RTF bypasses MarkItDown</div>
+  <p>MarkItDown 0.1.5 cannot convert RTF (it returns the raw <code>\rtf1\ansi</code> control codes unchanged). <code>format_miner</code> routes <code>.rtf</code> to <code>striprtf</code> instead (<code>format_miner.py:387</code>, verified empirically on 52 real RTF files). The per-format dispatch is invisible to callers — both transformers emit Markdown text that flows into the normal chunker.</p>
+</div>
+
+<h2>Data flow</h2>
+<p>
+  Project mining moves data through ten steps:
+</p>
+<ul>
+  <li>The CLI invokes <code>mine(project_dir)</code>.</li>
+  <li><code>scan_project</code> walks the filesystem, yielding paths filtered by extension, size, and <code>.gitignore</code> rules.</li>
+  <li>For each file, <code>process_file</code> reads bytes and checks <code>file_already_mined</code> (mtime-based idempotency).</li>
+  <li><code>detect_room</code> routes the content to a room via path/filename/content scoring.</li>
+  <li><code>chunk_text</code> splits content into 800-char chunks with 128-char overlap, computing virtual 1-indexed line ranges.</li>
+  <li><code>_build_drawer_metadata</code> enriches each chunk with <code>content_date</code> (filename&rarr;frontmatter&rarr;body&rarr;mtime), known entities, capitalized-word frequency, and hall type.</li>
+  <li>Chunks are batched and upserted to the ChromaDB collection; deterministic SHA IDs ensure re-runs upsert to the same rows.</li>
+  <li><code>build_closet_lines</code> extracts topics/entities/quotes from the first 5000 chars and creates pointer lines (legacy 3-segment or Tier 6a 4-segment).</li>
+  <li>Closet pointers are upserted to the closets collection, creating a searchable index.</li>
+  <li>Post-mine, <code>_compute_topic_tunnels_for_wing</code> links wings sharing confirmed topics, and <code>compute_hallways_for_wing</code> creates within-wing entity co-occurrence links.</li>
+</ul>
+<p>
+  All drawers are verbatim; every transformation (chunking, line numbering, closet generation) is reversible or read-time-only. A crash or re-run idempotently upserts to the same rows via deterministic IDs. See the <a href="palace-model.html">palace model</a> for how drawers, closets, halls, and tunnels relate, and <a href="backends.html">storage backends</a> for where the rows actually live.
+</p>
+
+<div class="related"><h2>See also</h2><div class="related-grid">
+  <a class="related-card" href="mining-conversations.html"><span class="rc-group">Ingestion</span><div class="rc-title">Conversation Mining</div><div class="rc-desc">Parallel miner for chat exports; shares chunking, entity extraction, room routing, and idempotent drawer logic.</div></a>
+  <a class="related-card" href="entities.html"><span class="rc-group">Ingestion</span><div class="rc-title">Entity System</div><div class="rc-desc">Detects projects/people via git history and manifests; extracted entities populate <code>known_entities.json</code> for metadata tagging.</div></a>
+  <a class="related-card" href="aaak-dialect.html"><span class="rc-group">Ingestion</span><div class="rc-title">AAAK Dialect &amp; Closets</div><div class="rc-desc">Closet pointers (<code>topic|entities|date:Lstart-Lend|&rarr;ids</code>) form the index layer LLMs scan to locate drawers.</div></a>
+  <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">Drawers live in wings/rooms; closets cross-reference; halls link entities; tunnels link wings by topic or entity.</div></a>
+  <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Closets are scanned via FTS5; matching pointers trigger drawer retrieval; virtual line numbering applies on render.</div></a>
+  <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">Project mining is the main ingest path; incremental append-only design is a core architectural principle.</div></a>
+</div></div>

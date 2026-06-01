@@ -1,0 +1,219 @@
+<header class="page-head">
+  <div class="page-kicker">Cross-cutting</div>
+  <h1>Internationalization</h1>
+  <p class="lead">A multilingual memory: 14 UI locales, 100+ embedding languages, non-Latin entities.</p>
+</header>
+
+<div class="summary">
+  MemPalace localizes UI strings and entity detection across 14 languages (en, ja, ko, zh-CN, zh-TW, de, es, fr, pt-br, it, ru, hi, id, be) via JSON catalogs in <code>mempalace/i18n/</code>. A single loader handles case-insensitive BCP 47 tags, dotted-key string interpolation, and language-aware entity patterns. Non-Latin scripts (Hindi/Devanagari, Chinese, Korean, Cyrillic, Belarusian) are kept intact through <em>script-aware word boundaries</em> that account for combining marks — Python's <code>\b</code> silently truncates them. For semantic retrieval, an optional multilingual <code>embeddinggemma-300m</code> model (0.88 cross-lingual cosine similarity) drops in beside the English-only <code>all-MiniLM</code> default.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<h3>Language loading &amp; string lookup</h3>
+<p>
+  <code>load_lang(lang)</code> reads JSON from <code>mempalace/i18n/&lt;lang&gt;.json</code>, normalizing the requested tag through <code>_canonical_lang()</code> so any capitalization resolves to the on-disk file. It stores the parsed locale in a module-level <code>_strings</code> dict and returns the full object. The <code>t(key, **kwargs)</code> function then navigates dotted keys (e.g. <code>cli.mine_complete</code>), performs <code>{var}</code> interpolation with kwargs, and falls back to the key itself if the string is missing. If a requested language has no file, English loads as the fallback so callers always get working strings — this is what wires up every localized message in the <a href="cli.html">CLI</a>.
+</p>
+
+<h3>Non-Latin script support in entity detection</h3>
+<p>
+  Each locale's <code>entity</code> section may declare <code>boundary_chars</code> (the Unicode ranges that count as "inside-word" for that script), plus <code>candidate_pattern</code> and <code>multi_word_pattern</code>. The <code>_script_boundary()</code> function builds a lookaround regex that treats those characters as word-internal, so combining marks are preserved. Hindi declares <code>boundary_chars="\wऀ-ॿ"</code>, which keeps the name <code>अनीता</code> intact instead of truncating it to <code>अनीत</code>. Boundaries are baked in during pattern collection (via <code>_expand_b()</code> and candidate wrapping) rather than patched up after matching.
+</p>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Python's <code>\b</code> silently truncates names with combining marks</div>
+  <p>
+    <code>\b</code> is a transition between <code>\w</code> (Unicode Letter/Number) and non-<code>\w</code>, but Unicode <em>Marks</em> (categories Mc/Mn) — Devanagari matras, Arabic vowels, Hebrew points — are <strong>not</strong> <code>\w</code>. So a literal <code>\bअनीता\b</code> matches only <code>अनीत</code>, dropping the trailing <code>ा</code>. MemPalace's fix — script-aware lookaround boundaries (<code>i18n/__init__.py:113</code>) — is elegant but non-obvious; it is why entity extraction works for Hindi, Tamil, Thai, and similar scripts at all.
+  </p>
+</div>
+
+<h3>Entity pattern merging across languages</h3>
+<p>
+  <code>get_entity_patterns(languages)</code> merges patterns from multiple locales into one dict. List fields (<code>person_verb_patterns</code>, <code>pronouns</code>, <code>dialogue_patterns</code>, …) are concatenated in request order with duplicates removed while preserving first occurrence; <code>stopwords</code> are returned as a sorted union; <code>candidate_patterns</code> and <code>multi_word_patterns</code> stay as fully-wrapped regex strings (boundaries and capture groups already applied), ready to compile directly. The consumers are <code>entity_detector.detect_entities()</code> and the <a href="entities.html">entity system</a>. Results are cached by canonicalized language tuple, so <code>(pt-br, en)</code> and <code>(PT-BR, EN)</code> share one entry.
+</p>
+
+<h3>Multilingual embeddings (EmbeddinggemmaONNX)</h3>
+<p>
+  The <code>EmbeddinggemmaONNX</code> class wraps <code>onnx-community/embeddinggemma-300m-ONNX</code>, a quantized model supporting 100+ languages. It lazy-loads model and tokenizer from HuggingFace on first call, tokenizes input, runs ONNX inference, and truncates the 768-dim sentence embedding to 384-dim via Matryoshka Representation Learning so it slots into existing 384-dim ChromaDB collections without schema migration. The <code>get_embedding_function()</code> factory caches by (model, providers) tuple and falls back to <code>all-MiniLM-L6-v2</code> when <code>model='minilm'</code> or unspecified. See <a href="llm-integration.html">LLM integration</a> and <a href="backends.html">storage backends</a> for how these vectors feed semantic <a href="search.html">search</a>.
+</p>
+
+<h3>Hardware acceleration &amp; device resolution</h3>
+<p>
+  <code>_resolve_providers(device)</code> maps device names (<code>cpu</code>, <code>cuda</code>, <code>coreml</code>, <code>dml</code>, <code>auto</code>) to ONNX Runtime execution-provider lists. The <code>auto</code> mode probes available providers in priority order (CUDA &gt; CoreML &gt; DirectML &gt; CPU) and returns the first available. Unavailable accelerators emit a one-shot warning via a <code>_WARNED</code> set and fall back to CPU, so mining never fails because a GPU is missing.
+</p>
+
+<h3>Dialect compression with language context</h3>
+<p>
+  The <a href="aaak-dialect.html">Dialect</a> class accepts a <code>lang</code> parameter, loads the locale-specific AAAK instruction (<code>t('aaak.instruction')</code>) and regex patterns (<code>get_regex()</code>), and uses them to guide lossy compression. <code>compress()</code> extracts entities, topics, key sentences, emotions, and flags from plain text and returns AAAK Dialect format; the localized instruction is handed to LLMs as a system-level compression guideline (e.g. Japanese 概念間はパイプ vs English "pipes between concepts").
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>BCP 47 Language Tag</dt>
+  <dd>Standardized language code (RFC 5646), case-insensitive. MemPalace normalizes via <code>_canonical_lang()</code> so <code>PT-BR</code>, <code>pt-br</code>, and <code>Pt-Br</code> all map to the same file.</dd>
+  <dt>Combining Mark</dt>
+  <dd>Non-spacing diacritical mark (Unicode categories Mc/Mn) like a Hindi matra (ा) or Arabic vowel (َ). Python's <code>\b</code> word boundary ignores them, causing truncation; MemPalace fixes this via script-aware lookaround boundaries.</dd>
+  <dt>Script-Aware Boundary</dt>
+  <dd>A regex lookaround <code>(?&lt;=[chars])(?=[^chars])</code> that treats declared character ranges (e.g. Devanagari U+0900–U+097F) as word-internal, preserving combining marks and multi-codepoint names.</dd>
+  <dt>Entity Detection Patterns</dt>
+  <dd>Language-specific regex sets for <code>candidate_patterns</code>, <code>person_verb_patterns</code>, <code>dialogue_patterns</code>, <code>project_verb_patterns</code>, pronouns, and stopwords; merged per-language via <code>get_entity_patterns()</code>.</dd>
+  <dt>Embedding Function (EF)</dt>
+  <dd>A ChromaDB-compatible callable returning vector embeddings. Two choices: <code>minilm</code> (384-dim, English-only, faster) or <code>embeddinggemma</code> (384-dim via Matryoshka truncation, multilingual, 0.88 cross-lingual cosine similarity).</dd>
+  <dt>Matryoshka Representation Learning (MRL)</dt>
+  <dd>A training technique that lets an embedding model produce useful outputs at any dimensionality. <code>EmbeddinggemmaONNX</code> truncates 768-dim output to 384-dim to be a drop-in ChromaDB replacement.</dd>
+  <dt>AAAK Dialect Instruction</dt>
+  <dd>A localized compression instruction stored in each locale's i18n JSON (e.g. Japanese vs English version), consumed by <code>Dialect.compress()</code> to guide LLM-based lossy summarization.</dd>
+  <dt>Entity Cache</dt>
+  <dd>The <code>_entity_cache</code> dict, keyed on <code>tuple(languages)</code>, that caches merged entity patterns to avoid recompiling across <code>get_entity_patterns()</code> calls.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  <strong>Script-aware word boundaries for combining marks.</strong> <code>_script_boundary()</code> (<code>i18n/__init__.py:113</code>) solves the combining-mark truncation problem by generating a lookaround that treats a locale-specific character class as word-internal. It is the single function that makes Devanagari, Arabic, Tamil, Thai, and similar names survive extraction.
+</p>
+
+<div class="code-caption">mempalace/i18n/__init__.py:113 · script-aware word boundary for combining marks</div>
+<pre><code class="language-python">def _script_boundary(chars: str) -&gt; str:
+    """Build a lookaround-based word boundary expression.
+    Python's built-in ``\b`` ignores combining marks, so names like
+    अनीता get truncated to अनीत. This returns a boundary that treats
+    the declared chars as word-internal."""
+    return (
+        rf"(?:(?&lt;=[{chars}])(?=[^{chars}])"
+        rf"|(?&lt;=[^{chars}])(?=[{chars}])"
+        rf"|^(?=[{chars}])"
+        rf"|(?&lt;=[{chars}])$)"
+    )</code></pre>
+
+<p>
+  <strong>14 localized JSON catalogs with dual purposes.</strong> Each locale file (<code>en.json</code>, <code>ja.json</code>, <code>hi.json</code>, …) serves two roles: UI strings (terms, CLI messages, AAAK instruction) for the Dialect class and CLI, and entity-detection patterns (<code>candidate_pattern</code>, <code>person_verb_patterns</code>, <code>boundary_chars</code>) for mining. Colocating both avoids duplication and keeps the entity detector and Dialect using one source of truth.
+</p>
+
+<p>
+  <strong>Case-insensitive language-code normalization.</strong> <code>_canonical_lang()</code> (<code>i18n/__init__.py:28</code>) lowercases and glob-matches mixed-case codes to a single on-disk stem, applied in both <code>load_lang()</code> and <code>get_entity_patterns()</code> so any capitalization unifies through the loader and cache.
+</p>
+
+<div class="code-caption">mempalace/i18n/__init__.py:197 · merging entity patterns with boundary expansion and tuple caching</div>
+<pre><code class="language-python">def get_entity_patterns(languages=("en",)) -&gt; dict:
+    # Normalize via canonical filename so "PT-BR" and "pt-br"
+    # share one cache entry; unknown codes kept as-is so the
+    # English fallback fires exactly once.
+    languages = tuple(_canonical_lang(lang) or lang for lang in languages)
+    key = languages
+    if key in _entity_cache:
+        return _entity_cache[key]
+    # ... merge candidate/multi-word/verb patterns across locales,
+    #     apply script-aware boundary expansion, union stopwords ...
+    _entity_cache[key] = merged
+    return merged</code></pre>
+
+<p>
+  <strong>Lazy-loaded EmbeddinggemmaONNX model.</strong> <code>_lazy_load()</code> (<code>embedding.py:170</code>) defers downloading the ~300MB ONNX model and tokenizer from HuggingFace until the first <code>__call__</code>, so the import never blocks CLI startup and CPU-only users install without forced GPU dependencies. The output is truncated to 384-dim with <code>outputs[self._output_idx][:, :_EMBEDDINGGEMMA_DIM]</code> (<code>embedding.py:220</code>) and L2-normalized, matching MiniLM's vector width for drop-in compatibility.
+</p>
+
+<div class="code-caption">mempalace/embedding.py:210 · ONNX inference, Matryoshka truncation to 384-dim, L2-normalize</div>
+<pre><code class="language-python">def __call__(self, input):  # ChromaDB EF protocol uses `input`
+    self._lazy_load()
+    np = self._np
+    texts = [_EMBEDDINGGEMMA_PREFIX + t for t in input]
+    encs = self._tokenizer.encode_batch(texts)
+    outputs = self._session.run(None, {...})
+    sent_emb = outputs[self._output_idx][:, :_EMBEDDINGGEMMA_DIM]  # → 384d
+    norms = np.linalg.norm(sent_emb, axis=1, keepdims=True) + 1e-12
+    return (sent_emb / norms).tolist()</code></pre>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Multilingual embeddings trade speed for quality</div>
+  <p>
+    <code>EmbeddinggemmaONNX</code> reaches <strong>0.88</strong> cross-lingual cosine similarity versus MiniLM's <strong>0.35</strong> on parallel-translated text (DE/FR/HI/IT/KO/RU), but it is slower: a 300MB lazy-downloaded model, a heavier tokenizer, and higher inference cost. Onboarding defaults new users to <code>embeddinggemma</code> and recommends it for non-English content, while existing palaces keep <code>minilm</code> for backward compatibility (<code>embedding.py:140</code>).
+  </p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ The EF name is persisted in ChromaDB — switching models needs a rebuild</div>
+  <p>
+    <code>EmbeddinggemmaONNX.name()</code> returns <code>embeddinggemma_300m</code> (<code>embedding.py:159</code>), and ChromaDB persists this on the collection. Swapping models without re-embedding makes ChromaDB reject the old collection on name mismatch. This is intentional — it forces <code>mempalace repair rebuild-index</code> (see <a href="maintenance.html">maintenance</a>) because the two models live in different vector spaces — but surprising if you don't expect it.
+  </p>
+</div>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>load_lang</td><td>func</td><td><code>i18n/__init__.py:50</code></td><td>Loads a locale JSON, stores it globally, returns the dict; falls back to English if the language is not found.</td></tr>
+    <tr><td>t</td><td>func</td><td><code>i18n/__init__.py:62</code></td><td>Retrieves a localized string by dotted key (e.g. <code>cli.mine_complete</code>) and interpolates kwargs.</td></tr>
+    <tr><td>get_entity_patterns</td><td>func</td><td><code>i18n/__init__.py:197</code></td><td>Merges entity-detection patterns across locales, applies script-aware boundary expansion, returns a cached dict.</td></tr>
+    <tr><td>_script_boundary</td><td>func</td><td><code>i18n/__init__.py:113</code></td><td>Generates a lookaround word boundary that treats a declared character class as word-internal, preserving combining marks.</td></tr>
+    <tr><td>_canonical_lang</td><td>func</td><td><code>i18n/__init__.py:28</code></td><td>Resolves mixed-case language codes (PT-BR, pt-br) to canonical on-disk filename stems via case-insensitive globbing.</td></tr>
+    <tr><td>available_languages</td><td>func</td><td><code>i18n/__init__.py:45</code></td><td>Returns the sorted list of available language codes by globbing <code>*.json</code> in the i18n directory.</td></tr>
+    <tr><td>EmbeddinggemmaONNX</td><td>class</td><td><code>embedding.py:140</code></td><td>ChromaDB-compatible EF using embeddinggemma-300m-ONNX; 100+ languages, 0.88 cross-lingual cosine similarity.</td></tr>
+    <tr><td>get_embedding_function</td><td>func</td><td><code>embedding.py:227</code></td><td>Factory returning a cached embedding function (EmbeddinggemmaONNX or minilm) for the requested device and model.</td></tr>
+    <tr><td>_resolve_providers</td><td>func</td><td><code>embedding.py:62</code></td><td>Maps device names to ONNX Runtime provider lists, with CPU fallback and one-shot warnings for missing accelerators.</td></tr>
+    <tr><td>Dialect</td><td>class</td><td><code>dialect.py:300</code></td><td>AAAK Dialect encoder accepting a <code>lang</code> parameter; loads locale AAAK instruction and regex to guide lossy compression.</td></tr>
+    <tr><td>extract_candidates</td><td>func</td><td><code>entity_detector.py:181</code></td><td>Extracts capitalized proper-noun candidates via language-aware patterns, returning {name: frequency} for 3+ occurrences.</td></tr>
+    <tr><td>detect_entities</td><td>func</td><td><code>entity_detector.py:449</code></td><td>Scans files, extracts candidates, scores and classifies them as person/project/uncertain (with optional agent_personas).</td></tr>
+  </tbody>
+</table>
+
+<details class="collapsible">
+  <summary>Candidate extraction edge cases &amp; details</summary>
+  <div class="code-caption">mempalace/entity_detector.py:181 · extract candidates with language-aware, unioned character classes</div>
+  <pre><code class="language-python">def extract_candidates(text: str, languages=("en",)) -&gt; dict:
+    patterns = get_entity_patterns(langs)
+    stopwords = _get_stopwords(langs)
+    coca_filter = _get_coca_filter()
+    counts = defaultdict(int)
+    for wrapped_pat in patterns["candidate_patterns"]:
+        rx = re.compile(wrapped_pat)
+        for word in rx.findall(text):
+            wl = word.lower()
+            if wl in stopwords or wl in coca_filter:  # block false positives
+                continue
+            counts[word] += 1
+    return {n: c for n, c in counts.items() if c &gt;= 3}</code></pre>
+  <p>Single-word and multi-word patterns are unioned; the COCA frequency filter blocks common English words from masquerading as proper nouns, and only candidates appearing 3+ times are returned.</p>
+</details>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Localize UI strings and entity patterns in a single JSON structure per language.</dt>
+  <dd>Keeps all locale-specific data (UI, entity patterns, <code>boundary_chars</code>, AAAK instructions) colocated under one schema, avoiding definitions spread across files and making clear what is translatable vs structural.</dd>
+  <dt>Default multilingual embeddings (embeddinggemma) for new palaces, preserve minilm for existing ones.</dt>
+  <dd>0.88 cross-lingual similarity is a major quality win for non-English content, but existing palaces were built in MiniLM's vector space. Switching requires re-indexing, so onboarding offers and recommends embeddinggemma without breaking current users.</dd>
+  <dt>Script-aware boundaries via lookaround, not post-processing.</dt>
+  <dd>Baking boundary logic into the regex itself avoids slicing extracted names after the fact — names with combining marks are matched correctly the first time, not cleaned up later.</dd>
+  <dt>Lazy-load the EmbeddinggemmaONNX model on first use, not at import time.</dt>
+  <dd>A 300MB model should not block CLI startup or onboarding. Lazy loading lets CPU-only users run MemPalace without forced GPU dependencies and keeps import overhead minimal when the model is unused.</dd>
+  <dt>Cache entity patterns by canonical language tuple, allowing mixed case in callers.</dt>
+  <dd>BCP 47 tags are case-insensitive per RFC. Normalizing before cache lookup lets callers pass any capitalization and still share cached merged patterns, reducing redundant regex compilation.</dd>
+</dl>
+
+<div class="callout insight">
+  <div class="callout-title">💡 14 languages, but only 3 ship full entity patterns</div>
+  <p>
+    Only <code>zh-CN</code>, <code>hi</code>, and <code>ko</code> declare <code>boundary_chars</code> and complete entity sections. <code>ja.json</code> and <code>pt-br.json</code> have no <code>entity</code> section at all, so they fall back to English entity patterns. Most locales translate UI strings (terms, CLI) but reuse English entity detection — a deliberate cost trade-off, not a bug. The merge loop's English fallback (<code>i18n/__init__.py</code>) is what keeps those locales working.
+  </p>
+</div>
+
+<h2>Data flow</h2>
+<p>
+  Data starts in the locale JSON files (<code>mempalace/i18n/*.json</code>). <code>load_lang()</code> populates the module-level <code>_strings</code> dict, which <code>t()</code> reads for UI string lookups (e.g. <code>cli.mine_start</code>). Entity-detection patterns are extracted by <code>get_entity_patterns(languages)</code>, which merges <code>candidate_patterns</code>, <code>person_verb_patterns</code>, and friends across requested locales, applies script-aware boundary expansion, caches by language tuple, and hands them to <code>entity_detector.detect_entities()</code> and <code>palace.extract_entity_candidates()</code>. Those patterns compile into regex objects applied to file content during <a href="mining-projects.html">mining</a> and <a href="mining-conversations.html">conversation mining</a>.
+</p>
+<p>
+  In parallel, the embedding subsystem (<code>embedding.py</code>) supplies an EF — either <code>EmbeddinggemmaONNX</code> or minilm — to ChromaDB, which vectorizes text for similarity <a href="search.html">search</a> and <a href="knowledge-graph.html">knowledge-graph</a> queries. The <a href="aaak-dialect.html">Dialect</a> class loads locale AAAK instructions (<code>aaak.instruction</code>) and regex (<code>regex</code> section) to drive lossy compression. Configuration (<code>config.py</code>) reads <code>entity_languages</code> and <code>embedding_model</code> from environment or <code>config.json</code>, letting users pick which languages' entity patterns apply and whether to enable multilingual embeddings.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="entities.html"><span class="rc-group">Ingestion</span><div class="rc-title">Entity System</div><div class="rc-desc">Entity patterns in i18n drive detection; entity_detector.py calls get_entity_patterns() directly.</div></a>
+    <a class="related-card" href="aaak-dialect.html"><span class="rc-group">Ingestion</span><div class="rc-title">AAAK Dialect &amp; Closets</div><div class="rc-desc">Each locale's aaak.instruction localizes the lossy compression guideline.</div></a>
+    <a class="related-card" href="llm-integration.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">LLM Integration</div><div class="rc-desc">Multilingual embeddings (embeddinggemma vs minilm) power semantic search and graph queries.</div></a>
+    <a class="related-card" href="backends.html"><span class="rc-group">Retrieval</span><div class="rc-title">Storage Backends</div><div class="rc-desc">ChromaDB persists the embedding function name; switching models requires rebuild-index.</div></a>
+    <a class="related-card" href="cli.html"><span class="rc-group">Interfaces</span><div class="rc-title">CLI &amp; Onboarding</div><div class="rc-desc">Every CLI message is localized via the i18n t() function.</div></a>
+    <a class="related-card" href="mining-projects.html"><span class="rc-group">Ingestion</span><div class="rc-title">Project Mining</div><div class="rc-desc">Entity detection during mining uses get_entity_patterns() with entity_languages from config.</div></a>
+  </div>
+</div>

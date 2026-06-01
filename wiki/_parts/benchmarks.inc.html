@@ -1,0 +1,271 @@
+<header class="page-head">
+  <div class="page-kicker">Cross-cutting</div>
+  <h1>Benchmarks</h1>
+  <p class="lead">Reproducible recall numbers — and an unusually honest methodology.</p>
+</header>
+
+<div class="summary">
+  MemPalace scores <strong>96.6% recall@5</strong> on LongMemEval using raw semantic search with zero API calls, demonstrating that storing verbatim conversation text and letting embeddings find it later beats LLM-based fact extraction. Layered heuristics — keyword overlap, temporal proximity, and preference extraction — push the number to <strong>98.4% on held-out data</strong> and <strong>≥99% with an optional LLM rerank</strong>, each improvement grounded in analysis of specific failure patterns. The suite spans three public academic datasets (LongMemEval, LoCoMo, ConvoMem) with published methodology, auditable per-question result files, and a deliberate refusal to teach-to-the-test for the final 0.6%.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<p>
+  The benchmark harness runs a tiered retrieval pipeline. A <strong>raw semantic baseline</strong> establishes the headline; a four-stage <strong>hybrid re-ranker</strong> layers targeted heuristics on top; a clean <strong>train/test split</strong> validates that the gains generalize; and an <strong>optional LLM rerank</strong> closes the last gap with semantic reasoning. Every layer is measured on the same datasets that drive the <a href="search.html">search and retrieval</a> stack in production.
+</p>
+
+<h3>Raw semantic baseline: 96.6% with zero API calls</h3>
+<p>
+  Each conversation session is stored as a single document containing all user turns concatenated. ChromaDB embeds documents and queries with sentence transformers (<code>all-MiniLM-L6-v2</code>, 384-dim) and retrieves by cosine similarity: the question's embedding is compared against all session embeddings, and the top-5 are returned. This baseline alone — no heuristics, no LLM, no API key — achieves 96.6% R@5 on 500 LongMemEval questions. The result contradicts the field's assumption that AI must extract and compress memory; verbatim storage avoids the information loss that extraction introduces.
+</p>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight: raw text beats LLM-extracted memory by 2.1×</div>
+  <p>
+    On ConvoMem, MemPalace's verbatim approach scores 92.9% average recall versus Mem0's 30–45% (<code>benchmarks/BENCHMARKS.md:109</code>). Mem0 uses an LLM to extract structured memories; when that extraction fails, the original text is gone forever. MemPalace keeps the source text, so the embedding model can always find it later. The simpler design wins precisely because it discards nothing.
+  </p>
+</div>
+
+<h3>Hybrid v1–v4: targeted fixes for failure patterns</h3>
+<p>
+  Each hybrid version targets a category of misses identified by error analysis, not individual questions:
+</p>
+<ul>
+  <li><strong>v1</strong> — keyword overlap scoring (0.30 weight × keyword match fraction reduces distance by up to 30%) for vocabulary mismatches like a "Business Administration" degree answer.</li>
+  <li><strong>v2</strong> — temporal date parsing and proximity boosting for time-anchored questions ("four weeks ago"); questions referencing the assistant trigger a two-pass retrieval.</li>
+  <li><strong>v3</strong> — 16 regex patterns extract preferences at ingest and create synthetic docs that bridge semantic gaps; rerank pool widens to top-20.</li>
+  <li><strong>v4</strong> — quoted-phrase extraction and person-name boosting for the final three failures.</li>
+</ul>
+<p>
+  Every fix through v3 is motivated by analyzing failure <em>categories</em>. The v4 step is the exception, and the authors flag it explicitly (see the integrity callout below).
+</p>
+
+<h3>Held-out evaluation: separating honest from overfitted</h3>
+<p>
+  A train/test split (<code>lme_split_50_450.json</code>) ensures the hybrid improvements generalize. Researchers tune on 50 development questions, then evaluate on 450 held-out questions never seen during development. The held-out score of <strong>98.4% R@5</strong> is the honest publishable number, because all three misses that v4 targeted came from the same 500-question set used for validation — contaminating that result. The honest claim becomes "98.4% R@5 on clean unseen data; 100% if tuned on the test set itself."
+</p>
+
+<h3>LLM reranking: semantic reasoning over keyword matching</h3>
+<p>
+  After hybrid retrieval produces a top-10 ranking, the full text of each candidate (capped at 500 chars) is sent to Claude Haiku with the question. Haiku returns a single session number (1–10) to promote to rank 1; all others stay in their hybrid order. This catches preference questions where embeddings fail due to vocabulary gaps — Haiku reasons about intent where embedding similarity cannot. The pass is optional and fault-tolerant: if the API call fails, the function returns the original hybrid ranking unchanged. See <a href="llm-integration.html">LLM integration</a> for how Haiku/Sonnet are wired in.
+</p>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance: rerank costs ~$0.001/query</div>
+  <p>
+    The minimal 500-char-per-session prompt keeps the optional rerank cheap (~$0.001/query with Haiku, ~$0.003 with Sonnet) and errors rare. The headline 96.6% needs none of it — it reproduces on a laptop in five minutes with no API key.
+  </p>
+</div>
+
+<h3>Three academic datasets</h3>
+<p>
+  <strong>LongMemEval</strong> (500 questions, ~53 sessions per query) tests single-needle-in-haystack retrieval across 6 question types. <strong>LoCoMo</strong> (1,986 questions over 10 long conversations) tests multi-hop fact connections and temporal inference. <strong>ConvoMem</strong> (75K+ QA pairs, 6 categories) tests scale and memory types — facts, preferences, changes, abstention. MemPalace scores 96.6% / 98.4% / ≥99% on LongMemEval (raw / hybrid / rerank), 88.9% R@10 on LoCoMo (hybrid, no rerank), and 92.9% average recall on ConvoMem. All three datasets are public; the benchmark code is deterministic and auditable.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Raw baseline (96.6% R@5)</dt>
+  <dd>Semantic search with ChromaDB's default <code>all-MiniLM-L6-v2</code> embeddings over verbatim session text — no heuristics, no LLM calls. The reproducible, offline headline result.</dd>
+
+  <dt>Hybrid retrieval (98.4%)</dt>
+  <dd>Two-stage ranking: semantic retrieval of top-50 candidates, then re-scoring via keyword overlap (up to 30% distance reduction) plus a temporal-proximity boost for time-anchored questions.</dd>
+
+  <dt>LLM rerank (≥99%)</dt>
+  <dd>Optional third pass: send the top-K retrieved sessions to Claude Haiku with the question; Haiku selects the single most relevant session to promote to rank 1, leaving the rest of the ranking unchanged.</dd>
+
+  <dt>Held-out evaluation (98.4% R@5, 450q)</dt>
+  <dd>Clean train/test split: hybrid_v4 tuned on 50 dev questions, validated on 450 previously unseen questions to measure honest generalization.</dd>
+
+  <dt>Preference extraction</dt>
+  <dd>16 regex patterns detect how users phrase preferences ("I've been having trouble with X", "I prefer Y"); synthetic documents bridge vocabulary gaps between question phrasing and session text.</dd>
+
+  <dt>Two-pass assistant retrieval</dt>
+  <dd>For "what did you say" questions: pass 1 finds the top-5 sessions using user turns only; pass 2 re-indexes those sessions with full text (user + assistant) to avoid diluting the global index.</dd>
+
+  <dt>Recall@k vs QA accuracy</dt>
+  <dd>Retrieval recall measures whether the correct session is in the top-K; QA accuracy measures whether an LLM generates a correct answer. The metrics are independent — MemPalace's 96.6% is R@5, not end-to-end accuracy.</dd>
+
+  <dt>Benchmark integrity flag</dt>
+  <dd>Hybrid v4's last 0.6% came from analyzing three specific failed questions and building targeted fixes — teaching-to-the-test, acknowledged and disclosed rather than hidden.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  The hybrid re-ranker's core is a single multiplicative fusion: a strong keyword match shrinks the semantic distance, but never enough to fully override a good embedding.
+</p>
+
+<div class="code-caption">benchmarks/longmemeval_bench.py:624 · fuse semantic distance with keyword overlap</div>
+<pre><code class="language-python">fused_dist = dist * (1.0 - hybrid_weight * overlap)
+# dist:          ChromaDB cosine distance (lower = better)
+# overlap:       fraction of question keywords in document (0.0-1.0)
+# hybrid_weight: 0.30 (tuned via full 500-question validation)
+# Result: perfect keyword overlap reduces distance by up to 30%</code></pre>
+
+<p>
+  Keyword extraction deliberately strips noise. A 51-word stop list removes question markers, pronouns, prepositions, and temporal words, and only 3+ character words count, so a "perfect" overlap requires <em>meaningful</em> matches.
+</p>
+
+<div class="code-caption">benchmarks/longmemeval_bench.py:553 · keyword extraction &amp; overlap</div>
+<pre><code class="language-python">def extract_keywords(text):
+    words = re.findall(r"\b[a-z]{3,}\b", text.lower())
+    return [w for w in words if w not in STOP_WORDS]
+
+def keyword_overlap(query_kws, doc_text):
+    doc_lower = doc_text.lower()
+    if not query_kws:
+        return 0.0
+    hits = sum(1 for kw in query_kws if kw in doc_lower)
+    return hits / len(query_kws)</code></pre>
+
+<p>
+  Preference extraction runs at ingest. Sixteen regex patterns detect how users express preferences, and each match becomes a synthetic "User has mentioned: …" doc sharing the session's <code>corpus_id</code> (capped at 10 mentions). Evaluation deduplicates at the session level, so a preference doc and its source session both resolve to the same session.
+</p>
+
+<div class="code-caption">benchmarks/longmemeval_bench.py:1138 · preference detection patterns</div>
+<pre><code class="language-python">PREF_PATTERNS = [
+    r"i(?:'ve been| have been) having (?:trouble|issues?|problems?) with ([^,\.!?]{5,80})",
+    r"i(?:'ve been| have been) feeling ([^,\.!?]{5,60})",
+    r"i prefer ([^,\.!?]{5,60})",
+    r"i usually ([^,\.!?]{5,60})",
+    r"lately[,\s]+(?:i've been|i have been|i'm|i am) ([^,\.!?]{5,80})",
+    # ... 11 more patterns
+]
+for pat in PREF_PATTERNS:
+    for match in re.findall(pat, text, re.IGNORECASE):
+        mentions.append(match.strip())</code></pre>
+
+<p>
+  Time-anchored questions get a temporal proximity boost. An 11-pattern parser resolves relative references ("N days ago", "a week ago", "last month") into a target date, and sessions inside the tolerance window earn up to a 40% distance reduction that decays linearly toward the window's edge.
+</p>
+
+<div class="code-caption">benchmarks/longmemeval_bench.py:964 · temporal proximity scoring</div>
+<pre><code class="language-python">delta_days = abs((sess_date - target_date).days)
+if delta_days &lt;= tolerance:
+    temporal_boost = 0.40
+elif delta_days &lt;= tolerance * 3:
+    temporal_boost = 0.40 * (1.0 - (delta_days - tolerance) / (tolerance * 2))
+else:
+    temporal_boost = 0.0
+fused_dist = fused_dist * (1.0 - temporal_boost)</code></pre>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight: temporal correctness is a hint, not a rule</div>
+  <p>
+    The 40% cap (<code>benchmarks/HYBRID_MODE.md:544</code>) means an excellent semantic match can never be completely overridden by temporal proximity. This prevents a wrong-content session from the right date being promoted above a right-content session from a slightly off date.
+  </p>
+</div>
+
+<p>
+  Questions that reference the assistant ("you suggested…") use two-pass retrieval to avoid polluting the global index with assistant text.
+</p>
+
+<div class="code-caption">benchmarks/longmemeval_bench.py:883 · two-pass assistant retrieval</div>
+<pre><code class="language-python">if is_assistant_reference(question):
+    # Pass 1: find top-5 sessions using user turns only
+    results = collection.query(query_texts=[question], n_results=5)
+    top_indices = [int(rid.split('_')[1]) for rid in results['ids'][0]]
+
+    # Pass 2: reindex top sessions with full text (user + assistant)
+    top_corpus_full = [corpus_full[i] for i in top_indices]
+    collection2 = _fresh_collection('mempal_drawers_pass2')
+    collection2.add(documents=top_corpus_full, ids=[f'doc2_{i}' for i in range(len(top_corpus_full))])
+    results2 = collection2.query(query_texts=[question], n_results=n_results)
+    two_pass_order = [top_indices[int(rid.split('_')[1])] for rid in results2['ids'][0]]</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha: global assistant indexing dilutes the signal</div>
+  <p>
+    The naive fix — indexing all turns (user + assistant) globally — makes every session's assistant text compete with every other session's, drowning the semantic signal (<code>benchmarks/BENCHMARKS.md:193</code>). The two-pass approach finds the session first, then searches full text only <em>within</em> it, which outperforms global indexing precisely because it avoids that dilution.
+  </p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance: the EphemeralClient singleton broke the memory wall</div>
+  <p>
+    A module-level <code>_bench_client = chromadb.EphemeralClient()</code> (<code>benchmarks/longmemeval_bench.py:97</code>) is reused across all 500 questions, with collections deleted and recreated between queries. The previous PersistentClient-plus-tempdir pattern accumulated SQLite handles and crashed at Q388; switching to ephemeral eliminated the hang, made queries 2× faster, and enabled full 500-question runs.
+  </p>
+</div>
+
+<details class="collapsible">
+  <summary>More extractors: person names and quoted phrases (v4)</summary>
+  <p>
+    <strong>Person-name extraction</strong> (<code>benchmarks/longmemeval_bench.py:1521</code>) finds capitalized 3–15 character words, subtracting a 470+ line <code>NOT_NAMES</code> set ("What", "Monday", "January", "Previously"). Sessions containing any extracted name get a 40% distance reduction — this catches questions like "Rachel ukulele" where embeddings underweight proper nouns.
+  </p>
+  <p>
+    <strong>Quoted-phrase extraction</strong> (<code>benchmarks/longmemeval_bench.py:1434</code>) scans for single or double quoted phrases and gives a 60% boost to sessions containing the exact phrase — specialized for questions like "you suggested 'sexual compulsions'…" where the answer session contains the verbatim quote.
+  </p>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>build_palace_and_retrieve</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:163</code></td><td>Baseline retrieval: builds a fresh palace per question, ingests sessions, returns ranked indices</td></tr>
+    <tr><td>build_palace_and_retrieve_hybrid</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:485</code></td><td>Hybrid v1: semantic retrieval + keyword-overlap re-ranking</td></tr>
+    <tr><td>build_palace_and_retrieve_hybrid_v2</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:709</code></td><td>Hybrid v2: adds temporal date boost and two-pass assistant retrieval</td></tr>
+    <tr><td>build_palace_and_retrieve_hybrid_v3</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:994</code></td><td>Hybrid v3: 16-pattern preference extraction, expanded top-20 rerank pool</td></tr>
+    <tr><td>build_palace_and_retrieve_hybrid_v4</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:1339</code></td><td>Hybrid v4: quoted-phrase + person-name + nostalgia patterns (teaching-to-the-test fix)</td></tr>
+    <tr><td>extract_preferences</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:1157</code></td><td>Applies 16 preference-detection regex patterns to session text</td></tr>
+    <tr><td>parse_time_offset_days</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:805</code></td><td>Parses "4 weeks ago" / "last month"; returns (days_offset, tolerance_window)</td></tr>
+    <tr><td>extract_keywords</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:553</code></td><td>Extracts meaningful words via a 51-word stop list for hybrid re-ranking</td></tr>
+    <tr><td>keyword_overlap</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:557</code></td><td>Fraction of question keywords found in a document; feeds the boost score</td></tr>
+    <tr><td>ndcg</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:61</code></td><td>Normalized discounted cumulative gain; ranking-quality metric alongside recall@k</td></tr>
+    <tr><td>_fresh_collection</td><td>func</td><td><code>benchmarks/longmemeval_bench.py:146</code></td><td>Deletes and recreates a ChromaDB collection to isolate per-question state</td></tr>
+    <tr><td>_bench_client</td><td>const</td><td><code>benchmarks/longmemeval_bench.py:97</code></td><td>Module-level EphemeralClient singleton shared across all 500 questions</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Publish raw 96.6% as the headline, not the reranked 100%</dt>
+  <dd>The 96.6% requires no API key, no cloud, and no LLM at any stage — it reproduces on a laptop in five minutes, aligning with MemPalace's local-first pitch. The reranked numbers are real but depend on an optional LLM. Leading with the harder constraint (offline, free) and noting the rerank as an upgrade is the honest framing.</dd>
+
+  <dt>Refuse to post cross-tool comparisons with Mem0, Mastra, Supermemory</dt>
+  <dd>Different systems publish different metrics on different splits — Supermemory and Mastra report QA accuracy, not retrieval recall. Placing R@5 next to QA accuracy is apples-to-oranges, so the authors decline to post comparisons they did not run under one metric on one dataset.</dd>
+
+  <dt>Commit every per-question result file and make it auditable</dt>
+  <dd>Aggregate numbers hide failure patterns. Committing JSONL files with every question, every retrieved document, and every score lets readers verify the claims rather than trust a scorecard — the core of the "honest benchmarks" ethos.</dd>
+
+  <dt>Implement a 50/450 train/test split after spotting v4 contamination</dt>
+  <dd>Once the teaching-to-the-test was recognized, the authors built a clean split rather than ignoring it: tune on dev (safe), publish on held-out (final). Benchmark integrity is treated as active, ongoing work.</dd>
+
+  <dt>Cap preference extraction at 10 mentions per session</dt>
+  <dd>Longer synthetic docs invite false-positive embedding matches. Capping at the 10 most salient preferences balances coverage against signal quality, and the cap is documented in code for review.</dd>
+</dl>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Benchmark integrity: 98.4% is the honest claim, not 100%</div>
+  <p>
+    Hybrid v4's three fixes (quoted phrase, person name, nostalgia patterns) were developed by directly examining three specific failed questions — named in <code>benchmarks/BENCHMARKS.md</code> as <code>d6233ab6</code>, <code>4dfccbf8</code>, <code>ceb54acb</code> (<code>benchmarks/BENCHMARKS.md:489</code>). That is methodological contamination: the fixes provably work on those three questions but may not generalize. The held-out 98.4% R@5 on 450 unseen questions proves v1–v3 generalize; v4's last 0.6% remains internally contaminated. The authors disclose this rather than hiding it.
+  </p>
+</div>
+
+<h2>Data flow</h2>
+<p>
+  A question flows through a multi-stage pipeline:
+</p>
+<ol>
+  <li><strong>Raw semantic retrieval</strong> queries ChromaDB with the question embedding, returning the top-50 candidate sessions.</li>
+  <li><strong>Hybrid re-ranking</strong> applies keyword overlap and temporal proximity to those 50, producing a new ranked list.</li>
+  <li><strong>Two-pass assistant re-indexing</strong> runs if the question contains triggers like "you mentioned".</li>
+  <li><strong>Optional LLM reranking</strong> sends the top-10 sessions plus the question to Haiku, which returns a single session number to promote.</li>
+  <li><strong>Evaluation</strong> compares the final ranking against ground-truth session IDs, computing recall@k and NDCG@k.</li>
+</ol>
+<p>
+  Synthetic documents (preference docs, diary topics, quoted phrases) are indexed alongside session text under the same <code>corpus_id</code>, so they contribute to retrieval but map back to their session at scoring time. Result logs capture the full pipeline per question — the question, all retrieved documents, the final ranking, and the score — enabling the post-hoc analysis that powers MemPalace's transparency claims. These same retrieval layers feed the <a href="search.html">search</a> and <a href="knowledge-graph.html">temporal knowledge graph</a> subsystems.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Benchmark functions directly test the semantic search and ranking layers that power search.</div></a>
+    <a class="related-card" href="llm-integration.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">LLM Integration</div><div class="rc-desc">The optional rerank uses Claude Haiku/Sonnet to bridge semantic gaps embeddings cannot close.</div></a>
+    <a class="related-card" href="knowledge-graph.html"><span class="rc-group">Retrieval</span><div class="rc-title">Temporal Knowledge Graph</div><div class="rc-desc">Temporal proximity scoring in the benchmark mirrors the graph's time-anchored reasoning.</div></a>
+    <a class="related-card" href="mining-conversations.html"><span class="rc-group">Ingestion</span><div class="rc-title">Conversation Mining</div><div class="rc-desc">Benchmarks ingest mined conversation data; mining quality bounds what retrieval can find.</div></a>
+    <a class="related-card" href="mcp-server.html"><span class="rc-group">Interfaces</span><div class="rc-title">MCP Server &amp; Tools</div><div class="rc-desc">MCP tools surface programmatic memory queries; benchmarks validate the retrieval beneath them.</div></a>
+    <a class="related-card" href="index.html"><span class="rc-group">Overview</span><div class="rc-title">Home / Overview</div><div class="rc-desc">Benchmarks validate the core retrieval claims in MemPalace's positioning and home narrative.</div></a>
+  </div>
+</div>

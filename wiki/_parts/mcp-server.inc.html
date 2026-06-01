@@ -1,0 +1,186 @@
+<header class="page-head">
+  <div class="page-kicker">Interfaces</div>
+  <h1>MCP Server &amp; Tools</h1>
+  <p class="lead">Around 29 Model-Context-Protocol tools that let an agent live inside the palace.</p>
+</header>
+
+<div class="summary">
+  <p>The MCP server (<code>mcp_server.py</code>, 2,869 lines) exposes the entire palace read/write/knowledge-graph interface as JSON-RPC tools for Claude Code and Claude Desktop. It implements stdio protection to block transitive dependencies from corrupting the JSON-RPC stream, cache invalidation to detect external database writes, aggressive retry logic for ChromaDB and <a href="knowledge-graph.html">knowledge graph</a> stale handles, and a write-ahead log for audit trails. The 29 tools span palace reads (list/search/traverse), writes (add/update/delete drawers, sync), graph mutations with temporal filtering, cross-wing tunnels, agent diaries, and maintenance.</p>
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<h3>Protocol loop and request dispatch</h3>
+<p><code>main()</code> restores the real stdout, configures UTF-8 on Windows, starts the idle watchdog, then enters an infinite loop reading JSON-RPC requests from stdin. <code>handle_request()</code> routes <code>initialize</code>/<code>ping</code>/<code>tools/list</code>/<code>tools/call</code> methods, validates parameter types against each tool's input schema, whitelists unknown arguments, and returns JSON-RPC responses. The server never exits cleanly — it either crashes, hits <code>KeyboardInterrupt</code>, or the idle watchdog exits after the timeout.</p>
+
+<h3>Stdio protection at startup</h3>
+<p>Before any imports, the module saves the real stdout (fd 1) via <code>os.dup()</code>, redirects fd 1 to fd 2 (stderr), and sets <code>sys.stdout = sys.stderr</code>. This prevents <code>chromadb</code>/<code>onnxruntime</code> from writing C-level stderr banners onto the live JSON-RPC stream. In <code>main()</code>, <code>_restore_stdout()</code> undoes both the Python-level and fd-level redirects, restoring the real stdout for JSON-RPC output. Embedded interpreters without fd support are caught and silently skipped.</p>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security</div>
+  <p>ChromaDB → ONNX/posthog and other transitive dependencies write banners to stdout at the C level (not via Python), breaking Claude Desktop's JSON-RPC parser. The fix at <code>mcp_server.py:26</code> uses <code>os.dup2</code> <em>before imports</em> — redirecting <code>sys.stdout</code> alone does not catch fd-level writes from C libraries, and the redirect must happen at import time, not in <code>main()</code>.</p>
+</div>
+
+<h3>Cache management and staleness detection</h3>
+<p><code>_get_client()</code> compares the current inode and mtime of <code>chroma.sqlite3</code> against cached values. An inode change (full rebuild) or an mtime change (external write, &gt; 10ms delta) triggers a ChromaDB client rebuild. Before opening the client, <code>_refresh_vector_disabled_flag()</code> probes HNSW capacity via a pure sqlite/pickle read — never touching chromadb — so the issue #1222 divergence flag is set before the segment loads. <code>_get_collection()</code> retries once on any exception, clearing caches to force a fresh chromadb rebuild on the second attempt. Metadata is cached for 5 seconds and invalidated on writes.</p>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><code>_refresh_vector_disabled_flag()</code> (<code>mcp_server.py:350</code>) reads pure sqlite + pickle metadata straight out of chromadb's segment files to detect index divergence <em>without</em> opening a <code>PersistentClient</code>. This gates the client open and avoids segfaults on load (issue #1222) — the probe is a pure filesystem read with zero chromadb interaction.</p>
+</div>
+
+<h3>Knowledge graph threading and retry</h3>
+<p><code>_call_kg(op)</code> captures the canonical KG path once (<code>realpath</code> + <code>normcase</code>), then runs <code>op(kg)</code> via <code>_get_kg()</code>. If a <code>sqlite3.ProgrammingError</code> (closed database) is raised, it evicts that <code>kg</code> instance from the per-path cache and retries once. The canonical path is threaded through both <code>_get_kg</code> calls to prevent insert/evict key drift if env or mounts change between attempts. The underlying <code>KnowledgeGraph</code> uses a per-instance <code>threading.Lock</code> and WAL mode for concurrent access. See <a href="knowledge-graph.html">the temporal knowledge graph</a> for the storage side.</p>
+
+<h3>Tool implementation: read, write, KG, tunnels, diaries</h3>
+<p>Read tools (status, list_wings/rooms, search, traverse) pull from ChromaDB collection metadata or KG SQLite without modifications. Write tools (add_drawer, delete_drawer, update_drawer) log to the WAL before mutations, detect idempotency via a <code>col.get()</code> probe, and invalidate the metadata cache. KG tools (kg_query/add/invalidate/timeline) go through the <code>_call_kg</code> wrapper. Tunnel tools (create/list/delete/follow) read and write <code>tunnels.json</code> with id canonicalization. Diary tools use timestamp-based unique ids for append-only entries, storing <code>parent_entry_id</code> for chunked reconstruction.</p>
+<ul>
+  <li><strong>Idempotency:</strong> <code>add_drawer</code> checks <code>drawer_id</code> and <code>last_chunk_id</code> before insert to avoid re-filing identical content.</li>
+  <li><strong>Chunking:</strong> content larger than <code>chunk_size</code> is split into bounded per-chunk drawers in a single batched upsert (all-or-nothing).</li>
+  <li><strong>Sanitization:</strong> all inputs pass <code>sanitize_name</code>/<code>content</code>/<code>kg_value</code>; lone surrogates are stripped before write.</li>
+</ul>
+
+<h3>Warmup and idle watchdog</h3>
+<p><code>_maybe_eager_warmup_embedder()</code> (opt-in via <code>MEMPALACE_EAGER_WARMUP=1</code>) pre-loads the embedder and HNSW segment at startup, paying both the ONNX cold-load tax (5–30s) and the segment load cost before the first tool call, preventing <code>-32000</code> timeout errors on large existing palaces. <code>_start_idle_exit_watchdog()</code> spawns a daemon thread that checks <code>_last_request_time</code> every 60s and calls <code>os._exit(0)</code> if idle longer than <code>MEMPALACE_MCP_IDLE_HOURS</code> (default 8h, set to <code>0</code> to disable), releasing ChromaDB file handles on Windows.</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>MCP Protocol</dt>
+  <dd>Model Context Protocol — a JSON-RPC 2.0 request/response interface over stdio for Claude Code and Claude Desktop to invoke tools without network round-trips.</dd>
+  <dt>Stdio Protection</dt>
+  <dd>Redirection of stdout at the file-descriptor level (<code>os.dup2</code>) before heavy imports, preventing transitive dependencies (chromadb, onnxruntime) from writing banners/errors that corrupt JSON-RPC payloads.</dd>
+  <dt>Cache Invalidation</dt>
+  <dd>Detection of external writes via inode + mtime checks on <code>chroma.sqlite3</code>, forcing a ChromaDB client/collection rebuild to prevent stale HNSW indices.</dd>
+  <dt>Retry-on-Close</dt>
+  <dd>A one-shot retry pattern in <code>_call_kg</code> for <code>sqlite3.ProgrammingError</code> when a <code>KnowledgeGraph</code> handle is closed mid-operation (a race between tool call and reconnect).</dd>
+  <dt>Write-Ahead Log (WAL)</dt>
+  <dd>A JSONL audit trail at <code>~/.mempalace/wal/write_log.jsonl</code> recording all drawer/KG mutations with content redaction for review and rollback.</dd>
+  <dt>AAAK Dialect</dt>
+  <dd>A compressed memory format using entity codes (ALC, JOR), emotion markers (<code>*warm*</code>, <code>*fierce*</code>), and pipe-separated fields for agents to write dense diary entries. See <a href="aaak-dialect.html">AAAK Dialect &amp; Closets</a>.</dd>
+  <dt>Tunnel</dt>
+  <dd>An explicit cross-wing connection (stored in <code>tunnels.json</code>) linking rooms that relate across projects/domains, complementing the implicit graph edges from rooms spanning multiple wings. See the <a href="palace-model.html">palace model</a>.</dd>
+  <dt>Idle Auto-Exit</dt>
+  <dd>A daemon watchdog thread that exits the MCP process after <code>MEMPALACE_MCP_IDLE_HOURS</code> (default 8h) with no requests, releasing ChromaDB file handles on Windows.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p><strong>Stdio protection via <code>os.dup2</code></strong> — Lines 26–43 redirect stdout to stderr before imports to block transitive-dependency banners from corrupting JSON-RPC. The file-descriptor level (<code>os.dup</code>) is essential because some C libraries write to stderr directly, bypassing Python's <code>sys.stdout</code>. <code>_restore_stdout()</code> undoes both the fd and Python-level redirects in <code>main()</code>.</p>
+
+<div class="code-caption">mempalace/mcp_server.py:26 · redirect fd 1 → fd 2 before imports</div>
+<pre><code class="language-python">_REAL_STDOUT = sys.stdout
+_REAL_STDOUT_FD = None
+try:
+    _REAL_STDOUT_FD = os.dup(1)
+    os.dup2(2, 1)
+except (OSError, AttributeError):
+    pass
+sys.stdout = sys.stderr</code></pre>
+
+<p><strong>Inode + mtime staleness detection</strong> — <code>_get_client()</code> detects external database modifications (CLI, scripts, repair) by comparing the current <code>st_ino</code> and <code>st_mtime</code> against cached values. FAT filesystems returning <code>0</code> for <code>st_ino</code> are guarded (line 474), and <code>_vector_disabled_flag</code> is refreshed <em>before</em> the chromadb client open (line 482) to catch HNSW divergence before segment load.</p>
+
+<div class="code-caption">mempalace/mcp_server.py:474 · inode + mtime detection</div>
+<pre><code class="language-python">inode_changed = current_inode != 0 and current_inode != _palace_db_inode
+mtime_changed = current_mtime != 0.0 and abs(current_mtime - _palace_db_mtime) &gt; 0.01
+
+if _client_cache is None or inode_changed or mtime_changed:
+    _refresh_vector_disabled_flag()
+    _client_cache = ChromaBackend.make_client(_config.palace_path)</code></pre>
+
+<p><strong>Retry-on-close for <code>KnowledgeGraph</code></strong> — <code>_call_kg</code> wraps all KG operations with a one-shot retry on <code>sqlite3.ProgrammingError</code>. The canonical path is captured once (line 276) and threaded through both <code>_get_kg</code> calls (lines 278, 284) to prevent key drift if env mutates between reconnect and retry.</p>
+
+<div class="code-caption">mempalace/mcp_server.py:276 · canonical path threading + one-shot retry</div>
+<pre><code class="language-python">path = _canonicalize_kg_path(_resolve_kg_path())
+for attempt in range(2):
+    kg = _get_kg(path)
+    try:
+        return op(kg)
+    except sqlite3.ProgrammingError:
+        if attempt == 0:
+            with _kg_cache_lock:
+                if _kg_by_path.get(path) is kg:
+                    _kg_by_path.pop(path, None)
+            continue
+        raise</code></pre>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p><code>_call_kg</code> retries <em>at most once</em> on <code>sqlite3.ProgrammingError</code> (line 282) rather than spinning — a second close is a lost race, not a transient. The tradeoff is that a reconnect-during-handler still fails on the second attempt, but it avoids hung loops (line 263).</p>
+</div>
+
+<p><strong>Write-ahead log with content redaction</strong> — <code>_WAL_DIR</code> (<code>~/.mempalace/wal</code>, line 390) stores JSONL entries. <code>_wal_log</code> redacts <code>content</code>/<code>query</code>/<code>entry</code> fields (lines 406–409) via the <code>_WAL_REDACT_KEYS</code> frozenset, replacing values with <code>'[REDACTED N chars]'</code>. The log file is created atomically via <code>os.open</code> with <code>O_CREAT|O_WRONLY</code> and <code>mode=0o600</code> (line 401).</p>
+
+<p><strong>Chunked content with idempotency probe</strong> — <code>tool_add_drawer</code> handles oversized content (&gt; <code>chunk_size</code>) by splitting into bounded chunks in a single batched upsert (line 1219). The idempotency probe checks both <code>drawer_id</code> (single-chunk) and the last <code>chunk_id</code> (chunked) to re-detect prior writes, and physical chunk ids are returned in the response for fetch/delete iteration.</p>
+
+<div class="code-caption">mempalace/mcp_server.py:1170 · idempotency probe before batched upsert</div>
+<pre><code class="language-python">if len(content) &lt;= chunk_size:
+    idempotency_probe_ids = [drawer_id]
+else:
+    last_chunk_idx = (len(content) - 1) // chunk_size
+    idempotency_probe_ids = [drawer_id, f"{drawer_id}_chunk_{last_chunk_idx:06d}"]
+try:
+    existing = col.get(ids=idempotency_probe_ids, include=[])
+    if existing.ids:
+        return {"success": True, "reason": "already_exists", "drawer_id": drawer_id}</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p><code>_fetch_all_metadata</code> paginates <code>col.get()</code> in 1000-row batches (line 621) because ChromaDB <em>silently truncates results at 10K rows without raising</em>. The warm metadata cache only applies when <code>where=None</code> (line 649) — filtered queries always paginate fresh to avoid returning a stale subset.</p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p>Agent diaries normalize <code>agent_name</code> to <code>.lower()</code> at write (line 1617) and read (line 1745) so <code>Claude</code>, <code>claude</code>, and <code>CLAUDE</code> all resolve to the same diary (issue #1243). This breaks pre-fix mixed-case entries unless repaired, but keeps future reads robust; filters apply on wing + <code>room='diary'</code> + agent (lines 1758–1760).</p>
+</div>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>tool_status</td><td>func</td><td><code>mcp_server.py:737</code></td><td>Palace overview: total drawers, wing/room breakdown, protocol version, AAAK spec, HNSW capacity probe result.</td></tr>
+    <tr><td>tool_search</td><td>func</td><td><code>mcp_server.py:877</code></td><td>Semantic + keyword search with wing/room filters, max_distance threshold, query sanitization, vector-disabled fallback.</td></tr>
+    <tr><td>tool_add_drawer</td><td>func</td><td><code>mcp_server.py:1105</code></td><td>File verbatim content with duplicate check, chunking for oversized content, idempotency probe, WAL logging.</td></tr>
+    <tr><td>tool_kg_query</td><td>func</td><td><code>mcp_server.py:1475</code></td><td>Query the knowledge graph for an entity's relationships (outgoing/incoming/both) with optional <code>as_of</code> temporal filter.</td></tr>
+    <tr><td>tool_diary_write</td><td>func</td><td><code>mcp_server.py:1604</code></td><td>Agent diary entry in AAAK format, optional topic/wing, timestamp-based id for append-only semantics.</td></tr>
+    <tr><td>tool_reconnect</td><td>func</td><td><code>mcp_server.py:1877</code></td><td>Force cache invalidation and ChromaDB/KG reconnect after external writes, clear the HNSW divergence flag.</td></tr>
+    <tr><td>_get_client</td><td>func</td><td><code>mcp_server.py:435</code></td><td>Return cached ChromaDB <code>PersistentClient</code> with inode/mtime staleness detection and HNSW capacity probe.</td></tr>
+    <tr><td>_call_kg</td><td>func</td><td><code>mcp_server.py:248</code></td><td>Wrap a KG operation with one-shot retry on <code>sqlite3.ProgrammingError</code> (closed database during reconnect).</td></tr>
+    <tr><td>handle_request</td><td>func</td><td><code>mcp_server.py:2447</code></td><td>JSON-RPC 2.0 dispatcher: routes initialize/ping/tools/list/tools/call, validates params, catches <code>TypeError</code> for arity errors.</td></tr>
+    <tr><td>_wal_log</td><td>func</td><td><code>mcp_server.py:412</code></td><td>Append a JSONL audit entry to <code>~/.mempalace/wal/write_log.jsonl</code> with operation, params (redacted), timestamp.</td></tr>
+    <tr><td>TOOLS</td><td>dict</td><td><code>mcp_server.py:1967</code></td><td>MCP protocol registry mapping tool names to <code>{description, input_schema, handler}</code> — 29 tools total.</td></tr>
+    <tr><td>_vector_disabled</td><td>const</td><td><code>mcp_server.py:342</code></td><td>Module flag set when <code>hnsw_capacity_status</code> detects divergence; gates vector search down to BM25-only fallback.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Write-ahead log (WAL) for all mutations</dt>
+  <dd>Provides an audit trail for detecting memory poisoning and enables review/rollback without touching the vector index. Content is redacted to avoid logging sensitive user data. Local-first storage means the log is operator-accessible and never auto-purged — the trust boundary is the user's machine. See <a href="security-privacy.html">Security &amp; Privacy</a>.</dd>
+  <dt>Retry-on-close instead of preventive locking</dt>
+  <dd>The <code>KnowledgeGraph</code> can close between <code>_get_kg()</code> and the <code>op(kg)</code> call during reconnect. A one-shot retry is simpler than RWLock + readers/writers semantics and preserves the contract that reconnect cleanly resets state without leaking handles. Spinning/hung loops are worse than a single clear failure.</dd>
+  <dt>Inode + mtime staleness detection over file watches</dt>
+  <dd>Stateless detection works across platforms (including Windows FAT), needs no background threads, and handles both full rebuilds (inode) and in-place modifications (mtime). It avoids filesystem-watch API complexity and platform-specific TOCTOU races, and is cheap (one stat syscall) before every chromadb touch.</dd>
+  <dt>Metadata cache with 5-second TTL over always-fresh</dt>
+  <dd>Metadata changes on every write, yet status/list_wings/list_rooms/get_taxonomy all read it. Always-fresh would require paginating 1000+ drawers on every read; a 5-second TTL balances freshness with latency, and the cache is invalidated immediately on writes (lines 1194, 1228, 1268, 1459, 1310).</dd>
+  <dt>Opt-in eager warmup instead of blocking main</dt>
+  <dd>Cold ONNX load (5–30s) plus HNSW segment load can exceed the MCP client timeout (issue #1495). Eager warmup pays both costs at startup but is opt-in via <code>MEMPALACE_EAGER_WARMUP</code> to preserve default startup latency — users with large existing palaces set the flag; fresh installs don't pay the cost.</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>Requests enter <code>main()</code> as JSON lines on stdin. <code>handle_request()</code> parses the JSON-RPC envelope, routes to the <code>TOOLS</code> dict, and invokes the handler with type-coerced arguments (integers, floats from the transport). Read tools query <code>_get_collection()</code>, which polls <code>_get_client()</code> for cache validity via inode/mtime, returning the cached ChromaDB collection with metadata filtered by wing/room. Writes log to the WAL, mutate via <code>col.upsert</code>/<code>delete</code>/<code>update</code>, then invalidate <code>_metadata_cache</code>. KG tools wrap mutations in <code>_call_kg(op)</code> with one-shot retry on close. Tunnel tools read/write <code>tunnels.json</code>. Diary tools append via <code>col.add</code> with <code>parent_entry_id</code> linkage for chunked reconstruction. All responses are serialized to JSON with <code>ensure_ascii=False</code> (literal UTF-8) and written to stdout with a flush. Transitive-dependency writes are redirected to stderr at startup, and <code>_restore_stdout()</code> restores the real fd 1 in <code>main()</code> before the loop. The vector path delegates to <a href="search.html">hybrid search</a> and pulls clients through <a href="backends.html">storage backends</a>.</p>
+
+<details class="collapsible">
+  <summary>Tool inventory &amp; counts</summary>
+  <p>29 tools total: Read (7) + Write (5) + KG (6) + Tunnels (6) + Diaries (2) + Settings (3). The KG tools cover add/query/invalidate/timeline with temporal (<code>as_of</code>) filtering; the Settings tools expose <code>hook_settings</code> and <code>memories_filed_away</code> for coordinating silent saves and diary writes via <a href="hooks.html">Claude Code hooks</a>. The metadata cache TTL is 5 seconds.</p>
+</details>
+
+<div class="related"><h2>See also</h2><div class="related-grid">
+  <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">The MCP tools expose wings/rooms/drawers/tunnels as read/write operations.</div></a>
+  <a class="related-card" href="knowledge-graph.html"><span class="rc-group">Retrieval</span><div class="rc-title">Temporal Knowledge Graph</div><div class="rc-desc">MCP tools wrap KG mutations (add/query/invalidate/timeline) with retry-on-close and temporal filtering.</div></a>
+  <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">tool_search delegates to search_memories with vector-disabled fallback and query sanitization.</div></a>
+  <a class="related-card" href="backends.html"><span class="rc-group">Retrieval</span><div class="rc-title">Storage Backends</div><div class="rc-desc">MCP tools pull the ChromaDB client via ChromaBackend with inode/mtime staleness detection and HNSW probing.</div></a>
+  <a class="related-card" href="hooks.html"><span class="rc-group">Interfaces</span><div class="rc-title">Hooks &amp; Auto-save</div><div class="rc-desc">MCP tools expose hook_settings and memories_filed_away to coordinate silent saves and diary writes.</div></a>
+  <a class="related-card" href="security-privacy.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Security &amp; Privacy</div><div class="rc-desc">WAL audit trail, content redaction, path sanitization, and stdio protection guard the JSON-RPC stream.</div></a>
+</div></div>

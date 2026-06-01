@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>System Architecture · MemPalace Wiki</title>
+  <meta name="description" content="MemPalace is a multi-layer AI memory system built on a pluggable storage backend (ChromaDB default) plus a SQLite knowledge graph. User data flows through miners into verbatim drawers, indexed by AAAK-compressed closets. The L0-L3 wake-up stack injects context on demand: identity plus essential story (~600-900 tokens), on-demand wing/room retrieval, and deep semantic search. Every component honors five non-negotiable principles: verbatim-always storage, append-only ingestion, local-first execution, background hooks, and privacy by architecture.">
+  <meta name="mp:slug" content="architecture">
+  <meta name="mp:group" content="Overview">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="System Architecture · MemPalace Wiki">
+  <meta property="og:description" content="MemPalace is a multi-layer AI memory system built on a pluggable storage backend (ChromaDB default) plus a SQLite knowledge graph. User data flows through miners into verbatim drawers, indexed by AAAK-compressed closets. The L0-L3 wake-up stack injects context on demand: identity plus essential story (~600-900 tokens), on-demand wing/room retrieval, and deep semantic search. Every component honors five non-negotiable principles: verbatim-always storage, append-only ingestion, local-first execution, background hooks, and privacy by architecture.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "System Architecture", "name": "System Architecture", "description": "MemPalace is a multi-layer AI memory system built on a pluggable storage backend (ChromaDB default) plus a SQLite knowledge graph. User data flows through miners into verbatim drawers, indexed by AAAK-compressed closets. The L0-L3 wake-up stack injects context on demand: identity plus essential story (~600-900 tokens), on-demand wing/room retrieval, and deep semantic search. Every component honors five non-negotiable principles: verbatim-always storage, append-only ingestion, local-first execution, background hooks, and privacy by architecture.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link active" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Overview</span><span class="sep">/</span><span>System Architecture</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Overview</div>
+  <h1>System Architecture</h1>
+  <p class="lead">The component map, the wake-up stack, and the non-negotiable design principles.</p>
+</header>
+
+<div class="summary">
+  MemPalace is a multi-layer AI memory system built on a pluggable storage backend (ChromaDB by default) plus a SQLite <a href="knowledge-graph.html">knowledge graph</a>. User data flows through three miners into <em>verbatim drawers</em>, indexed by AAAK-compressed <em>closets</em>. The L0&ndash;L3 wake-up stack injects context on demand: identity plus an essential story (~600&ndash;900 tokens), on-demand wing/room retrieval, and deep semantic search. Every component is shaped by five non-negotiable principles &mdash; verbatim-always storage, append-only ingestion, local-first execution, background hooks (zero chat interruption), and privacy by architecture (no external API required for core operations).
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+<p>
+  The system has three concerns: getting data <em>in</em> (ingestion), getting it <em>out</em> (search and the wake-up stack), and the substrate that holds it (the storage backend and knowledge graph). Each is built to honor the same invariants, so accuracy degrades gracefully rather than corrupting.
+</p>
+
+<h3>Ingestion pipeline: mine &rarr; store &rarr; index</h3>
+<p>
+  Three miners (<a href="mining-projects.html">projects</a>, <a href="mining-conversations.html">conversations</a>, and documents) scan source files, split content into verbatim chunks (drawers), detect <a href="entities.html">entities</a> and rooms/wings, and route each drawer to palace storage. For every drawer, the system builds <a href="aaak-dialect.html">AAAK-compressed closet pointers</a> (topic + entities + quotes) so semantic search can locate relevant drawers quickly. All writes are append-only: a re-mine locks the source file, deletes prior stale drawers, then inserts fresh ones &mdash; so a crash mid-cycle leaves the palace untouched.
+</p>
+<ul>
+  <li><code>miner.py</code> orchestrates: project files &rarr; wing/room routing &rarr; chunk &rarr; drawer storage.</li>
+  <li><code>palace.py</code> owns closet generation (<code>build_closet_lines</code>): entities, topics, and quotes extracted with <a href="i18n.html">i18n</a> support.</li>
+  <li>Drawers are stored in the <code>mempalace_drawers</code> collection; closets in <code>mempalace_closets</code> &mdash; a separate, queryable index.</li>
+</ul>
+
+<h3>Search: hybrid vector + BM25 ranking</h3>
+<p>
+  When a query arrives, <code>search_memories</code> runs a hybrid strategy: closets are scanned for weak semantic signals (a similarity boost), vector embeddings search the full drawers collection, and BM25 keyword matching re-ranks the candidates. If vector search is disabled, a BM25 fallback scans ChromaDB's SQLite FTS5 layer directly. Results are always verbatim drawer text with metadata (wing, room, source file, similarity) &mdash; no summaries, no paraphrasing. Wing/room filters narrow the candidate pool at query time. See <a href="search.html">Search &amp; Retrieval</a> for depth.
+</p>
+<ul>
+  <li>Closets are ranking <em>signals</em>, never gates &mdash; a weak closet can only help, never hide a drawer.</li>
+  <li>BM25 uses local corpus IDF, so terms that discriminate <em>within the result set</em> bubble up.</li>
+  <li>Distance thresholds (<code>max_distance</code>, <code>min_similarity</code>) let callers enforce quality floors.</li>
+</ul>
+
+<h3>Wake-up stack: L0 &rarr; L1 &rarr; L2 &rarr; L3</h3>
+<p>
+  On cold-start or conversation reset, the stack injects L0 (user identity from <code>~/.mempalace/identity.txt</code>) plus L1 (an auto-generated essential story from the highest-weight drawers). This costs ~600&ndash;900 tokens and leaves 95%+ of the context window free. When a topic (wing) or old conversation (room) surfaces, L2 loads on-demand filtered retrieval. For vague queries (&ldquo;remember when we discussed&hellip;&rdquo;), L3 runs deep semantic search across the full palace. Each layer loads on demand and never blocks the chat; <a href="hooks.html">background hooks</a> sync new memory asynchronously. The four <a href="architecture.html">layers</a> are the primary external interface.
+</p>
+<ul>
+  <li>L0 is user-written identity text; <code>Layer0</code> reads <code>~/.mempalace/identity.txt</code> once per wake-up.</li>
+  <li>L1 scores drawers by importance + recency, groups by room, and truncates to <code>MAX_CHARS</code> (3200).</li>
+  <li>L2 retrieves up to 10 drawers filtered by wing/room metadata; L3 runs the full semantic query.</li>
+</ul>
+
+<h3>Storage backend: pluggable RFC 001 interface</h3>
+<p>
+  The backend ABC (<code>backends/base.py</code>) defines the contract: <code>get_collection()</code> returns a collection handle, <code>query()</code> does semantic search, <code>get()</code> returns raw drawers, and <code>upsert()</code> writes with batching. <code>ChromaBackend</code> (the default reference implementation) wraps ChromaDB's <code>PersistentClient</code> with HNSW tuning, segment health checks, and Windows file-locking. Embeddings are computed <a href="llm-integration.html">locally</a> (Ollama, LM Studio, &hellip;) by default; external providers (Anthropic, OpenAI) are optional and BYOK-only. New <a href="backends.html">backends</a> subclass <code>BaseBackend</code> and implement the same collection interface.
+</p>
+<ul>
+  <li>RFC 001 defines typed results (<code>QueryResult</code>, <code>GetResult</code>) that replace Chroma's raw dict shape.</li>
+  <li><code>ChromaBackend</code> injects <code>_HNSW_BLOAT_GUARD</code> tuning at collection creation to prevent segfaults on large mines.</li>
+  <li>Lifecycle: open (lazy, on first access) &rarr; query/get/upsert &rarr; close (explicit or context exit).</li>
+</ul>
+
+<h3>Knowledge graph: temporal entity relationships</h3>
+<p>
+  A separate SQLite database (default <code>~/.mempalace/kg.db</code>) stores <code>(subject, predicate, object, valid_from, valid_to)</code> triples. The design is entity-first: people matter more than topics. When a drawer is filed, the KG can be seeded with facts (e.g. &ldquo;Alice is Bob's partner&rdquo;). Queries support temporal filtering &mdash; &ldquo;who was Alice's partner on 2025-01-15?&rdquo; returns only triples where <code>valid_from &le; date &le; valid_to</code>. Invalidation marks triples as ended without deletion, giving an append-only audit trail. See the <a href="knowledge-graph.html">Temporal Knowledge Graph</a> page.
+</p>
+<ul>
+  <li>Entity IDs are <code>SHA256(name)</code>, so queries are case-insensitive and collision-resistant.</li>
+  <li>Temporal format is <code>YYYY-MM-DD</code> or ISO UTC datetime; comparison is lexicographic in SQL.</li>
+  <li>Triples are immutable: facts are added, ended, or replaced &mdash; never mutated in place.</li>
+</ul>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Wing</dt>
+  <dd>A broad category (person, project, topic) that groups related memory. Drawers are organized under wings.</dd>
+  <dt>Room</dt>
+  <dd>A time- or topic-based grouping within a wing (a day, a session, a discussion thread). Drawers live in rooms.</dd>
+  <dt>Drawer</dt>
+  <dd>A single chunk of verbatim user content (never summarized or paraphrased). The atomic storage unit that is queried, ranked, and returned in search results.</dd>
+  <dt>Closet</dt>
+  <dd>A searchable index layer using AAAK compression. Stores topic pointers, entity names, and quote fragments &mdash; scanned by an LLM to identify relevant drawers without reading all content.</dd>
+  <dt>AAAK dialect</dt>
+  <dd>A lossy symbolic compression format (entities, topics, emotions, flags) that lets an LLM scan thousands of closet entries instantly and know exactly which drawer to open.</dd>
+  <dt>L0&ndash;L3 wake-up stack</dt>
+  <dd>Four memory layers: L0 (user identity), L1 (essential story auto-generated from the palace), L2 (on-demand wing/room retrieval), L3 (deep semantic search). L0+L1 inject ~600&ndash;900 tokens; L2/L3 add context on demand.</dd>
+  <dt>Backend</dt>
+  <dd>A pluggable storage interface (<code>base.py</code>). ChromaDB is the default reference implementation; custom backends subclass <code>BaseBackend</code> and <code>BaseCollection</code>.</dd>
+  <dt>Knowledge graph</dt>
+  <dd>A SQLite-backed temporal entity-relationship graph. Stores <code>(subject, predicate, object)</code> triples with <code>valid_from</code>/<code>valid_to</code> dates for entity-first reasoning.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<h3>Per-palace lock: non-blocking concurrency</h3>
+<p>
+  <code>mine_palace_lock</code> is keyed per palace (not global), so concurrent mines against the same palace can't corrupt the HNSW graph. It is non-blocking: if another mine holds the lock, it raises <code>MineAlreadyRunning</code> instead of waiting. It is re-entrant &mdash; the same thread can acquire it multiple times (e.g. <code>ChromaCollection.upsert</code> acquires internally). It is Windows-safe (uses <code>msvcrt.locking</code> on byte 0; Unix uses <code>fcntl.flock</code>), and the lock holder's identity is recorded in the file body for diagnostic messages.
+</p>
+<div class="code-caption">palace.py:589 · per-palace non-blocking lock with re-entrancy and holder identity</div>
+<pre><code class="language-python">@contextlib.contextmanager
+def mine_palace_lock(palace_path: str):
+    """Per-palace non-blocking lock around the full `mine` pipeline."""
+    lock_dir = os.path.join(os.path.expanduser("~"), ".mempalace", "locks")
+    os.makedirs(lock_dir, exist_ok=True)
+    resolved = os.path.realpath(os.path.expanduser(palace_path))
+    palace_key = hashlib.sha256(os.path.normcase(resolved).encode()).hexdigest()[:16]
+
+    if _held_by_this_thread(palace_key):
+        yield  # Re-entrant: same thread, same palace — pass through
+        return
+
+    try:
+        fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _write_lock_holder(lf)  # Record PID + argv for diagnostics
+        _mark_held(palace_key)
+        yield
+    finally:
+        _mark_released(palace_key)</code></pre>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha</div>
+  <p>Re-entrancy is tracked in a per-thread <code>threading.local()</code> set of lock keys (<code>palace.py:509</code>). When a process forks, that set is inherited, but a PID check clears stale state so children correctly re-acquire. This prevents self-deadlock when <code>miner.mine()</code> (holding the outer lock) calls <code>ChromaCollection.upsert()</code> (trying to acquire the same lock) from the same thread.</p>
+</div>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p>When a mine holds the lock, the lock file body records the PID and the first three argv entries &mdash; e.g. <code>PID 12345 mempalace mine ~/palace</code> (<code>palace.py:570</code>). A contending mine reads this identity and embeds it in the <code>MineAlreadyRunning</code> error, so users see exactly which process is blocking them instead of a generic &ldquo;locked&rdquo; message.</p>
+</div>
+
+<h3>Wake-up stack: lazy load + token budget</h3>
+<p>
+  <code>MemoryStack.wake_up()</code> returns L0 (identity) + L1 (essential story) in ~600&ndash;900 tokens. L1 generation is defensive: it scans up to <code>MAX_SCAN=2000</code> drawers, scores by importance metadata (with fallbacks to <code>emotional_weight</code> and <code>weight</code>), sorts, groups by room, and truncates to <code>MAX_CHARS=3200</code>. If the importance field is absent it defaults to <code>3.0</code>. Token estimates use <code>len(text)//4</code> (conservative; actual tokens may vary).
+</p>
+<div class="code-caption">layers.py:381 · wake-up stack — L0 + L1 injection</div>
+<pre><code class="language-python">def wake_up(self, wing: str = None) -&gt; str:
+    """
+    Generate wake-up text: L0 (identity) + L1 (essential story).
+    Typically ~600-900 tokens. Inject into system prompt or first message.
+    """
+    parts = []
+    # L0: Identity
+    parts.append(self.l0.render())
+    parts.append("")
+    # L1: Essential Story
+    if wing:
+        self.l1.wing = wing
+    parts.append(self.l1.generate())
+    return "\n".join(parts)</code></pre>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p><code>Layer1.generate()</code> tries four metadata keys in order &mdash; <code>importance</code>, <code>emotional_weight</code>, <code>weight</code> &mdash; defaulting to <code>3.0</code> if none are found (<code>layers.py:129</code>). This gives backward compatibility with older schemas and multiple naming conventions. With no importance field at all, every drawer is weighted equally and ranked only by fetch order.</p>
+</div>
+
+<h3>AAAK closet pointers: i18n-aware entity extraction</h3>
+<p>
+  <code>build_closet_lines()</code> extracts entities from drawer content using i18n-aware regex patterns (loaded from locale JSON via <code>entity_detector</code>). Entities must occur at least twice in the window. A stoplist filters common English filler (The, This, When) and COCA vocabulary words so fake entities don't pollute closets. The legacy format is <code>topic|entities|&rarr;drawer_ids</code>; the Tier&nbsp;6a format adds dates and line numbers as <code>topic|entities|YYYY-MM-DD:Lstart-Lend|&rarr;drawer_ids</code> when metadata is available.
+</p>
+<div class="code-caption">palace.py:241 · AAAK closet pointer generation (i18n-aware entity extraction)</div>
+<pre><code class="language-python">def build_closet_lines(source_file, drawer_ids, content, wing, room, drawer_metas=None):
+    """Build compact closet pointer lines from drawer content."""
+    drawer_ref = ",".join(drawer_ids[:3])
+    coca_filter = _get_coca_filter()          # Common English content words
+    words = _candidate_entity_words(window)   # i18n-aware patterns
+
+    # Entities must occur >=2 times
+    word_freq = {}
+    for w in words:
+        if w in _ENTITY_STOPLIST:             # Filter The, This, When, etc.
+            continue
+        if w.lower() in coca_filter:
+            continue
+        word_freq[w] = word_freq.get(w, 0) + 1
+
+    entities = sorted(
+        [w for w, c in word_freq.items() if c &gt;= 2],
+        key=lambda w: -word_freq[w],
+    )[:5]  # Top 5 entities</code></pre>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance</div>
+  <p>Closets pack greedily up to <code>CLOSET_CHAR_LIMIT=1500</code> chars, but lines are never split (<code>palace.py:149</code>). If a line would overflow the current closet, it flows to a new one (<code>_01</code>, <code>_02</code>, &hellip;). This keeps closet pointers grep-friendly and atomic, so an LLM can parse a single line without worrying about continuations.</p>
+</div>
+
+<h3>ChromaBackend: HNSW bloat guard</h3>
+<p>
+  New collections are created with <code>_HNSW_BLOAT_GUARD</code> tuning &mdash; <code>hnsw:batch_size=50_000</code> and <code>hnsw:sync_threshold=50_000</code> (<code>backends/chroma.py:101</code>). This defers persistence until a large batch completes, breaking the resize+persist feedback loop that caused <code>link_lists.bin</code> to balloon to hundreds of GB on large mines. It was empirically validated on a 39k-drawer rebuild: palace 376&nbsp;MB, <code>link_lists.bin</code> 0 bytes, and no segfault.
+</p>
+
+<h3>Hybrid search: BM25 + vector rerank</h3>
+<p>
+  <code>search_memories()</code> queries ChromaDB's vector API, gets candidate drawers, computes Okapi-BM25 scores locally over the candidate set's corpus IDF, then reranks. If vector search is disabled, it falls back to ChromaDB's SQLite FTS5 layer, scoring with BM25. Closets contribute an optional <code>closet_boost_weight</code> &mdash; never a gate &mdash; so weak closets can't hide strong BM25 matches.
+</p>
+<div class="code-caption">searcher.py:748 · search_memories — hybrid entry point</div>
+<pre><code class="language-python">def search_memories(
+    query: str,
+    palace_path: str,
+    wing: str = None,
+    room: str = None,
+    n_results: int = 5,
+    max_distance: float = 0.0,
+    vector_disabled: bool = False,
+    candidate_strategy: str = "vector",
+    collection_name: str = None,
+) -&gt; dict:
+    """Programmatic search — returns a dict instead of printing.
+
+    Used by the MCP server and other callers that need data.
+    """</code></pre>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p>BM25 IDF is computed over the <em>candidate set</em> returned by vector search, not the full palace (<code>searcher.py:75</code>). This is exactly right for reranking a small set: a term rare in the full palace but common among the candidates gets an inflated IDF, which is precisely what discriminates within those results. Applied to the full palace, the same math would be inaccurate.</p>
+</div>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>MemoryStack</td><td>class</td><td><code>layers.py:361</code></td><td>Unified interface to the 4-layer wake-up stack (L0 identity, L1 story, L2 on-demand, L3 deep search).</td></tr>
+    <tr><td>search_memories</td><td>function</td><td><code>searcher.py:748</code></td><td>Main entry point for hybrid semantic + BM25 search; returns ranked drawers with metadata.</td></tr>
+    <tr><td>get_collection</td><td>function</td><td><code>palace.py:61</code></td><td>Factory to fetch or create a collection (default <code>mempalace_drawers</code>) through the backend; lazy on first access.</td></tr>
+    <tr><td>build_closet_lines</td><td>function</td><td><code>palace.py:241</code></td><td>Generates AAAK closet pointer lines (topics, entities, quotes, dates) with i18n-aware extraction.</td></tr>
+    <tr><td>ChromaBackend</td><td>class</td><td><code>backends/chroma.py:30</code></td><td>Reference RFC 001 backend wrapping ChromaDB with HNSW tuning, segment health checks, Windows-safe locking.</td></tr>
+    <tr><td>KnowledgeGraph</td><td>class</td><td><code>knowledge_graph.py:129</code></td><td>SQLite temporal entity-relationship graph; stores/queries triples with <code>valid_from</code>/<code>valid_to</code>.</td></tr>
+    <tr><td>mine_palace_lock</td><td>function</td><td><code>palace.py:589</code></td><td>Per-palace non-blocking lock; re-entrant, with holder identity recording.</td></tr>
+    <tr><td>Layer0</td><td>class</td><td><code>layers.py:34</code></td><td>Reads user identity from <code>~/.mempalace/identity.txt</code>; ~100 tokens, always loaded in wake-up.</td></tr>
+    <tr><td>Layer1</td><td>class</td><td><code>layers.py:76</code></td><td>Auto-generates essential story from highest-weight drawers; ~500&ndash;800 tokens, grouped by room.</td></tr>
+    <tr><td>BaseBackend</td><td>class</td><td><code>backends/base.py:17</code></td><td>Abstract RFC 001 backend interface; subclass for custom storage (Weaviate, Pinecone, &hellip;).</td></tr>
+    <tr><td>file_already_mined</td><td>function</td><td><code>palace.py:714</code></td><td>Checks whether a file's drawers exist at the current <code>NORMALIZE_VERSION</code>; triggers silent upgrades.</td></tr>
+    <tr><td>NORMALIZE_VERSION</td><td>constant</td><td><code>palace.py:58</code></td><td>Schema version for drawer normalization; stale drawers are silently rebuilt on mismatch.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight</div>
+  <p>Drawer metadata carries a <code>normalize_version</code> field. When the schema changes (e.g. new noise-stripping rules in v2), stale drawers are detected by <code>file_already_mined()</code> and re-mined <em>silently</em> &mdash; no manual erase+rebuild. A missing version field defaults to 1, which forces a rebuild (<code>palace.py:58</code>).</p>
+</div>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Append-only writes with atomic delete+insert per file</dt>
+  <dd>Incremental-only principle (CLAUDE.md line 23): never destroy existing data to rebuild. Re-mines lock, delete stale drawers for that <code>source_file</code>, then insert fresh ones. A crash during delete leaves drawers with a stale <code>normalize_version</code> (re-mined later); a crash during insert leaves the old drawers intact. Either way, no palace corruption.</dd>
+  <dt>Closets as optional ranking boost, never as gates</dt>
+  <dd>100% recall is non-negotiable. Weak closets (regex-extracted from narrative content) must never hide drawers. Only BM25 + vector distance decide inclusion; closets add a boost weight. If entity extraction fails or closets are stale, search accuracy degrades gracefully.</dd>
+  <dt>L0+L1 wake-up automatic, L2+L3 on-demand</dt>
+  <dd>Performance budgets (CLAUDE.md line 26): hooks &lt;500ms, startup injection &lt;100ms. Inject minimal context (identity + essentials) automatically; load deeper context (wings, topics, searches) only when the user mentions them, leaving 95%+ of the context window free.</dd>
+  <dt>Local-first embedding + optional external LLM</dt>
+  <dd>Local-first, zero external API by default (CLAUDE.md line 25): embeddings run on Ollama/LM Studio on localhost. External providers (Anthropic, OpenAI, Google) are BYOK, never required, never silent. Code explicitly checks for configured providers before any fallback, so external APIs are never enabled by environmental surprise.</dd>
+  <dt>Per-palace locking, non-blocking, with identity recording</dt>
+  <dd>Concurrency safety without resource exhaustion. Per-palace (not global) allows parallel mines on different palaces; non-blocking prevents daemon pileup; identity recording lets users diagnose the holder; thread + PID tracking prevents self-deadlock when nested miners try to re-acquire.</dd>
+</dl>
+
+<div class="callout security">
+  <div class="callout-title">🔒 Security</div>
+  <p>The MCP server redirects stdout&rarr;stderr at both the Python and file-descriptor level <em>before</em> importing chromadb/onnxruntime (<code>mcp_server.py:22</code>), because those dependencies print banners and errors straight to stdout (sometimes at the C level), which would break Claude Desktop's JSON-RPC parser. The real stdout FD is saved and restored before the protocol loop so valid JSON-RPC goes to stdout and debug logs to stderr. See <a href="mcp-server.html">MCP Server &amp; Tools</a>.</p>
+</div>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Verbatim always</div>
+  <p>No summarization, paraphrasing, or lossy compression of drawer content. CLAUDE.md (line 22) is explicit: &ldquo;If a user said it, we store exactly what they said.&rdquo; This extends to whitespace, code formatting, and even Unicode surrogate pairs (handled by <code>strip_lone_surrogates</code> for Windows clipboard corruption). See <a href="surprises.html">Surprises &amp; Gotchas</a> and <a href="security-privacy.html">Security &amp; Privacy</a>.</p>
+</div>
+
+<h2>Data flow</h2>
+<p>
+  Data enters through three miners: <strong>project</strong> (code/docs), <strong>conversation</strong> (transcripts), and <strong>documents</strong> (binary office files). Each miner reads source files, splits them into verbatim chunks (drawers), detects wings/rooms and entities, and routes them to the palace. For each drawer, <code>palace.py</code> builds AAAK-compressed closet pointers (entities, topics, quotes, dates, line numbers). Drawers land in the <code>mempalace_drawers</code> collection; closets in <code>mempalace_closets</code>.
+</p>
+<p>
+  On search, <code>searcher.py</code> queries via the hybrid path (vector + BM25 rerank), optionally boosted by closet hits, returning verbatim drawer text. On context injection, <code>layers.py</code> generates L0 (identity from <code>~/.mempalace/identity.txt</code>) + L1 (top drawers by importance + recency). The <code>KnowledgeGraph</code> (SQLite) stores entity-relationship triples seeded from drawer facts, enabling entity-first temporal queries. All writes are append-only (lock, delete stale per <code>source_file</code>, insert fresh), and <a href="hooks.html">background hooks</a> sync new content invisibly.
+</p>
+<details class="collapsible">
+  <summary>The append-only crash matrix</summary>
+  <ul>
+    <li><strong>Crash during delete:</strong> old drawers still exist but may carry a stale <code>normalize_version</code> &mdash; <code>file_already_mined()</code> flags them for a later re-mine. No data lost.</li>
+    <li><strong>Crash during insert:</strong> the new drawers are missing, but the old ones remain queryable. No data lost.</li>
+    <li><strong>Concurrent mine:</strong> <code>mine_palace_lock</code> raises <code>MineAlreadyRunning</code> with the holder's PID+argv rather than waiting or corrupting the HNSW graph.</li>
+  </ul>
+</details>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">The Layers (L0&ndash;L3)</div><div class="rc-desc">The wake-up stack is the primary external interface, injected via MCP/CLI/hooks.</div></a>
+    <a class="related-card" href="palace-model.html"><span class="rc-group">Overview</span><div class="rc-title">The Palace Model</div><div class="rc-desc">Wings, rooms, drawers, and closets are the core data model every component operates on.</div></a>
+    <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Hybrid BM25 + vector search is the L3 retrieval mechanism; closets are ranking signals.</div></a>
+    <a class="related-card" href="mining-projects.html"><span class="rc-group">Ingestion</span><div class="rc-title">Project Mining</div><div class="rc-desc">The project miner is the primary ingestion path, feeding drawers into the architecture.</div></a>
+    <a class="related-card" href="knowledge-graph.html"><span class="rc-group">Retrieval</span><div class="rc-title">Temporal Knowledge Graph</div><div class="rc-desc">Entity-first design; the KG stores relationships extracted from drawers.</div></a>
+    <a class="related-card" href="security-privacy.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Security &amp; Privacy</div><div class="rc-desc">Local-first, zero external APIs, privacy by architecture &mdash; core to the design.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

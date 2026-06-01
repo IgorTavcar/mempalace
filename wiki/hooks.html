@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hooks &amp; Auto-save · MemPalace Wiki</title>
+  <meta name="description" content="The hooks system (Stop and PreCompact) auto-saves session transcripts to the palace in the background without blocking the chat window. The Stop hook fires every 15 human messages (configurable) to checkpoint the conversation; the PreCompact hook saves everything just before context compression. Both hooks mine the JSONL transcript directly into drawers, then optionally ingest project files and notify the AI via systemMessage (silent mode, default v3.3.0+) or block the AI to save via MCP tools (legacy). This design saves approximately USD 1 per session by eliminating token retransmission of diary blocks in the chat.">
+  <meta name="mp:slug" content="hooks">
+  <meta name="mp:group" content="Interfaces">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="Hooks &amp; Auto-save · MemPalace Wiki">
+  <meta property="og:description" content="The hooks system (Stop and PreCompact) auto-saves session transcripts to the palace in the background without blocking the chat window. The Stop hook fires every 15 human messages (configurable) to checkpoint the conversation; the PreCompact hook saves everything just before context compression. Both hooks mine the JSONL transcript directly into drawers, then optionally ingest project files and notify the AI via systemMessage (silent mode, default v3.3.0+) or block the AI to save via MCP tools (legacy). This design saves approximately USD 1 per session by eliminating token retransmission of diary blocks in the chat.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Hooks & Auto-save", "name": "Hooks & Auto-save", "description": "The hooks system (Stop and PreCompact) auto-saves session transcripts to the palace in the background without blocking the chat window. The Stop hook fires every 15 human messages (configurable) to checkpoint the conversation; the PreCompact hook saves everything just before context compression. Both hooks mine the JSONL transcript directly into drawers, then optionally ingest project files and notify the AI via systemMessage (silent mode, default v3.3.0+) or block the AI to save via MCP tools (legacy). This design saves approximately USD 1 per session by eliminating token retransmission of diary blocks in the chat.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link active" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Interfaces</span><span class="sep">/</span><span>Hooks &amp; Auto-save</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Interfaces</div>
+  <h1>Hooks &amp; Auto-save</h1>
+  <p class="lead">Background filing that keeps memory off the chat window and under budget.</p>
+</header>
+
+<div class="summary">
+  MemPalace ships two Claude Code hooks — <strong>Stop</strong> and <strong>PreCompact</strong> — that auto-save session transcripts into the palace without blocking the chat. The Stop hook checkpoints every 15 human messages; the PreCompact hook saves everything just before context compression. Both mine the JSONL transcript directly into drawers, then notify the AI via a tiny <code>systemMessage</code> (silent mode, default since v3.3.0) or, in legacy mode, block the AI to save via <a href="mcp-server.html">MCP tools</a>. By writing diary entries through a direct Python API call instead of asking the AI to retype them in chat, this design saves roughly USD 1 per session.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+<p>
+  Both hooks read a JSON event from stdin (containing <code>session_id</code>, <code>transcript_path</code>, and <code>stop_hook_active</code>), validate that the palace exists, then either mine in the background (Stop) or synchronously (PreCompact). The split is deliberate: Stop optimizes for latency, PreCompact optimizes for data safety. Hooks are wired through the <a href="cli.html">CLI dispatcher</a> and feed the <a href="mining-conversations.html">conversation miner</a>.
+</p>
+
+<h3>Stop hook: every N messages</h3>
+<p>
+  After each assistant response Claude Code fires the Stop hook. The hook counts <em>human</em> (non-command-message) entries in the JSONL transcript; if the count since the last save is <code>&gt;= SAVE_INTERVAL</code> (15, configurable) it triggers a checkpoint. It logs state, derives the project <a href="palace-model.html">wing</a> name from the transcript path, and spawns detached background mines for both the transcript (<em>convos</em> mode) and an optional <code>MEMPAL_DIR</code> (<em>projects</em> mode). Then it either saves a diary entry directly (silent mode) or returns <code>decision:&nbsp;block</code> to ask the AI to save manually (legacy mode).
+</p>
+<ul>
+  <li>Threshold-based: fires at 15, 30, 45&hellip; exchanges.</li>
+  <li>Counts only human (non-command-message) entries.</li>
+  <li>Derives wing from transcript <code>cwd</code> metadata first, falling back to path decoding.</li>
+  <li>Spawns background mines asynchronously via <code>_spawn_mine</code>; skips if the target is already running.</li>
+  <li>Silent mode (default): Python API save, zero chat-window cost. Legacy mode (opt-in): blocks the AI until manual save via MCP tools.</li>
+</ul>
+<p>
+  The <code>stop_hook_active</code> flag prevents infinite loops: when the AI tries to stop again after saving, the flag is already true and the hook lets it through.
+</p>
+
+<h3>PreCompact hook: emergency save before compression</h3>
+<p>
+  When the context window fills, Claude Code fires the PreCompact hook with the transcript path. Unlike Stop, it does not count messages or gate on a threshold — compaction always warrants capture — so it runs a <em>synchronous</em> (blocking) mine of the transcript and optional <code>MEMPAL_DIR</code>, then returns <code>{}</code> to allow compaction to proceed.
+</p>
+<ul>
+  <li>Synchronous mine: blocks the hook until complete.</li>
+  <li>Always runs (no threshold or gate).</li>
+  <li>60-second timeout per mine target.</li>
+  <li>Ensures the transcript is physically filed before the AI loses access to it.</li>
+</ul>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight — Stop runs async, PreCompact runs sync</div>
+  <p>
+    The Stop hook spawns mines via <code>_spawn_mine</code> (detached subprocess) and exits immediately to stay under the 500&nbsp;ms budget. The PreCompact hook uses <code>subprocess.run</code> and blocks until the mine completes. Stop optimizes latency; PreCompact optimizes safety — it must wait so the transcript is saved <em>before</em> compaction loses it. The same two events, opposite execution models. See <code>hooks_cli.py:472</code>.
+  </p>
+</div>
+
+<h3>Per-target PID deduplication</h3>
+<p>
+  Hook-spawned miners claim atomic PID slots in <code>~/.mempalace/hook_state/mine_pids/</code> to prevent concurrent mines of the same source (which would corrupt the HNSW index). The hook hashes the mine command (<code>dir + mode + wing</code>) into a slot filename, then tries to atomically create a PID file with <code>O_CREAT | O_EXCL</code>. If the file already exists and its PID is alive, the spawn is skipped; if the PID is dead, the slot is reclaimed via unlink-and-recreate. A stored timestamp enables stale-by-age detection (default 2 hours, <code>MEMPALACE_MINE_TIMEOUT_HOURS=0</code> disables it).
+</p>
+<ul>
+  <li>Hash digest of the mine command yields a unique slot per <code>(dir, mode, wing)</code>.</li>
+  <li>Atomic <code>O_CREAT | O_EXCL</code> prevents race conditions between simultaneous hook fires.</li>
+  <li>Stale detection by PID liveness or age (default 2 hours).</li>
+  <li>Child removes its own slot on exit via the <code>MEMPALACE_MINE_PID_FILE</code> env var.</li>
+  <li>Distinct targets run in parallel; the same target is deduped.</li>
+</ul>
+
+<h3>Silent mode vs. blocking (legacy)</h3>
+<p>
+  Silent mode (<code>hook_silent_save=True</code>, default since v3.3.0) calls <code>tool_diary_write</code> from the <a href="mcp-server.html">MCP server</a> directly as a Python function, then returns a <code>systemMessage</code> like <code>✦ N memories woven&hellip;</code> so the AI sees only a notification. Blocking mode (legacy) returns <code>{"decision": "block", "reason": &hellip;}</code> to ask the AI to save manually via <code>mempalace_diary_write</code> / <code>mempalace_add_drawer</code>; the AI stops and must save before proceeding. The config defaults to <code>True</code> to match the MISSION.md goal of removing noise from the chat window.
+</p>
+
+<div class="callout perf">
+  <div class="callout-title">⚡ Performance — ~USD 1/session saved</div>
+  <p>
+    Previous versions asked the AI to write diary entries in chat, costing roughly USD 1 per session in token retransmission. Silent mode saves directly via the Python API (<code>tool_diary_write</code>), so the AI never writes diary blocks in chat — the only output is a negligible <code>systemMessage</code> notification. This single change justifies the shift from blocking to silent mode (MISSION.md:30).
+  </p>
+</div>
+
+<h3>Detached subprocess lifecycle</h3>
+<p>
+  Hook-spawned mines detach fully from the harness via platform-specific mechanisms. On POSIX, <code>Popen</code> uses <code>start_new_session=True</code> so signals (SIGTERM, SIGINT) don't propagate from the hook to the child. On Windows it sets <code>creationflags</code> with <code>DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_BREAKAWAY_FROM_JOB</code> so the child doesn't inherit stdout/stderr handles and the parent can exit. The child redirects to <code>hook.log</code> and cleans up its own PID slot on exit via <code>_cleanup_mine_pid_file()</code>. The hook process exits immediately while mining continues in the background.
+</p>
+
+<h3>Configuration &amp; kill-switch</h3>
+<p>
+  Hooks respect the <code>hooks.auto_save</code> boolean (default <code>True</code>, read from <code>~/.mempalace/config.json</code> or env var <code>MEMPALACE_HOOKS_AUTO_SAVE</code>). When <code>auto_save=False</code> both hooks return <code>{}</code> immediately with no mining or side effects. The palace-root kill-switch (<code>_palace_root_exists()</code>) checks that <code>~/.mempalace</code> is a directory; if the user removes or clears it, all hooks short-circuit <em>before</em> any disk access — even before logging the short-circuit — preventing accidental recreation. This lets users disable MemPalace entirely without uninstalling the hook scripts. See <a href="security-privacy.html">Security &amp; Privacy</a> and <a href="maintenance.html">Maintenance</a>.
+</p>
+
+<h3>Shallow-path guard &amp; Python resolution</h3>
+<p>
+  Claude Code's harness may inherit a minimal PATH (e.g. <code>/usr/bin:/bin</code> on macOS GUI launch) lacking the user's venv, so hooks must resolve the correct interpreter themselves. <code>_mempalace_python()</code> resolves in priority order: (1) <code>MEMPALACE_PYTHON</code> env var, (2) venv under the package install path (<code>parents[3]/bin/python</code> for site-packages installs), (3) project-relative venv (<code>parents[1]/venv/bin/python</code> for editable installs), (4) <code>sys.executable</code> fallback. It checks <code>len(parents)</code> before indexing to avoid <code>IndexError</code> on shallow paths (Docker <code>/work</code>, <code>/opt/app</code>), per PR #1580 review. Shell hooks (<code>mempal_save_hook.sh</code>) use the same resolution and pass <code>MEMPALACE_PYTHON</code> into the subprocess env.
+</p>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Stop Hook</dt>
+  <dd>Claude Code event fired after each assistant response; counts human messages in the transcript and triggers auto-save when a threshold (<code>SAVE_INTERVAL=15</code>) is reached.</dd>
+  <dt>PreCompact Hook</dt>
+  <dd>Claude Code event fired right before context compression; always runs a synchronous mine to capture transcript data before the AI loses detailed context.</dd>
+  <dt>Silent Mode</dt>
+  <dd>Default (v3.3.0+) hook behavior: saves directly via the Python API without returning <code>decision:block</code>; the AI sees only a <code>systemMessage</code> notification, with zero chat-window interruption.</dd>
+  <dt>Detached Subprocess</dt>
+  <dd>Hook-spawned mines run as fully detached processes using POSIX <code>start_new_session</code> or Windows process groups, so the hook exits immediately while background work continues.</dd>
+  <dt>Per-target PID Guard</dt>
+  <dd>Atomic slot-based deduplication in <code>~/.mempalace/hook_state/mine_pids/</code>: prevents concurrent mines of the same target via <code>O_CREAT|O_EXCL</code> and per-target hash digests; stale PIDs are detected by age.</dd>
+  <dt>Palace Root Kill-switch</dt>
+  <dd>If <code>~/.mempalace/</code> is removed or is not a directory, all hook side effects (mining, logging, state creation) short-circuit immediately without disk access.</dd>
+  <dt>auto_save Config</dt>
+  <dd>Boolean setting (default <code>True</code>, <code>hooks.auto_save</code>) that gates all Stop and PreCompact hook functionality; when <code>False</code>, hooks pass through silently.</dd>
+  <dt>Wing Derivation</dt>
+  <dd>Hooks infer the project wing name from the JSONL transcript using: (1) <code>cwd</code> metadata, (2) encoded <code>.claude/projects/</code> path decoding, (3) legacy <code>-Projects-</code> segment, or (4) default <code>wing_sessions</code>.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  <strong>Detached subprocess creation.</strong> A single helper produces the <code>Popen</code> kwargs that fully detach a child so the hook can exit, branching on <code>os.name</code> for Windows vs. POSIX (<code>hooks_cli.py:27</code>):
+</p>
+<div class="code-caption">hooks_cli.py:27 · detached Popen kwargs (POSIX / Windows)</div>
+<pre><code class="language-python">def _detached_popen_kwargs() -&gt; dict:
+    """Kwargs that fully detach a Popen child so the hook process can exit."""
+    kwargs: dict = {"stdin": subprocess.DEVNULL, "close_fds": True}
+    if os.name == "nt":
+        flags = 0
+        for name in ("DETACHED_PROCESS", "CREATE_NEW_PROCESS_GROUP", "CREATE_BREAKAWAY_FROM_JOB"):
+            flags |= getattr(subprocess, name, 0)
+        if flags:
+            kwargs["creationflags"] = flags
+    else:
+        kwargs["start_new_session"] = True
+    return kwargs</code></pre>
+
+<p>
+  <strong>Atomic PID slot claim.</strong> <code>_create_mine_slot_with_placeholder</code> reserves a per-target slot with <code>os.open(..., O_CREAT | O_EXCL | O_WRONLY, 0o600)</code>, recording PID and creation timestamp. The caller, <code>_claim_mine_slot</code>, falls back to stale-reclaim logic when the slot already exists (<code>hooks_cli.py:433</code>):
+</p>
+<div class="code-caption">hooks_cli.py:433 · atomic PID slot claim with stale reclaim</div>
+<pre><code class="language-python">def _claim_mine_slot(cmd: list[str]) -&gt; Optional[Path]:
+    """Atomically reserve the per-target PID slot for ``cmd``.
+    Returns the slot path on success, or ``None`` if already running."""
+    pid_file = _pid_file_for_cmd(cmd)
+    pid_file.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        return _create_mine_slot_with_placeholder(pid_file)
+    except FileExistsError:
+        pass
+    if _mine_already_running(cmd):
+        return None
+    try:
+        pid_file.unlink()
+    except FileNotFoundError:
+        pass
+    try:
+        return _create_mine_slot_with_placeholder(pid_file)
+    except FileExistsError:
+        return None</code></pre>
+
+<p>
+  <strong>Palace-root kill-switch.</strong> Every entrypoint (<code>hook_stop</code>, <code>hook_session_start</code>, <code>hook_precompact</code>) calls this first; <code>is_dir()</code> (not <code>exists()</code>) treats a stray file or broken symlink as absent (<code>hooks_cli.py:48</code>):
+</p>
+<div class="code-caption">hooks_cli.py:48 · user-removable kill-switch</div>
+<pre><code class="language-python">def _palace_root_exists() -&gt; bool:
+    """User-removable kill-switch.
+    If ~/.mempalace/ does not exist, the user has explicitly cleared it.
+    All hook side effects must respect this and short-circuit BEFORE touching disk."""
+    return PALACE_ROOT.is_dir()</code></pre>
+
+<p>
+  <strong>Silent-mode save.</strong> When silent mode is active, the hook writes the diary entry through a direct Python call and only emits a <code>systemMessage</code> when something was actually saved (<code>hooks_cli.py:942</code>):
+</p>
+<div class="code-caption">hooks_cli.py:942 · silent save via Python API (no MCP roundtrip)</div>
+<pre><code class="language-python">result = {"count": 0}
+if transcript_path:
+    result = _save_diary_direct(
+        transcript_path, session_id, wing=project_wing, toast=toast
+    )
+    _ingest_transcript(transcript_path)
+_maybe_auto_ingest()
+count = result.get("count", 0)
+if count &gt; 0:
+    themes = result.get("themes", [])
+    _output({"systemMessage": f"✦ {count} memories woven into the palace..."})</code></pre>
+
+<p>
+  Under the hood, <code>_save_diary_direct</code> (<code>hooks_cli.py:649</code>) imports <code>mcp_server.tool_diary_write</code>, extracts the last 30 user messages, infers themes via <code>_extract_themes</code> (<code>hooks_cli.py:632</code>, top 3 by frequency after a 300-word English stopword filter), and writes a compressed checkpoint entry (<code>CHECKPOINT:date|session:X|msgs:N|recent:&hellip;</code>). The themes are appended to the <code>systemMessage</code> to hint the AI about what was saved.
+</p>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha — Windows can't use os.kill(pid, 0)</div>
+  <p>
+    On POSIX, liveness is checked with <code>os.kill(pid, 0)</code>. On Windows, <code>os.kill</code> with a signal maps to <code>TerminateProcess</code> — it would <em>kill</em> the process. The code uses <code>ctypes</code> to call <code>GetExitCodeProcess</code> instead, returning <code>False</code> (dead) if the handle is invalid. This cross-platform difference is buried in a utility function (<code>hooks_cli.py:342</code>) but is critical for correctness.
+  </p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">⚠️ Gotcha — macOS bash 3.2 has no mapfile</div>
+  <p>
+    macOS ships bash 3.2.57 (Apple's 2006 GPLv3 cutoff), which lacks <code>mapfile</code>/<code>readarray</code> (bash 4.0+). The shell hook parses Python output with portable <code>sed -n 'Np'</code> instead. Without this, every parsed value would fall back to its default on macOS and hooks would silently produce zero saves (issue #1440). See <code>mempal_save_hook.sh:118</code>.
+  </p>
+</div>
+
+<details class="collapsible">
+  <summary>Shell-hook parsing &amp; defense-in-depth</summary>
+  <p>
+    The shell hook (<code>mempal_save_hook.sh:150</code>) parses JSON via inline Python, emitting a <code>__MEMPAL_PARSE_OK__</code> sentinel followed by sanitized values, one per line. Shell reads the sentinel via <code>sed -n '1p'</code> to distinguish "Python failed" from "parsing succeeded but the value is empty." Hardening includes <code>umask 077</code> on the stderr redirect, <code>printf '%s'</code> instead of <code>echo</code>, and a 4&nbsp;KB cap on the error log.
+  </p>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>hook_stop</td><td>func</td><td><code>hooks_cli.py:877</code></td><td>Main Stop hook handler: counts messages, checks threshold, spawns mines or saves directly, handles silent vs. blocking modes.</td></tr>
+    <tr><td>hook_precompact</td><td>func</td><td><code>hooks_cli.py:1002</code></td><td>PreCompact handler: runs a synchronous mine before compression, always saving without a threshold gate.</td></tr>
+    <tr><td>_spawn_mine</td><td>func</td><td><code>hooks_cli.py:472</code></td><td>Spawns a detached background subprocess for mining after atomically claiming a per-target PID slot.</td></tr>
+    <tr><td>_mine_already_running</td><td>func</td><td><code>hooks_cli.py:366</code></td><td>Checks whether a previous mine for the same target is still alive (PID liveness or age) to prevent concurrent miners.</td></tr>
+    <tr><td>_claim_mine_slot</td><td>func</td><td><code>hooks_cli.py:433</code></td><td>Atomically reserves a per-target PID file via <code>O_CREAT|O_EXCL</code> with stale-reclaim logic.</td></tr>
+    <tr><td>_save_diary_direct</td><td>func</td><td><code>hooks_cli.py:649</code></td><td>Silent-mode save: calls <code>mcp_server.tool_diary_write</code> directly to write a checkpoint entry without an MCP roundtrip.</td></tr>
+    <tr><td>_wing_from_transcript_path</td><td>func</td><td><code>hooks_cli.py:812</code></td><td>Derives the wing name: <code>cwd</code> metadata &rarr; path decoding &rarr; fallback to <code>wing_sessions</code>.</td></tr>
+    <tr><td>_detached_popen_kwargs</td><td>func</td><td><code>hooks_cli.py:27</code></td><td>Returns <code>Popen</code> kwargs for fully detached children (POSIX <code>start_new_session</code>, Windows <code>creationflags</code>).</td></tr>
+    <tr><td>_palace_root_exists</td><td>func</td><td><code>hooks_cli.py:48</code></td><td>User-removable kill-switch: returns <code>False</code> if <code>~/.mempalace</code> is missing or not a directory.</td></tr>
+    <tr><td>SAVE_INTERVAL</td><td>const</td><td><code>hooks_cli.py:22</code></td><td>Human-message threshold for triggering a Stop hook save (default 15, configurable).</td></tr>
+    <tr><td>MempalaceConfig.hooks_auto_save</td><td>property</td><td><code>config.py:340</code></td><td>Boolean config (default <code>True</code>) that gates all Stop and PreCompact hook functionality.</td></tr>
+    <tr><td>MempalaceConfig.hook_silent_save</td><td>property</td><td><code>config.py:590</code></td><td>Boolean config (default <code>True</code>) switching between silent-mode (Python API) and legacy blocking-mode (MCP tools).</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>Background detached subprocess vs. inline synchronous mining</dt>
+  <dd>Hooks must return to Claude Code within 500&nbsp;ms. Spawning a detached subprocess lets the hook exit immediately while mining continues. PreCompact is the exception — it mines synchronously because compaction must wait for the transcript to be saved. The split respects both latency and data safety.</dd>
+  <dt>Silent mode (Python API) as default, blocking mode (MCP) as legacy</dt>
+  <dd>Per the MISSION.md goal of removing chat-window noise and eliminating token retransmission, silent mode saves via a direct Python call at zero token cost. Blocking mode asks the AI to save via <a href="mcp-server.html">MCP tools</a> but costs tokens and interrupts flow, so it is opt-in for backward compatibility.</dd>
+  <dt>Per-target PID slots instead of a global mine.pid</dt>
+  <dd>Different targets (dirs, modes, wings) must run in parallel; a single global file would either block unrelated targets or allow concurrent miners of the same target — corrupting the HNSW index. Per-target slots, claimed via atomic <code>O_CREAT|O_EXCL</code>, give parallelism across targets and deduplication within a target.</dd>
+  <dt>Palace-root kill-switch (empty ~/.mempalace check)</dt>
+  <dd>Removing <code>~/.mempalace</code> is the user-visible way to disable MemPalace without uninstalling hooks. The check runs before any side effect — even logging — so the absence signal itself is never recorded, fully respecting user intent.</dd>
+  <dt>Wing derivation: cwd metadata &rarr; path decoding &rarr; fallback</dt>
+  <dd>Wing names aren't provided by the harness, so they're inferred from the transcript. <code>cwd</code> metadata is the most reliable source; path decoding is a heuristic fallback for transcripts outside <code>.claude/projects</code>; <code>wing_sessions</code> is the last resort. This hierarchy prioritizes correctness and avoids silent misclassification.</dd>
+</dl>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight — safe defaults on a broken config</div>
+  <p>
+    If <code>hook_silent_save</code> is unreadable (missing, corrupted, or raises <code>AttributeError</code>), the code defaults to <code>True</code> — silent mode — rather than blocking (<code>hooks_cli.py:900</code>). A broken config saves in the background instead of trapping the user in an infinite block loop or losing data. Likewise, wing derivation reads <code>cwd</code> metadata first because Claude Code records the working directory on most message types (<code>hooks_cli.py:839</code>), making it the most reliable signal.
+  </p>
+</div>
+
+<h2>Data flow</h2>
+<p>
+  User sends a message &rarr; Claude Code fires the <strong>Stop</strong> hook (or <strong>PreCompact</strong>) &rarr; <code>hook_stop()</code> / <code>hook_precompact()</code> reads stdin JSON (<code>session_id</code>, <code>transcript_path</code>, <code>stop_hook_active</code>) &rarr; the hook validates that the palace root exists and checks <code>hooks_auto_save</code> &rarr; it counts human messages via <code>_count_human_messages</code> &rarr; if the count <code>&gt;= SAVE_INTERVAL</code> (or always, for PreCompact) it derives the wing via <code>_wing_from_transcript_path</code> &rarr; it claims an atomic PID slot and spawns a detached subprocess via <code>_spawn_mine</code> (or, for PreCompact, runs the mine synchronously with <code>subprocess.run</code>) &rarr; the mine ingests the transcript (<em>convos</em> mode) and optional <code>MEMPAL_DIR</code> (<em>projects</em> mode) into palace drawers.
+</p>
+<p>
+  In silent mode the hook then calls <code>_save_diary_direct</code> &rarr; <code>mcp_server.tool_diary_write</code> &rarr; a diary entry is written to the wing &rarr; the hook returns <code>{systemMessage: "✦ N memories…"}</code>. In blocking mode it returns <code>{decision: block, reason: …}</code> &rarr; the AI saves via MCP tools &rarr; the AI retries Stop &rarr; <code>stop_hook_active=true</code> lets it through &rarr; data persists in drawers and diary. For PreCompact the transcript is filed before compaction proceeds. Logs land in <code>~/.mempalace/hook_state/hook.log</code> and PID slots in the <code>mine_pids/</code> subdirectory. See the full <a href="architecture.html">architecture</a> and <a href="mining-conversations.html">conversation mining</a> for the downstream stages.
+</p>
+
+<table class="data">
+  <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Hook timeout (harness)</td><td>30s</td></tr>
+    <tr><td>Mine subprocess timeout</td><td>60s (configurable)</td></tr>
+    <tr><td>Stop hook threshold</td><td>15 human messages (<code>SAVE_INTERVAL</code>)</td></tr>
+    <tr><td>Theme extraction</td><td>top 3 from last 30 messages</td></tr>
+    <tr><td>Token cost (silent mode)</td><td>~USD 0 (vs ~USD 1 legacy mode)</td></tr>
+  </tbody>
+</table>
+
+<div class="callout insight">
+  <div class="callout-title">💡 Insight — 30s harness limit, 60s+ mine</div>
+  <p>
+    The hook command timeout in <code>.claude/settings.local.json</code> is 30 seconds (the harness kills the hook past that). But the mine subprocess can run 60+ seconds (<code>timeout=60</code> in the PreCompact <code>subprocess.run</code>, or unlimited when <code>MEMPALACE_MINE_TIMEOUT_HOURS &gt; 0.05</code>). The Stop hook spawns the mine and exits; the mine runs independently in the background. This keeps hook latency under the 500&nbsp;ms budget while still allowing substantive work (hooks/README.md:30).
+  </p>
+</div>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">Where hooks sit in the harness-to-palace pipeline.</div></a>
+    <a class="related-card" href="mining-conversations.html"><span class="rc-group">Ingestion</span><div class="rc-title">Conversation Mining</div><div class="rc-desc">The miner both hooks invoke to ingest transcripts.</div></a>
+    <a class="related-card" href="mcp-server.html"><span class="rc-group">Interfaces</span><div class="rc-title">MCP Server &amp; Tools</div><div class="rc-desc">Silent mode calls <code>tool_diary_write</code> directly; blocking mode uses the MCP tools.</div></a>
+    <a class="related-card" href="cli.html"><span class="rc-group">Interfaces</span><div class="rc-title">CLI &amp; Onboarding</div><div class="rc-desc">The dispatcher (<code>cmd_hook</code>) that routes hook events.</div></a>
+    <a class="related-card" href="maintenance.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Repair, Sync &amp; Maintenance</div><div class="rc-desc">Hook logs and PID slots live in <code>hook_state/</code>; stale-slot cleanup.</div></a>
+    <a class="related-card" href="security-privacy.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Security &amp; Privacy</div><div class="rc-desc">The kill-switch and the local-only guarantee that hooks honor.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

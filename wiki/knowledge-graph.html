@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temporal Knowledge Graph · MemPalace Wiki</title>
+  <meta name="description" content="The Temporal Knowledge Graph stores structured facts as subject→predicate→object triples with optional valid_from/valid_to timestamps, enabling queries at specific points in time. Built on SQLite with thread-safe WAL mode and no external dependencies, it complements vector search by providing deterministic relationship queries (&quot;Who was Alice&#x27;s employer in 2023?&quot;) and serves as ground truth for fact-checking and entity disambiguation.">
+  <meta name="mp:slug" content="knowledge-graph">
+  <meta name="mp:group" content="Retrieval">
+  <meta name="generator" content="mempalace-wiki">
+  <meta property="og:title" content="Temporal Knowledge Graph · MemPalace Wiki">
+  <meta property="og:description" content="The Temporal Knowledge Graph stores structured facts as subject→predicate→object triples with optional valid_from/valid_to timestamps, enabling queries at specific points in time. Built on SQLite with thread-safe WAL mode and no external dependencies, it complements vector search by providing deterministic relationship queries (&quot;Who was Alice&#x27;s employer in 2023?&quot;) and serves as ground truth for fact-checking and entity disambiguation.">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Temporal Knowledge Graph", "name": "Temporal Knowledge Graph", "description": "The Temporal Knowledge Graph stores structured facts as subject\u2192predicate\u2192object triples with optional valid_from/valid_to timestamps, enabling queries at specific points in time. Built on SQLite with thread-safe WAL mode and no external dependencies, it complements vector search by providing deterministic relationship queries (\"Who was Alice's employer in 2023?\") and serves as ground truth for fact-checking and entity disambiguation.", "about": "MemPalace \u2014 local-first AI memory", "isPartOf": {"@type": "Collection", "name": "MemPalace Codebase Wiki"}, "inLanguage": "en", "version": "3.3.6"}</script>
+</head>
+<body class="with-sidebar">
+  <div class="scrim"></div>
+  <header class="topbar">
+    <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <a class="brand" href="index.html" style="border:none;padding:0"><span class="logo">🏛️</span> MemPalace</a>
+    <button class="theme-toggle" type="button" title="Toggle theme" style="margin-left:auto">◐</button>
+    <button class="theme-toggle" data-search-open type="button" title="Search" style="margin-left:8px">🔍</button>
+  </header>
+  <aside class="sidebar">
+<a class="brand" href="index.html"><span class="logo">🏛️</span><span>MemPalace<small>Codebase Wiki</small></span></a>
+<button class="search-trigger" data-search-open type="button"><span>🔍 Search…</span><span class="st-key"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+<nav>
+<div class="nav-group"><div class="nav-group-title">Overview</div>
+<a class="nav-link" href="index.html"><span class="ic">🏛️</span><span>Overview</span></a>
+<a class="nav-link" href="architecture.html"><span class="ic">🗺️</span><span>System Architecture</span></a>
+<a class="nav-link" href="palace-model.html"><span class="ic">🧭</span><span>The Palace Model</span></a>
+<a class="nav-link" href="glossary.html"><span class="ic">📖</span><span>Glossary</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Ingestion</div>
+<a class="nav-link" href="mining-projects.html"><span class="ic">⛏️</span><span>Project Mining</span></a>
+<a class="nav-link" href="mining-conversations.html"><span class="ic">💬</span><span>Conversation Mining</span></a>
+<a class="nav-link" href="entities.html"><span class="ic">🧩</span><span>Entity System</span></a>
+<a class="nav-link" href="aaak-dialect.html"><span class="ic">🔡</span><span>AAAK Dialect &amp; Closets</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Retrieval</div>
+<a class="nav-link" href="search.html"><span class="ic">🔍</span><span>Search &amp; Retrieval</span></a>
+<a class="nav-link active" href="knowledge-graph.html"><span class="ic">🕸️</span><span>Temporal Knowledge Graph</span></a>
+<a class="nav-link" href="backends.html"><span class="ic">🗄️</span><span>Storage Backends</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Interfaces</div>
+<a class="nav-link" href="cli.html"><span class="ic">⌨️</span><span>CLI &amp; Onboarding</span></a>
+<a class="nav-link" href="mcp-server.html"><span class="ic">🔌</span><span>MCP Server &amp; Tools</span></a>
+<a class="nav-link" href="hooks.html"><span class="ic">🪝</span><span>Hooks &amp; Auto-save</span></a>
+</div>
+<div class="nav-group"><div class="nav-group-title">Cross-cutting</div>
+<a class="nav-link" href="llm-integration.html"><span class="ic">🤖</span><span>LLM Integration</span></a>
+<a class="nav-link" href="i18n.html"><span class="ic">🌐</span><span>Internationalization</span></a>
+<a class="nav-link" href="security-privacy.html"><span class="ic">🔒</span><span>Security &amp; Privacy</span></a>
+<a class="nav-link" href="maintenance.html"><span class="ic">🔧</span><span>Repair, Sync &amp; Maintenance</span></a>
+<a class="nav-link" href="benchmarks.html"><span class="ic">📊</span><span>Benchmarks</span></a>
+<a class="nav-link" href="surprises.html"><span class="ic">✨</span><span>Surprises &amp; Gotchas</span></a>
+</div>
+</nav>
+<div style="margin-top:18px;padding:10px;border-top:1px solid var(--border)"><button class="theme-toggle" type="button" title="Toggle theme">◐ theme</button></div>
+</aside>
+  <div class="content">
+    <div class="content-inner">
+      <nav class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span>Retrieval</span><span class="sep">/</span><span>Temporal Knowledge Graph</span></nav>
+      <main>
+<header class="page-head">
+  <div class="page-kicker">Retrieval</div>
+  <h1>Temporal Knowledge Graph</h1>
+  <p class="lead">Entity&rarr;predicate&rarr;entity facts with validity windows, stored in local SQLite and queryable by time.</p>
+</header>
+
+<div class="summary">
+  The Temporal Knowledge Graph stores structured facts as subject&rarr;predicate&rarr;object triples with optional <code>valid_from</code>/<code>valid_to</code> timestamps, so you can ask what was true at a specific instant. It is built on a single local SQLite database with thread-safe WAL mode and zero external dependencies. It complements <a href="search.html">vector search</a> by answering deterministic relationship queries (&ldquo;Who was Alice&rsquo;s employer in 2023?&rdquo;) and acts as ground truth for fact-checking and <a href="entities.html">entity disambiguation</a>.
+</div>
+
+<div id="toc"></div>
+
+<h2>How it works</h2>
+
+<h3>Storage: SQLite with WAL and thread safety</h3>
+<p>
+  The KG lives in a single local SQLite database at <code>~/.mempalace/knowledge_graph.sqlite3</code> with Write-Ahead Logging enabled for durability and concurrent reads. A <code>threading.Lock</code> guards every database operation; the connection uses <code>check_same_thread=False</code> and a 10-second busy timeout to tolerate contention. Each <code>KnowledgeGraph</code> instance is a singleton per palace path, cached in <code>mcp_server._kg_by_path</code> so there is a single writer and consistent reads. The schema holds two tables:
+</p>
+<ul>
+  <li><strong>entities</strong> &mdash; <code>id</code>, <code>name</code>, <code>type</code>, <code>properties</code> (JSON).</li>
+  <li><strong>triples</strong> &mdash; <code>subject</code>, <code>predicate</code>, <code>object</code>, <code>valid_from</code>, <code>valid_to</code>, <code>confidence</code>, and provenance fields, with indexes on subject, object, predicate, and the temporal columns.</li>
+</ul>
+
+<h3>Temporal normalization: legacy date-only and canonical UTC</h3>
+<p>
+  The KG accepts both <code>YYYY-MM-DD</code> (legacy) and <code>YYYY-MM-DDTHH:MM:SSZ</code> (canonical) formats for temporal values. To make lexicographic string comparison correct, date-only values are normalized at query time: <code>valid_from='2026-01-01'</code> becomes <code>'2026-01-01T00:00:00Z'</code>, while <code>valid_to='2026-01-01'</code> becomes <code>'2026-01-01T23:59:59Z'</code>. This happens via SQL <code>CASE</code> expressions (<code>_sql_temporal_start_expr</code>, <code>_sql_temporal_end_expr</code>) so a query like <code>as_of=2026-01-15T10:30:00Z</code> still matches facts stored as date-only. <code>_temporal_filter_sql</code> assembles the WHERE clause: <code>(valid_from IS NULL OR start_expr &lt;= as_of) AND (valid_to IS NULL OR end_expr &gt;= as_of)</code>.
+</p>
+
+<div class="callout insight">
+  <div class="callout-title">&#128161; Insight</div>
+  <p>Date-only facts are interpreted as full-day intervals at query time. A legacy <code>valid_from='2026-01-01'</code> opens at <code>T00:00:00Z</code> and <code>valid_to='2026-01-01'</code> closes at <code>T23:59:59Z</code>, so a date is treated as a 24-hour window rather than a single point. This lets canonical UTC <code>as_of</code> queries match older date-only triples without a migration. See <code>knowledge_graph.py:56</code>.</p>
+</div>
+
+<h3>Add, query, and invalidate operations</h3>
+<p>
+  Adding a triple (<code>add_triple</code>) auto-creates missing entity nodes, normalizes the predicate, generates a unique <code>triple_id</code> from a hash of <code>valid_from</code> and the current timestamp, and validates that <code>valid_to &gt;= valid_from</code> (raising <code>ValueError</code> on an inverted interval). Query operations (<code>query_entity</code>, <code>query_relationship</code>, <code>timeline</code>) apply a temporal filter when an <code>as_of</code> parameter is given, returning a list of dicts with <code>direction</code>, <code>predicate</code>, the counterparty, and a <code>current</code> flag (true when <code>valid_to</code> is NULL). Invalidating a fact (<code>invalidate</code>) finds all open triples matching the subject/predicate/object and sets their <code>valid_to</code> to the given <code>ended</code> date (defaulting to <code>date.today()</code>). All mutations run inside <code>with conn:</code> transactions for atomicity.
+</p>
+
+<h3>Graph traversal directions</h3>
+<p>
+  <code>query_entity</code> supports three directions: <strong>outgoing</strong> returns facts where the entity is the subject (entity&rarr;?), <strong>incoming</strong> returns facts where the entity is the object (?&rarr;entity), and <strong>both</strong> combines them. The implementation runs two separate SQL queries with a <code>LEFT JOIN</code> to entity names, one per direction, and includes the counterparty&rsquo;s name (<code>obj_name</code> or <code>sub_name</code>) so the full relationship context is preserved for traversal.
+</p>
+
+<h3>Integration with fact-checking and disambiguation</h3>
+<p>
+  The KG is the ground truth for <code>fact_checker.py</code>, which detects contradictions (<code>relationship_mismatch</code>, <code>stale_fact</code>) and name confusions (<code>similar_name</code>) by comparing incoming text against stored facts. <code>seed_from_entity_facts</code> bootstraps the graph from hand-curated <code>ENTITY_FACTS</code> (used in tests). The validator <code>sanitize_kg_value</code> permits punctuation and natural-language entity names &mdash; unlike <code>sanitize_name</code> for wings and rooms &mdash; supporting rich descriptions such as <code>'Alice (birth 1950)' &rarr; 'child_of' &rarr; 'Elizabeth (deceased 1985)'</code>.
+</p>
+
+<h3>Stats and timeline</h3>
+<p>
+  <code>stats()</code> returns total entities, total triples, <code>current_facts</code> (<code>valid_to IS NULL</code>), <code>expired_facts</code>, and the list of all predicate types; it backs <code>tool_kg_stats</code> and test assertions. <code>timeline()</code> returns up to 100 facts in chronological order (ordered by <code>valid_from</code>, NULLs last), optionally scoped to one entity&rsquo;s incoming and outgoing edges, for narrative reconstruction and auditing.
+</p>
+
+<div class="callout perf">
+  <div class="callout-title">&#9889; Performance</div>
+  <p>Timeline queries are capped at <code>LIMIT 100</code> (<code>knowledge_graph.py:476</code>). This is a sane default for interactive use, but timelines with more than 100 entries are silently truncated &mdash; there is no pagination, so a denser timeline needs a follow-up query or an API change.</p>
+</div>
+
+<h2>Key concepts</h2>
+<dl class="concepts">
+  <dt>Triple (RDF-style)</dt>
+  <dd>A fact expressed as subject&rarr;predicate&rarr;object (e.g. <code>'Alice' &rarr; 'works_at' &rarr; 'Acme Corp'</code>). The core KG unit; predicates are normalized to lowercase with underscores.</dd>
+
+  <dt>Validity window</dt>
+  <dd>Optional <code>valid_from</code>/<code>valid_to</code> timestamps defining when a fact is true. Both accept ISO-8601 dates (<code>YYYY-MM-DD</code>) or canonical UTC datetimes (<code>YYYY-MM-DDTHH:MM:SSZ</code>). NULL means unbounded; values are inclusive on both ends.</dd>
+
+  <dt>Temporal query (<code>as_of</code>)</dt>
+  <dd>A query parameter returning only facts valid at a specified instant. Date-only queries like <code>as_of=2026-01-15</code> normalize to <code>T00:00:00Z</code>; the comparison logic handles both legacy date-only values and canonical UTC datetimes.</dd>
+
+  <dt>Invalidation</dt>
+  <dd>Closing a fact by setting its <code>valid_to</code> date. The original triple with NULL <code>valid_to</code> is updated to an ended timestamp; no rows are deleted, preserving the audit trail and time-travel queries.</dd>
+
+  <dt>Entity disambiguation</dt>
+  <dd>Person/project/concept nodes identified by lowercase-slugified names (<code>entity_id</code>). The registry in <code>entity_registry.py</code> and <code>fact_checker.py</code> detect duplicates and confusion; the KG enforces deterministic lookups via this slug. See the <a href="entities.html">Entity System</a>.</dd>
+
+  <dt>Provenance fields (RFC 002 &sect;5.5)</dt>
+  <dd>Optional <code>source_drawer_id</code>, <code>adapter_name</code>, <code>source_closet</code>, and <code>source_file</code> track where a fact came from: the drawer that mentions it, the adapter that extracted it, or the file/closet it references.</dd>
+
+  <dt>Confidence score</dt>
+  <dd>A per-triple float (default <code>1.0</code>) indicating certainty. Not yet used in ranking but reserved for future fact-assessment integrations and conflict resolution.</dd>
+
+  <dt>Timeline</dt>
+  <dd>A chronologically sorted view of facts for an entity or the whole KG, ordered by <code>valid_from</code> (NULLs last) and limited to 100 rows; useful for narrative reconstruction.</dd>
+</dl>
+
+<h2>Implementation highlights</h2>
+
+<p>
+  <strong>Temporal normalization via SQL CASE expressions.</strong> Rather than converting values in Python, the system normalizes in SQL (<code>knowledge_graph.py:84&ndash;103</code>), so the comparison runs at query time against the actual stored values, avoiding redundant conversions and keeping the Python path clean.
+</p>
+
+<div class="code-caption">knowledge_graph.py:84 &middot; date-only facts treated as full-day windows</div>
+<pre><code class="language-python">def _sql_temporal_start_expr(column: str) -> str:
+    """SQLite expression for comparing valid_from-style temporal values."""
+    return (
+        f"CASE WHEN length({column}) = 10 "
+        f"AND substr({column}, 5, 1) = '-' "
+        f"AND substr({column}, 8, 1) = '-' "
+        f"THEN {column} || 'T00:00:00Z' ELSE {column} END"
+    )
+
+def _sql_temporal_end_expr(column: str) -> str:
+    """SQLite expression for comparing valid_to-style temporal values."""
+    return (
+        f"CASE WHEN length({column}) = 10 "
+        f"AND substr({column}, 5, 1) = '-' "
+        f"AND substr({column}, 8, 1) = '-' "
+        f"THEN {column} || 'T23:59:59Z' ELSE {column} END"
+    )</code></pre>
+
+<p>
+  <strong>Inverted-interval validation.</strong> Both <code>add_triple</code> and <code>invalidate</code> explicitly reject intervals where <code>valid_to &lt; valid_from</code> (<code>knowledge_graph.py:270&ndash;278</code> and <code>346&ndash;352</code>). This matters because an inverted interval would be invisible to every <code>as_of</code> query &mdash; a silent failure that could hide data corruption.
+</p>
+
+<div class="code-caption">knowledge_graph.py:270 &middot; inverted intervals raise rather than vanish</div>
+<pre><code class="language-python">if (
+    valid_from is not None
+    and valid_to is not None
+    and _temporal_end_key(valid_to) &lt; _temporal_start_key(valid_from)
+):
+    raise ValueError(
+        f"valid_to={valid_to!r} is before valid_from={valid_from!r}; "
+        "an inverted interval would be invisible to every KG query"
+    )</code></pre>
+
+<p>
+  <strong>Entity ID canonicalization.</strong> <code>_entity_id</code> (<code>knowledge_graph.py:219</code>) lowercases names, replaces spaces with underscores, and strips apostrophes, giving deterministic deduplication: <code>'Alice Smith'</code> and <code>'alice_smith'</code> resolve to the same ID.
+</p>
+
+<p>
+  <strong>Per-path singleton cache.</strong> The MCP server keeps <code>_kg_by_path</code> (<code>mcp_server.py:176</code>), one KG instance per palace path, and routes every operation through <code>_call_kg</code> (<code>mcp_server.py:248</code>), which acquires the KG lock to guarantee a single writer and consistent reads.
+</p>
+
+<p>
+  <strong>Schema migration for backward compatibility.</strong> <code>_migrate_schema</code> (<code>knowledge_graph.py:180&ndash;194</code>) detects and adds the <code>source_drawer_id</code> and <code>adapter_name</code> columns when missing, enabling RFC 002 &sect;5.5 provenance without resetting existing palaces.
+</p>
+
+<p>
+  <strong>Duplicate detection on add.</strong> When adding a triple (<code>knowledge_graph.py:298&ndash;303</code>), the code checks for an identical subject/predicate/object with <code>valid_to IS NULL</code>; if found it returns the existing ID instead of inserting a duplicate, while still allowing the same fact under a different validity window.
+</p>
+
+<div class="callout gotcha">
+  <div class="callout-title">&#9888;&#65039; Gotcha</div>
+  <p>The KG does <em>not</em> enforce referential integrity at write time. Although the schema declares <code>FOREIGN KEY (subject) REFERENCES entities(id)</code>, <code>add_triple</code> auto-creates missing entities on the fly (<code>knowledge_graph.py:288&ndash;295</code>). You can add a triple for entities that do not yet exist; the foreign key documents intent but is a soft constraint, enabling flexible triple creation without pre-populating the entity table.</p>
+</div>
+
+<div class="callout gotcha">
+  <div class="callout-title">&#9888;&#65039; Gotcha</div>
+  <p>Predicates are always lowercased and space&rarr;underscore normalized at write time (<code>knowledge_graph.py:282</code>), so <code>'Child Of'</code>, <code>'child_of'</code>, and <code>'CHILD_OF'</code> map to the same predicate. This is intentional (it simplifies predicate discovery), but callers expecting case to be preserved will be surprised.</p>
+</div>
+
+<details class="collapsible">
+  <summary>Invalidation is idempotent &mdash; and why that&rsquo;s deliberate</summary>
+  <p>
+    <code>invalidate</code> searches for triples with <code>valid_to IS NULL</code> (<code>knowledge_graph.py:340</code>). Called twice on the same fact, the second call finds no matches and does nothing &mdash; semantically correct but potentially surprising to callers expecting an error. The forgiving behavior aligns with CLAUDE.md&rsquo;s &ldquo;incremental-only&rdquo; principle: operations are replay-safe.
+  </p>
+  <div class="code-caption">knowledge_graph.py:328 &middot; closing a fact, no-op on the second call</div>
+<pre><code class="language-python">def invalidate(self, subject, predicate, obj, ended=None):
+    """Mark a relationship as no longer valid (set valid_to date/time)."""
+    sub_id = self._entity_id(subject)
+    obj_id = self._entity_id(obj)
+    pred = predicate.lower().replace(" ", "_")
+    ended = sanitize_iso_temporal(ended or date.today().isoformat(), "ended")
+
+    # Find all open (valid_to IS NULL) triples matching this fact
+    rows = conn.execute(
+        "SELECT id, valid_from FROM triples "
+        "WHERE subject=? AND predicate=? AND object=? AND valid_to IS NULL",
+        (sub_id, pred, obj_id),
+    ).fetchall()
+    # Update all matching rows; second call finds nothing -> safe no-op</code></pre>
+</details>
+
+<h2>Key symbols</h2>
+<table class="symbols">
+  <thead><tr><th>Symbol</th><th>Kind</th><th>Location</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>KnowledgeGraph</td><td>class</td><td><code>knowledge_graph.py:129</code></td><td>Main KG interface. Manages the SQLite connection, locking, and all read/write operations. Singleton per palace path, cached in <code>mcp_server._kg_by_path</code>.</td></tr>
+    <tr><td>add_triple</td><td>method</td><td><code>knowledge_graph.py:237</code></td><td>Primary write. Auto-creates entities, validates intervals, deduplicates on subject/predicate/object + <code>valid_to IS NULL</code>, generates a unique <code>triple_id</code>.</td></tr>
+    <tr><td>query_entity</td><td>method</td><td><code>knowledge_graph.py:362</code></td><td>Primary read. Returns all facts for an entity, optionally at an <code>as_of</code> moment, in a given direction (outgoing/incoming/both).</td></tr>
+    <tr><td>invalidate</td><td>method</td><td><code>knowledge_graph.py:328</code></td><td>Closes an open fact by setting <code>valid_to</code>. Validates <code>ended &gt;= valid_from</code>. Idempotent across repeated calls.</td></tr>
+    <tr><td>_temporal_filter_sql</td><td>function</td><td><code>knowledge_graph.py:106</code></td><td>Generates the WHERE clause for temporal queries, handling date-only and canonical UTC normalization via CASE expressions.</td></tr>
+    <tr><td>timeline</td><td>method</td><td><code>knowledge_graph.py:462</code></td><td>Returns facts chronologically, optionally for one entity. Limited to 100 rows. Useful for narrative reconstruction.</td></tr>
+    <tr><td>seed_from_entity_facts</td><td>method</td><td><code>knowledge_graph.py:529</code></td><td>Bootstrap method that populates the KG from a dict of curated facts (tests and initial setup); handles relationships, interests, and entity metadata.</td></tr>
+    <tr><td>tool_kg_query</td><td>function</td><td><code>mcp_server.py:1475</code></td><td>MCP interface for querying the KG. Sanitizes inputs and calls <code>query_entity</code> via <code>_call_kg</code>.</td></tr>
+    <tr><td>tool_kg_add</td><td>function</td><td><code>mcp_server.py:1490</code></td><td>MCP interface for adding triples. Logs to WAL, sanitizes inputs, forwards to <code>add_triple</code>.</td></tr>
+    <tr><td>_call_kg</td><td>function</td><td><code>mcp_server.py:248</code></td><td>Helper that acquires the per-path KG singleton and calls a lambda, ensuring single writer and consistent reads.</td></tr>
+    <tr><td>check_text</td><td>function</td><td><code>fact_checker.py:55</code></td><td>Fact-checking entrypoint. Validates incoming text against the KG for contradictions (<code>stale_fact</code>, <code>relationship_mismatch</code>) and entity confusions.</td></tr>
+    <tr><td>sanitize_iso_temporal</td><td>function</td><td><code>config.py:133</code></td><td>Validator for temporal parameters. Rejects partial dates and non-UTC timezones, normalizes <code>+00:00</code> to <code>Z</code>. Applied at the MCP boundary for all temporal inputs.</td></tr>
+  </tbody>
+</table>
+
+<h2>Design decisions</h2>
+<dl class="concepts">
+  <dt>SQLite over Neo4j or another graph database</dt>
+  <dd>CLAUDE.md&rsquo;s &ldquo;local-first, zero external API&rdquo; principle. Neo4j (as Zep offers) needs a running server or a cloud subscription ($25/month+); SQLite is zero-infrastructure, file-based, and embedded. It trades native graph-traversal performance for simplicity &mdash; a fit-for-purpose call given MemPalace workloads (entity stars, not deep graph navigation). See <a href="backends.html">Storage Backends</a>.</dd>
+
+  <dt>Single coarse lock + WAL, not optimistic concurrency</dt>
+  <dd>The MCP server is single-process with background hooks running in threads. A coarse lock is simpler and sufficient; fine-grained locking would add complexity for no benefit. WAL mode allows concurrent reads while a write holds the lock, and the 10-second timeout absorbs occasional contention from heavy indexing or search.</dd>
+
+  <dt>Normalize predicates at write time, not query time</dt>
+  <dd>Normalizing on insert means queries need no case-insensitive matchers. The downside (lost original casing) is acceptable because relationships are usually written by code, not user input, and semantic normalization (<code>parent</code>, <code>parent_of</code>, <code>ParentOf</code> &rarr; <code>parent_of</code>) is more valuable than fidelity.</dd>
+
+  <dt>Temporal comparisons in SQL CASE, not Python</dt>
+  <dd>Performance and correctness: normalization happens once per query, over the actual stored values, keeping the code path close to the data. Date-only facts are normalized just-in-time (<code>00:00:00</code> for <code>valid_from</code>, <code>23:59:59</code> for <code>valid_to</code>), preserving the intent that a date spans the full day.</dd>
+
+  <dt>Invalidation updates the same row, not an insert</dt>
+  <dd>Audit trail and correctness: updating <code>valid_to</code> preserves the original triple ID and keeps a fact&rsquo;s full lifetime visible in one row. Inserting a new &ldquo;ended&rdquo; row would force queries to UNION versions; an in-place update is simpler and matches RDF 4D semantics (fact + time range).</dd>
+</dl>
+
+<h2>Data flow</h2>
+<p>
+  Data moves through the KG in two directions. <strong>Ingestion</strong> (<code>add_triple</code>, <code>add_entity</code>, <code>seed_from_entity_facts</code>) is driven by miners (<a href="mining-projects.html">project mining</a> via <code>miner.py</code>, <a href="mining-conversations.html">conversation mining</a> via <code>convo_miner.py</code>) through adapters carrying RFC 002 &sect;5.5 provenance, and by <code>fact_checker.py</code> validations. The <a href="mcp-server.html">MCP server</a> exposes <code>tool_kg_add</code>, <code>tool_kg_invalidate</code>, and <code>tool_kg_query</code> as the public interface.
+</p>
+<p>
+  <strong>Query</strong> operations (<code>query_entity</code>, <code>query_relationship</code>, <code>timeline</code>) are driven by fact-checkers validating incoming text, by <a href="cli.html">CLI</a> tools (<code>kg-query</code>, <code>kg-list</code>), and by <a href="search.html">search</a> integration &mdash; note that <code>searcher.py</code> does not call the KG directly, but the KG is available for post-search enrichment. Output feeds back into <code>fact_checker.py</code> for contradiction detection and <code>entity_registry.py</code> for disambiguation.
+</p>
+<p>
+  Every operation flows through <code>_call_kg</code> in <code>mcp_server.py</code>, which acquires the singleton KG for the palace path and holds the lock during execution. Schema mutations (<code>_migrate_schema</code>) run once at initialization. Data persists in the SQLite file; nothing is cached in memory beyond the connection object.
+</p>
+
+<div class="related">
+  <h2>See also</h2>
+  <div class="related-grid">
+    <a class="related-card" href="entities.html"><span class="rc-group">Ingestion</span><div class="rc-title">Entity System</div><div class="rc-desc">Provides disambiguation and name normalization; KG queries rely on its <code>entity_id</code> canonicalization.</div></a>
+    <a class="related-card" href="mcp-server.html"><span class="rc-group">Interfaces</span><div class="rc-title">MCP Server &amp; Tools</div><div class="rc-desc">Exposes the <code>tool_kg_*</code> functions and manages per-path KG caching as the public interface.</div></a>
+    <a class="related-card" href="architecture.html"><span class="rc-group">Overview</span><div class="rc-title">System Architecture</div><div class="rc-desc">The KG is one pillar alongside vector search and palace rooms; explains the system topology.</div></a>
+    <a class="related-card" href="search.html"><span class="rc-group">Retrieval</span><div class="rc-title">Search &amp; Retrieval</div><div class="rc-desc">Vector and hybrid search the KG complements with deterministic relationship queries.</div></a>
+    <a class="related-card" href="backends.html"><span class="rc-group">Retrieval</span><div class="rc-title">Storage Backends</div><div class="rc-desc">The SQLite/WAL storage layer the KG builds on for local, dependency-free persistence.</div></a>
+    <a class="related-card" href="security-privacy.html"><span class="rc-group">Cross-cutting</span><div class="rc-title">Security &amp; Privacy</div><div class="rc-desc">Local-first, zero-API storage and input sanitization that the KG honors.</div></a>
+  </div>
+</div>
+      </main>
+      <footer class="site-footer">
+        <span>MemPalace v3.3.6</span>
+        <span>·</span>
+        <a href="index.html">Wiki home</a>
+        <a href="https://github.com/MemPalace/mempalace">GitHub</a>
+        <a href="concepts.json">concepts.json</a>
+        <span style="margin-left:auto">Generated 2026-06-01 · press <kbd>/</kbd> to search</span>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
